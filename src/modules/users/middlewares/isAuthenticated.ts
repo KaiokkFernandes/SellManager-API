@@ -1,38 +1,34 @@
-import { verify } from 'jsonwebtoken';
+import { jwtVerify } from 'jose';
 import { Request, Response, NextFunction } from 'express';
 import auth from '@config/auth';
+import AppError from '@shared/erros/AppError';
 
-interface TokenPayload {
-    iat: number;
-    exp: number;
-    sub: string;
-}
+const secret = new TextEncoder().encode(auth.jwt.secret);
 
 export default function isAuthenticated(req: Request, _res: Response, next: NextFunction): void {
-    const authHeader = req.headers.authorization;
+  const authHeader = req.headers.authorization;
 
-    if (!authHeader) {
-        throw new Error('JWT token is missing');
-    }
+  if (!authHeader) {
+    return next(new AppError('JWT token is missing', 401));
+  }
 
-    // destruturação do token
-   const [, token] = authHeader.split(' ');
+  const [scheme, token] = authHeader.split(' ');
 
-   try{
-      const decodedToken = verify(token, auth.jwt.secret);
+  if (scheme !== 'Bearer' || !token) {
+    return next(new AppError('Invalid JWT token', 401));
+  }
 
-      console.log(decodedToken);
-
-      const { sub } = decodedToken as TokenPayload;
-
+  jwtVerify(token, secret)
+    .then(({ payload }) => {
+      if (!payload.sub) {
+        throw new Error('Token without subject');
+      }
 
       req.user = {
-      id: sub,
+        id: payload.sub,
+      };
 
-    }
-
-      return next();
-   }catch{
-      throw new Error('Invalid JWT token');
-   }
+      next();
+    })
+    .catch(() => next(new AppError('Invalid JWT token', 401)));
 }

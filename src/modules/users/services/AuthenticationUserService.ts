@@ -3,7 +3,7 @@ import { getCustomRepository } from "typeorm";
 import Users from "../typeorm/entities/Users";
 import UserRepository from "../typeorm/repositories/UserRepository";
 import { compare } from "bcryptjs";
-const jwt = require('jsonwebtoken');
+import { SignJWT } from 'jose';
 import authConfig from '../../../config/auth';
 
 
@@ -33,11 +33,12 @@ class AuthenticationUserService {
    }
 
 
-   const token = jwt.sign(
-    { id: user.id, email: user.email },
-    authConfig.jwt.secret,
-    { expiresIn: authConfig.jwt.expiresIn }
-  );
+   const token = await new SignJWT({ email: user.email })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setSubject(user.id)
+    .setIssuedAt()
+    .setExpirationTime(authConfig.jwt.expiresIn)
+    .sign(new TextEncoder().encode(authConfig.jwt.secret));
 
      return {
         user,
