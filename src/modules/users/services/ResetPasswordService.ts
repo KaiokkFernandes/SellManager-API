@@ -3,6 +3,7 @@ import AppError from '@shared/errors/AppError';
 import { IHashProvider } from '@shared/providers/HashProvider/IHashProvider';
 import { IUsersRepository } from '../domain/repositories/IUsersRepository';
 import { IUserTokensRepository } from '../domain/repositories/IUserTokensRepository';
+import { hashResetToken } from '../domain/resetToken';
 
 interface IRequest {
   token: string;
@@ -19,16 +20,12 @@ export class ResetPasswordService {
   ) {}
 
   public async execute({ token, password }: IRequest): Promise<void> {
-    const userToken = await this.userTokensRepository.findByToken(token);
+    const userToken = await this.userTokensRepository.findByTokenHash(
+      hashResetToken(token),
+    );
 
     if (!userToken) {
-      throw new AppError('User token does not exists');
-    }
-
-    const user = await this.usersRepository.findById(userToken.user_id);
-
-    if (!user) {
-      throw new AppError('User does not exists');
+      throw new AppError('Invalid or expired token');
     }
 
     if (
@@ -37,11 +34,20 @@ export class ResetPasswordService {
         addHours(userToken.created_at, TOKEN_EXPIRATION_HOURS),
       )
     ) {
-      throw new AppError('Token expired');
+      await this.userTokensRepository.deleteByUserId(userToken.user_id);
+      throw new AppError('Invalid or expired token');
+    }
+
+    const user = await this.usersRepository.findById(userToken.user_id);
+
+    if (!user) {
+      throw new AppError('Invalid or expired token');
     }
 
     user.password = await this.hashProvider.generateHash(password);
-
     await this.usersRepository.save(user);
+
+    // Uso único: o token deixa de valer depois de redefinir a senha.
+    await this.userTokensRepository.deleteByUserId(user.id);
   }
 }

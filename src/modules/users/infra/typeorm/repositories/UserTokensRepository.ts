@@ -1,6 +1,9 @@
 import { DataSource, Repository } from 'typeorm';
 import { UserToken } from '../../../domain/entities/UserToken';
-import { IUserTokensRepository } from '../../../domain/repositories/IUserTokensRepository';
+import {
+  ICreateUserTokenDTO,
+  IUserTokensRepository,
+} from '../../../domain/repositories/IUserTokensRepository';
 import { UserTokenSchema } from '../schemas/UserTokenSchema';
 
 export class UserTokensRepository implements IUserTokensRepository {
@@ -10,11 +13,15 @@ export class UserTokensRepository implements IUserTokensRepository {
     this.ormRepository = dataSource.getRepository(UserTokenSchema);
   }
 
-  public findByToken(token: string): Promise<UserToken | null> {
-    return this.ormRepository.findOneBy({ token });
+  public findByTokenHash(token_hash: string): Promise<UserToken | null> {
+    return this.ormRepository.findOneBy({ token_hash });
   }
 
-  public generate(user_id: string): Promise<UserToken> {
-    return this.ormRepository.save(this.ormRepository.create({ user_id }));
+  public create(data: ICreateUserTokenDTO): Promise<UserToken> {
+    return this.ormRepository.save(this.ormRepository.create(data));
+  }
+
+  public async deleteByUserId(user_id: string): Promise<void> {
+    await this.ormRepository.delete({ user_id });
   }
 }

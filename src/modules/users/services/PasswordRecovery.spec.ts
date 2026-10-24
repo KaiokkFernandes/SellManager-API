@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FakeHashProvider } from '@shared/providers/HashProvider/FakeHashProvider';
 import { FakeMailProvider } from '@shared/providers/MailProvider/FakeMailProvider';
 import { User } from '../domain/entities/User';
@@ -14,6 +14,15 @@ describe('Recuperação de senha', () => {
   let sendForgotPasswordEmail: SendForgotPasswordEmailService;
   let resetPassword: ResetPasswordService;
   let user: User;
+
+  /** Pede a recuperação e devolve o token em claro que foi no link do e-mail. */
+  async function requestToken(): Promise<string> {
+    await sendForgotPasswordEmail.execute({ email: user.email });
+    const link = String(
+      mailProvider.messages.at(-1)?.templateData.variables.link,
+    );
+    return new URL(link).searchParams.get('token') ?? '';
+  }
 
   beforeEach(async () => {
     usersRepository = new FakeUsersRepository();
@@ -41,14 +50,12 @@ describe('Recuperação de senha', () => {
     vi.useRealTimers();
   });
 
-  it('envia e-mail com link contendo o token', async () => {
-    await sendForgotPasswordEmail.execute({ email: 'kaio@test.com' });
+  it('envia o link por e-mail e guarda apenas o hash do token', async () => {
+    const token = await requestToken();
 
-    const [token] = userTokensRepository.tokens;
-    expect(mailProvider.messages).toHaveLength(1);
-    expect(mailProvider.messages[0]?.templateData.variables.link).toBe(
-      `http://web.test/reset_password?token=${token?.token}`,
-    );
+    expect(token.length).toBeGreaterThanOrEqual(43);
+    expect(userTokensRepository.tokens).toHaveLength(1);
+    expect(userTokensRepository.tokens[0]?.token_hash).not.toBe(token);
   });
 
   it('não revela se o e-mail existe: não falha e não envia nada', async () => {
@@ -58,29 +65,41 @@ describe('Recuperação de senha', () => {
     expect(mailProvider.messages).toHaveLength(0);
   });
 
-  it('redefine a senha com um token válido', async () => {
-    const { token } = await userTokensRepository.generate(user.id);
+  it('um novo pedido invalida o link anterior', async () => {
+    const first = await requestToken();
+    await requestToken();
 
-    await resetPassword.execute({ token, password: 'nova' });
+    await expect(
+      resetPassword.execute({ token: first, password: 'nova-senha' }),
+    ).rejects.toThrow('Invalid or expired token');
+  });
+
+  it('redefine a senha e o token não pode ser reutilizado', async () => {
+    const token = await requestToken();
+
+    await resetPassword.execute({ token, password: 'nova-senha' });
 
     expect((await usersRepository.findById(user.id))?.password).toBe(
-      'hashed:nova',
+      'hashed:nova-senha',
     );
+    await expect(
+      resetPassword.execute({ token, password: 'outra-senha' }),
+    ).rejects.toThrow('Invalid or expired token');
   });
 
   it('rejeita token expirado (mais de 2h)', async () => {
-    const { token } = await userTokensRepository.generate(user.id);
+    const token = await requestToken();
     vi.useFakeTimers();
     vi.setSystemTime(Date.now() + 3 * 60 * 60 * 1000);
 
     await expect(
-      resetPassword.execute({ token, password: 'nova' }),
-    ).rejects.toThrow('Token expired');
+      resetPassword.execute({ token, password: 'nova-senha' }),
+    ).rejects.toThrow('Invalid or expired token');
   });
 
   it('rejeita token inexistente', async () => {
     await expect(
-      resetPassword.execute({ token: 'inexistente', password: 'nova' }),
-    ).rejects.toThrow();
+      resetPassword.execute({ token: 'inexistente', password: 'nova-senha' }),
+    ).rejects.toThrow('Invalid or expired token');
   });
 });

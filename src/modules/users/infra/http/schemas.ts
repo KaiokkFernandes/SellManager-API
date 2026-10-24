@@ -22,7 +22,7 @@ export const forgotPasswordBodySchema = z.object({
 
 export const resetPasswordBodySchema = z
   .object({
-    token: z.uuid(),
+    token: z.string().min(32).max(128),
     password: newPassword,
     password_confirmation: z.string(),
   })
