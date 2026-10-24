@@ -4,9 +4,11 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { env } from '@config/env';
 import { pinoHttp } from 'pino-http';
+import swaggerUi from 'swagger-ui-express';
 import uploadConfig from '@config/upload';
 import { Container } from '@shared/container';
 import { logger } from '@shared/logger';
+import { generateOpenApiDocument } from './docs/openapi';
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
 import { createRoutes } from './routes';
 
@@ -23,6 +25,12 @@ export function createApp(container: Container): Express {
   );
   app.use(express.json({ limit: '100kb' }));
   app.use('/files', express.static(uploadConfig.uploadsFolder));
+  const openApiDocument = generateOpenApiDocument(env.APP_API_URL);
+  app.get('/docs.json', (_request, response) => {
+    response.json(openApiDocument);
+  });
+  app.use('/docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
+
   app.use(createRoutes(container));
   app.use(notFoundHandler);
   app.use(errorHandler);
