@@ -20,7 +20,7 @@ celebrate({
     email: Joi.string().email().required(),
   },
 }),
-asyncHandler(forgotPasswordController.create));
+asyncHandler(forgotPasswordController.create.bind(forgotPasswordController)));
 
 
 passwordRoutes.post('/reset',
@@ -31,6 +31,6 @@ passwordRoutes.post('/reset',
       password_confirmation: Joi.string().required().valid(Joi.ref('password')),
     },
   }),
-  asyncHandler(resetPasswordController.create));
+  asyncHandler(resetPasswordController.create.bind(resetPasswordController)));
 
 export default passwordRoutes;

@@ -12,7 +12,7 @@ async function bootstrap(): Promise<void> {
   const shutdown = (signal: string) => {
     console.log(`${signal} recebido, encerrando...`);
     server.close(() => {
-      AppDataSource.destroy().finally(() => process.exit(0));
+      void AppDataSource.destroy().finally(() => process.exit(0));
     });
   };
 

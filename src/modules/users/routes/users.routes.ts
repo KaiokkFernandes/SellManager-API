@@ -24,7 +24,7 @@ UsersRouter.post('/',
       password: Joi.string().required(),
     }
   }),
-  asyncHandler(usersController.create));
+  asyncHandler(usersController.create.bind(usersController)));
 
 UsersRouter.patch(
   '/avatar',
