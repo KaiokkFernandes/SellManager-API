@@ -2,6 +2,7 @@ import { RequestHandler, Router } from 'express';
 import multer from 'multer';
 import uploadConfig from '@config/upload';
 import { Container } from '@shared/container';
+import { authRateLimiter } from '@shared/http/middlewares/rateLimiter';
 import { validate } from '@shared/http/middlewares/validate';
 import { AuthenticateUserService } from '../../../services/AuthenticateUserService';
 import { CreateUserService } from '../../../services/CreateUserService';
@@ -66,6 +67,7 @@ export function makeUsersRoutes(
   usersRouter.get('/', authenticated, usersController.index);
   usersRouter.post(
     '/',
+    authRateLimiter,
     validate({ body: createUserBodySchema }),
     usersController.create,
   );

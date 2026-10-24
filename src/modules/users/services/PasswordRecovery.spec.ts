@@ -51,6 +51,13 @@ describe('Recuperação de senha', () => {
     );
   });
 
+  it('não revela se o e-mail existe: não falha e não envia nada', async () => {
+    await expect(
+      sendForgotPasswordEmail.execute({ email: 'nao@existe.com' }),
+    ).resolves.toBeUndefined();
+    expect(mailProvider.messages).toHaveLength(0);
+  });
+
   it('redefine a senha com um token válido', async () => {
     const { token } = await userTokensRepository.generate(user.id);
 

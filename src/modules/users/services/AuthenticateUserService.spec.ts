@@ -34,12 +34,18 @@ describe('AuthenticateUserService', () => {
   it('rejeita e-mail inexistente com 401', async () => {
     await expect(
       authenticateUser.execute({ email: 'nao@existe.com', password: '123456' }),
-    ).rejects.toMatchObject({ statusCode: 401 });
+    ).rejects.toMatchObject({
+      statusCode: 401,
+      message: 'Incorrect email/password combination.',
+    });
   });
 
-  it('rejeita senha errada com 401', async () => {
+  it('rejeita senha errada com a mesma mensagem de e-mail inexistente', async () => {
     await expect(
       authenticateUser.execute({ email: 'kaio@test.com', password: 'errada' }),
-    ).rejects.toMatchObject({ statusCode: 401 });
+    ).rejects.toMatchObject({
+      statusCode: 401,
+      message: 'Incorrect email/password combination.',
+    });
   });
 });

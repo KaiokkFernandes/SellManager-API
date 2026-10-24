@@ -1,5 +1,4 @@
 import path from 'node:path';
-import AppError from '@shared/errors/AppError';
 import { IMailProvider } from '@shared/providers/MailProvider/IMailProvider';
 import { IUsersRepository } from '../domain/repositories/IUsersRepository';
 import { IUserTokensRepository } from '../domain/repositories/IUserTokensRepository';
@@ -19,8 +18,9 @@ export class SendForgotPasswordEmailService {
   public async execute({ email }: IRequest): Promise<void> {
     const user = await this.usersRepository.findByEmail(email);
 
+    // Responde igual para e-mails inexistentes, para não permitir enumeração.
     if (!user) {
-      throw new AppError('User does not exists');
+      return;
     }
 
     const { token } = await this.userTokensRepository.generate(user.id);

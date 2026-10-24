@@ -31,7 +31,7 @@ export function makeContainer(
   overrides: Partial<Providers> = {},
 ) {
   const providers: Providers = {
-    hash: new BcryptHashProvider(),
+    hash: new BcryptHashProvider(env.BCRYPT_SALT_ROUNDS),
     token: new JoseTokenProvider(env.JWT_SECRET, env.JWT_EXPIRES_IN),
     mail: new EtherealMailProvider(new HandlebarsMailTemplateProvider()),
     storage: new DiskStorageProvider(

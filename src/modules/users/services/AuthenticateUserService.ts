@@ -24,17 +24,12 @@ export class AuthenticateUserService {
   public async execute({ email, password }: IRequest): Promise<IResponse> {
     const user = await this.usersRepository.findByEmail(email);
 
-    if (!user) {
+    // Mesma mensagem nos dois casos para não revelar quais e-mails existem.
+    if (
+      !user ||
+      !(await this.hashProvider.compareHash(password, user.password))
+    ) {
       throw new AppError('Incorrect email/password combination.', 401);
-    }
-
-    const passwordMatches = await this.hashProvider.compareHash(
-      password,
-      user.password,
-    );
-
-    if (!passwordMatches) {
-      throw new AppError('Incorret password, please try again.', 401);
     }
 
     const token = await this.tokenProvider.sign({ subject: user.id });
