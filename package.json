@@ -17,9 +17,9 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typeorm": "tsx ./node_modules/typeorm/cli.js",
-    "migration:run": "yarn typeorm migration:run -d src/shared/infra/typeorm/data-source.ts",
-    "migration:revert": "yarn typeorm migration:revert -d src/shared/infra/typeorm/data-source.ts",
-    "migration:create": "yarn typeorm migration:create",
+    "migration:run": "pnpm typeorm migration:run -d src/shared/infra/typeorm/data-source.ts",
+    "migration:revert": "pnpm typeorm migration:revert -d src/shared/infra/typeorm/data-source.ts",
+    "migration:create": "pnpm typeorm migration:create",
     "migration:run:prod": "typeorm migration:run -d dist/shared/infra/typeorm/data-source.js",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -71,7 +71,5 @@
     "typeorm": "^1.1.2",
     "zod": "^4.6.7"
   },
-  "resolutions": {
-    "tsc-alias/**/picomatch": "^2.3.2"
-  }
+  "packageManager": "pnpm@12.15.0"
 }

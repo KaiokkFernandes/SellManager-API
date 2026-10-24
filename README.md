@@ -79,7 +79,7 @@ Integration tests use the same app factory with a fake mail provider.
 ### Requirements
 
 - Node.js 24 (`.nvmrc`)
-- Yarn 1
+- pnpm 12 (version pinned in `packageManager`)
 - Docker (for PostgreSQL and the local mail inbox)
 
 ### Setup
@@ -87,15 +87,15 @@ Integration tests use the same app factory with a fake mail provider.
 ```bash
 git clone https://github.com/KaiokkFernandes/SellManager-API.git
 cd SellManager-API
-yarn install
+pnpm install
 
 cp .env.example .env
 # set JWT_SECRET to a random value:
 node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 
 docker compose up -d postgres mailpit
-yarn migration:run
-yarn dev
+pnpm migration:run
+pnpm dev
 ```
 
 | URL                        | What                                           |
@@ -132,18 +132,18 @@ variables are listed with comments in [`.env.example`](.env.example).
 
 | Script                                                           | Description                                            |
 | ---------------------------------------------------------------- | ------------------------------------------------------ |
-| `yarn dev`                                                       | Start in watch mode (tsx)                              |
-| `yarn build` / `yarn start`                                      | Compile to `dist/` and run the compiled app            |
-| `yarn typecheck`                                                 | Type-check without emitting                            |
-| `yarn lint` / `yarn lint:fix`                                    | ESLint                                                 |
-| `yarn format` / `yarn format:check`                              | Prettier                                               |
-| `yarn test`                                                      | Run all tests (unit + integration)                     |
-| `yarn test:unit` / `yarn test:watch`                             | Unit tests only; no database needed                    |
-| `yarn test:integration`                                          | HTTP tests; needs `docker compose up -d postgres-test` |
-| `yarn test:coverage`                                             | Run tests with coverage                                |
-| `yarn migration:run` / `migration:revert`                        | Apply or revert migrations (dev)                       |
-| `yarn migration:create src/shared/infra/typeorm/migrations/Name` | New empty migration                                    |
-| `yarn migration:run:prod`                                        | Apply migrations from the compiled `dist/`             |
+| `pnpm dev`                                                       | Start in watch mode (tsx)                              |
+| `pnpm build` / `pnpm start`                                      | Compile to `dist/` and run the compiled app            |
+| `pnpm typecheck`                                                 | Type-check without emitting                            |
+| `pnpm lint` / `pnpm lint:fix`                                    | ESLint                                                 |
+| `pnpm format` / `pnpm format:check`                              | Prettier                                               |
+| `pnpm test`                                                      | Run all tests (unit + integration)                     |
+| `pnpm test:unit` / `pnpm test:watch`                             | Unit tests only; no database needed                    |
+| `pnpm test:integration`                                          | HTTP tests; needs `docker compose up -d postgres-test` |
+| `pnpm test:coverage`                                             | Run tests with coverage                                |
+| `pnpm migration:run` / `migration:revert`                        | Apply or revert migrations (dev)                       |
+| `pnpm migration:create src/shared/infra/typeorm/migrations/Name` | New empty migration                                    |
+| `pnpm migration:run:prod`                                        | Apply migrations from the compiled `dist/`             |
 
 ## API overview
 
@@ -238,10 +238,10 @@ Errors always have the same shape:
 ## Tests
 
 ```bash
-yarn test:unit                         # services with fake repositories (no database)
+pnpm test:unit                         # services with fake repositories (no database)
 
 docker compose up -d postgres-test     # throwaway database on port 5434
-yarn test:integration                  # HTTP tests with supertest against PostgreSQL
+pnpm test:integration                  # HTTP tests with supertest against PostgreSQL
 ```
 
 The integration setup drops and re-creates the `sellmanager_test` schema before running
@@ -254,7 +254,7 @@ integration tests on every push and pull request.
 ## Production build
 
 ```bash
-yarn build
+pnpm build
 NODE_ENV=production yarn migration:run:prod
 NODE_ENV=production yarn start
 ```

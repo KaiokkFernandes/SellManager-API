@@ -5,7 +5,7 @@
 - **Um commit a cada passo concluído.** Cada etapa (ou sub-etapa) do trabalho vira
   seu próprio commit, para que o dono do projeto acompanhe e controle o que está
   sendo feito. Nunca acumule várias etapas em um commit só.
-- Antes de cada commit, rode build e testes (`yarn build` e `yarn test`, quando
+- Antes de cada commit, rode build e testes (`pnpm build` e `pnpm test`, quando
   existirem) e mostre o resultado. O projeto deve continuar compilando e
   funcionando ao fim de cada passo.
 - Mensagens de commit claras, em português, no formato `tipo: descrição`
@@ -28,9 +28,9 @@
 ## Comandos
 
 - Banco e e-mail locais: `docker compose up -d postgres postgres-test mailpit`
-- `yarn dev`, `yarn build`, `yarn typecheck`, `yarn lint`, `yarn format:check`
-- `yarn test:unit` (sem banco) e `yarn test:integration` (usa o postgres-test, porta 5434)
-- Migrations: `yarn migration:run` / `yarn migration:revert`; novas migrations
+- `pnpm dev`, `pnpm build`, `pnpm typecheck`, `pnpm lint`, `pnpm format:check`
+- `pnpm test:unit` (sem banco) e `pnpm test:integration` (usa o postgres-test, porta 5434)
+- Migrations: `pnpm migration:run` / `pnpm migration:revert`; novas migrations
   precisam ser registradas em `src/shared/infra/typeorm/data-source.ts`
 
 ## Estrutura
