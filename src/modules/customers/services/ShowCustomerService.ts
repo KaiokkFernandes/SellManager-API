@@ -13,7 +13,7 @@ class ShowCostumerServices {
    const users = await customerRepository.findById(id);
 
    if(!users) {
-    throw new AppError('User not found');
+    throw new AppError('Customer not found', 404);
    }
    return users;
 

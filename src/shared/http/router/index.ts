@@ -13,7 +13,7 @@ routes.use('/users', UsersRouter);
 routes.use('/sessions', sessionsRouter);
 routes.use('/password', passwordRoutes);
 routes.use('/profile', profileRoutes);
-routes.use('/costumer', CustomerRouter);
+routes.use('/customers', CustomerRouter);
 
 
 export default routes;

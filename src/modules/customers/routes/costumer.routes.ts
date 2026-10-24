@@ -9,7 +9,7 @@ const customerController = new CustomerController();
 
 CustomerRouter.use(isAuthenticated);
 
-CustomerRouter.get('/', asyncHandler(customerController.index.bind(CustomerController)));
+CustomerRouter.get('/', asyncHandler(customerController.index.bind(customerController)));
 
 CustomerRouter.get('/:id',
   celebrate({
@@ -17,7 +17,7 @@ CustomerRouter.get('/:id',
       id: Joi.string().uuid().required()
     }
   }),
- asyncHandler(customerController.show.bind(CustomerController)));
+ asyncHandler(customerController.show.bind(customerController)));
 
 CustomerRouter.post('/',
 celebrate({
@@ -25,8 +25,8 @@ celebrate({
     name: Joi.string().required(),
     email: Joi.string().email().required(),
   }
-})),
-asyncHandler(customerController.create.bind((CustomerController)));
+}),
+asyncHandler(customerController.create.bind(customerController)));
 
 CustomerRouter.put('/:id',
 celebrate({
@@ -38,7 +38,7 @@ celebrate({
     id: Joi.string().uuid().required()
   }
 }),
-asyncHandler(customerController.update.bind(CustomerController)));
+asyncHandler(customerController.update.bind(customerController)));
 
 CustomerRouter.delete('/:id',
 celebrate({
@@ -46,6 +46,6 @@ celebrate({
     id: Joi.string().uuid().required()
   }
 }),
-asyncHandler(customerController.delete.bind(CustomerController)));
+asyncHandler(customerController.delete.bind(customerController)));
 
 export default CustomerRouter;
