@@ -1,268 +1,178 @@
-# SellManager API
+# SellManager
 
-REST API for sales management — users, products, customers and orders — built with
-**Node.js, TypeScript, Express and TypeORM** on **PostgreSQL**.
+Sales management platform — a REST API, a web front-end and the contracts they share —
+organized as a **pnpm + Turborepo monorepo**.
 
-It is a study project for **Clean Architecture**: the domain has no framework
-dependencies, repositories live behind interfaces, and every dependency is wired in a
-single composition root.
+It started as a study project for Clean Architecture in Node.js. The API keeps the domain free
+of frameworks; the monorepo adds a single source of truth for request/response contracts that
+both the API and the front-end import.
 
-> Educational project. It follows production practices (validation, transactions,
-> rate limiting, tests, CI), but it was not built or audited for production use.
-
-## Features
-
-- **Authentication** with JWT (HS256, with expiration), bcrypt password hashing, and generic
-  login errors so the API doesn't reveal which emails exist
-- **Users:** sign-up, profile view/update (changing the password requires the old one),
-  avatar upload (jpeg/png/webp, max 2 MB)
-- **Password recovery** by email. The token is random, single-use, expires in 2 hours and is
-  stored only as a SHA-256 hash
-- **Products** with public read access; changing them requires authentication
-- **Customers** CRUD
-- **Orders.** Creating an order runs in a **transaction** that locks the products,
-  checks stock, copies the current price, computes the total in cents and decrements stock.
-  Canceling an order restores the stock. Concurrent orders cannot oversell
-- **Pagination** on every list (`?page=&limit=`)
-- **Validation** of body, params and query with zod
-- **OpenAPI 3.1 docs** at `/docs`, generated from the same zod schemas
-- **Security:** helmet, CORS allow-list, rate limiting on auth routes, and structured logs
-  (pino) that redact tokens and passwords
-
-## Tech stack
-
-| Area       | Choice                                                     |
-| ---------- | ---------------------------------------------------------- |
-| Runtime    | Node.js 24 LTS                                             |
-| Language   | TypeScript 6 (strict)                                      |
-| HTTP       | Express 5, helmet, cors, express-rate-limit, multer 2      |
-| Database   | PostgreSQL 18 + TypeORM 1.x (`DataSource`, `EntitySchema`) |
-| Validation | zod 4                                                      |
-| Auth       | jose (JWT), bcryptjs                                       |
-| Email      | nodemailer (SMTP or Ethereal) + Handlebars templates       |
-| Docs       | zod-to-openapi + swagger-ui-express                        |
-| Logs       | pino, pino-http                                            |
-| Tests      | Vitest + supertest                                         |
-| Quality    | ESLint 10 (typescript-eslint, type-checked), Prettier      |
-| Dev & CI   | tsx, Docker Compose, GitHub Actions                        |
-
-## Architecture
+## Repository layout
 
 ```
-src/
-├── config/                 env validation (zod), upload settings
-├── modules/
-│   └── <module>/           users | products | customers | orders
-│       ├── domain/         entities (plain interfaces) and repository interfaces
-│       ├── services/       use cases; receive dependencies through the constructor
-│       ├── fakes/          in-memory repositories for unit tests
-│       └── infra/
-│           ├── typeorm/    EntitySchema mappings and repository implementations
-│           └── http/       controllers, routes, zod schemas, OpenAPI docs
-└── shared/
-    ├── container/          composition root: the only place that knows concrete classes
-    ├── domain/             pagination types
-    ├── errors/             AppError
-    ├── http/               app factory, server, middlewares, OpenAPI document
-    ├── infra/typeorm/      DataSource and migrations
-    └── providers/          Hash, Token, Mail, MailTemplate and Storage (interface + impl + fake)
-test/integration/           HTTP tests against a real PostgreSQL
+.
+├── apps/
+│   ├── api/            @sellmanager/api     Express 5 + TypeORM + PostgreSQL REST API
+│   └── web/            @sellmanager/web     Vite + React front-end (skeleton only, no screens yet)
+├── packages/
+│   ├── shared/         @sellmanager/shared  zod schemas, response DTOs and types (no back-end deps)
+│   └── config/         @sellmanager/config  shared tsconfig, ESLint and Prettier configs
+├── docker-compose.yml  PostgreSQL (dev + test) and Mailpit
+├── turbo.json          task pipeline (build, dev, lint, typecheck, tests)
+├── pnpm-workspace.yaml workspace packages, overrides and allowed build scripts
+└── package.json        private root: only scripts and tooling
 ```
 
-Dependencies point inward: `infra → services → domain`. Services depend only on interfaces
-(`IUsersRepository`, `IHashProvider`, `IOrdersUnitOfWork`…). `makeContainer(dataSource)`
-builds the concrete implementations, and `createApp(container)` builds the Express app.
-Integration tests use the same app factory with a fake mail provider.
+| Package               | What it is                                                                  | Docs                                                   |
+| --------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `@sellmanager/api`    | Users, products, customers and orders; JWT auth, OpenAPI at `/docs`         | [apps/api/README.md](apps/api/README.md)               |
+| `@sellmanager/web`    | Front-end placeholder that proves the integration with `shared`             | [apps/web/README.md](apps/web/README.md)               |
+| `@sellmanager/shared` | Request schemas, response DTOs (`User`, `Product`, `Order`…), enums, errors | [packages/shared/README.md](packages/shared/README.md) |
+| `@sellmanager/config` | `tsconfig.*.json`, `createConfig()` for ESLint, Prettier config             | —                                                      |
+
+Dependency graph: `config` ← `shared` ← `api`, `web`. `api` and `web` never import each other.
+
+## Requirements
+
+- **Node.js 24** (see `.nvmrc`)
+- **pnpm 12**. The exact version is pinned in `packageManager`. Use `corepack enable pnpm`, or
+  `npm install -g pnpm`: pnpm switches itself to the pinned version.
+- **Docker**, for PostgreSQL and the local mail inbox
 
 ## Getting started
-
-### Requirements
-
-- Node.js 24 (`.nvmrc`)
-- pnpm 12 (version pinned in `packageManager`)
-- Docker (for PostgreSQL and the local mail inbox)
-
-### Setup
 
 ```bash
 git clone https://github.com/KaiokkFernandes/SellManager-API.git
 cd SellManager-API
 pnpm install
 
-cp .env.example .env
-# set JWT_SECRET to a random value:
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env
+# set JWT_SECRET in apps/api/.env to a random value:
 node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 
 docker compose up -d postgres mailpit
-pnpm migration:run
+pnpm --filter api migration:run
 pnpm dev
 ```
 
-| URL                        | What                                           |
-| -------------------------- | ---------------------------------------------- |
-| http://localhost:3333      | API                                            |
-| http://localhost:3333/docs | Swagger UI (`/docs.json` for the raw document) |
-| http://localhost:8025      | Mailpit: inbox for password-recovery emails    |
+`pnpm dev` builds `@sellmanager/shared` once, then runs all of these in parallel:
 
-The Docker PostgreSQL listens on port **5433**, so it won't clash with a local install on 5432.
+| URL                        | App                                         |
+| -------------------------- | ------------------------------------------- |
+| http://localhost:3333      | API (`apps/api`)                            |
+| http://localhost:3333/docs | API docs (Swagger UI)                       |
+| http://localhost:3000      | Web (`apps/web`)                            |
+| http://localhost:8025      | Mailpit: inbox for password-recovery emails |
 
-### Environment variables
+`shared` also runs in watch mode, so editing a schema rebuilds it, and the API restarts by itself.
 
-The app checks every variable at startup and refuses to start if one is invalid. All
-variables are listed with comments in [`.env.example`](.env.example).
+### Running a single app
 
-| Variable                                                              | Default                                           | Notes                                             |
-| --------------------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------- |
-| `NODE_ENV`                                                            | `development`                                     | `development` \| `test` \| `production`           |
-| `PORT`                                                                | `3333`                                            |                                                   |
-| `APP_API_URL`                                                         | `http://localhost:3333`                           | Used to build `avatar_url` and docs server        |
-| `APP_WEB_URL`                                                         | `http://localhost:3000`                           | Front-end URL used in the recovery link           |
-| `DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASSWORD` / `DB_NAME`         | Docker values                                     | PostgreSQL connection                             |
-| `JWT_SECRET`                                                          | —                                                 | **Required**, at least 32 characters              |
-| `JWT_EXPIRES_IN`                                                      | `1d`                                              |                                                   |
-| `BCRYPT_SALT_ROUNDS`                                                  | `12`                                              | 10–15                                             |
-| `CORS_ORIGIN`                                                         | `http://localhost:3000`                           | Comma-separated; `*` allows any origin            |
-| `TRUST_PROXY`                                                         | `0`                                               | Number of reverse proxies in front                |
-| `MAIL_DRIVER`                                                         | `ethereal`                                        | `smtp` (Mailpit in `.env.example`) or `ethereal`  |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER` / `SMTP_PASS` | — / `587` / `false`                               | `SMTP_HOST` is required with `smtp`               |
-| `MAIL_FROM_NAME` / `MAIL_FROM_EMAIL`                                  | `Equipe SellManager` / `no-reply@sellmanager.dev` | Sender                                            |
-| `LOG_LEVEL`                                                           | by `NODE_ENV`                                     | `debug` in dev, `info` in prod, `silent` in tests |
-
-## Scripts
-
-| Script                                                           | Description                                            |
-| ---------------------------------------------------------------- | ------------------------------------------------------ |
-| `pnpm dev`                                                       | Start in watch mode (tsx)                              |
-| `pnpm build` / `pnpm start`                                      | Compile to `dist/` and run the compiled app            |
-| `pnpm typecheck`                                                 | Type-check without emitting                            |
-| `pnpm lint` / `pnpm lint:fix`                                    | ESLint                                                 |
-| `pnpm format` / `pnpm format:check`                              | Prettier                                               |
-| `pnpm test`                                                      | Run all tests (unit + integration)                     |
-| `pnpm test:unit` / `pnpm test:watch`                             | Unit tests only; no database needed                    |
-| `pnpm test:integration`                                          | HTTP tests; needs `docker compose up -d postgres-test` |
-| `pnpm test:coverage`                                             | Run tests with coverage                                |
-| `pnpm migration:run` / `migration:revert`                        | Apply or revert migrations (dev)                       |
-| `pnpm migration:create src/shared/infra/typeorm/migrations/Name` | New empty migration                                    |
-| `pnpm migration:run:prod`                                        | Apply migrations from the compiled `dist/`             |
-
-## API overview
-
-All bodies are JSON. Full schemas and examples are at **`/docs`**. 🔒 means the route requires
-`Authorization: Bearer <token>`.
-
-| Method | Path                 | Auth | Description                                           |
-| ------ | -------------------- | :--: | ----------------------------------------------------- |
-| POST   | `/users`             |      | Sign up                                               |
-| GET    | `/users`             |  🔒  | List users (paginated)                                |
-| PATCH  | `/users/avatar`      |  🔒  | Upload avatar (`multipart/form-data`, field `avatar`) |
-| POST   | `/sessions`          |      | Log in, returns `{ user, token }`                     |
-| GET    | `/profile`           |  🔒  | Current user's profile                                |
-| PUT    | `/profile`           |  🔒  | Update profile / change password                      |
-| POST   | `/password/forgot`   |      | Send recovery email (always `204`)                    |
-| POST   | `/password/reset`    |      | Reset password with the emailed token                 |
-| GET    | `/products`          |      | List products (paginated)                             |
-| GET    | `/products/:id`      |      | Get a product                                         |
-| POST   | `/products`          |  🔒  | Create a product                                      |
-| PUT    | `/products/:id`      |  🔒  | Update a product                                      |
-| DELETE | `/products/:id`      |  🔒  | Delete a product (`409` if it has orders)             |
-| GET    | `/customers`         |  🔒  | List customers (paginated)                            |
-| GET    | `/customers/:id`     |  🔒  | Get a customer                                        |
-| POST   | `/customers`         |  🔒  | Create a customer                                     |
-| PUT    | `/customers/:id`     |  🔒  | Update a customer                                     |
-| DELETE | `/customers/:id`     |  🔒  | Delete a customer (`409` if they have orders)         |
-| GET    | `/orders`            |  🔒  | List orders (paginated, `?customer_id=`)              |
-| GET    | `/orders/:id`        |  🔒  | Get an order with its items                           |
-| POST   | `/orders`            |  🔒  | Create an order                                       |
-| PATCH  | `/orders/:id/status` |  🔒  | Change status: `pending → completed \| canceled`      |
-
-`/sessions`, `/password/*` and `POST /users` are rate limited to 20 requests per 15 minutes per IP.
-
-### Example: placing an order
-
-```http
-POST /orders
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "customer_id": "6e2ba4c6-96f5-4d7f-9303-6f6b91a1a960",
-  "products": [{ "id": "5c301fd4-233e-4eac-bb22-994b162e70d2", "quantity": 2 }]
-}
-```
-
-```json
-{
-  "id": "…",
-  "customer_id": "6e2ba4c6-96f5-4d7f-9303-6f6b91a1a960",
-  "status": "pending",
-  "total": 399.8,
-  "items": [
-    {
-      "id": "…",
-      "order_id": "…",
-      "product_id": "5c301fd4-…",
-      "price": 199.9,
-      "quantity": 2
-    }
-  ],
-  "created_at": "…",
-  "updated_at": "…"
-}
-```
-
-The client never sends prices: they are copied from the product when the order is placed.
-
-### Responses
-
-Lists return `{ "data": [...], "meta": { "page", "limit", "total", "total_pages" } }`.
-Errors always have the same shape:
-
-```json
-{
-  "status": "error",
-  "message": "Validation failed",
-  "details": [
-    { "segment": "body", "path": "email", "message": "Invalid email address" }
-  ]
-}
-```
-
-| Status | When                                                                                               |
-| ------ | -------------------------------------------------------------------------------------------------- |
-| 400    | Invalid input, malformed JSON, invalid upload, invalid/expired reset token                         |
-| 401    | Missing/invalid token or wrong credentials                                                         |
-| 404    | Resource or route not found                                                                        |
-| 409    | Email/name already in use, insufficient stock, invalid status change, deleting a referenced record |
-| 429    | Rate limit exceeded                                                                                |
-
-## Tests
+Any script of a package can be run from the root with `--filter` (the scope is optional):
 
 ```bash
-pnpm test:unit                         # services with fake repositories (no database)
-
-docker compose up -d postgres-test     # throwaway database on port 5434
-pnpm test:integration                  # HTTP tests with supertest against PostgreSQL
+pnpm --filter api dev            # only the API
+pnpm --filter web dev            # only the front-end
+pnpm --filter api migration:run  # also migration:revert, migration:create
+pnpm --filter api test:integration
+pnpm --filter shared build
 ```
 
-The integration setup drops and re-creates the `sellmanager_test` schema before running
-migrations. It refuses to run against any other database. One test sends concurrent orders
-for the same product to check that stock is never oversold.
+`turbo run dev --filter=@sellmanager/web...` runs the web app together with everything it depends on.
 
-CI (GitHub Actions) runs lint, format check, type-check, build, and the unit and
-integration tests on every push and pull request.
+## Environment variables
 
-## Production build
+Each app has its own `.env.example`, and the variables are documented there.
 
-```bash
-pnpm build
-NODE_ENV=production yarn migration:run:prod
-NODE_ENV=production yarn start
+| App        | File                                             | Variables                                                                                                                                                                                |
+| ---------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/api` | [`apps/api/.env.example`](apps/api/.env.example) | `NODE_ENV`, `PORT`, `APP_API_URL`, `APP_WEB_URL`, `DB_*`, `JWT_SECRET` (required), `JWT_EXPIRES_IN`, `BCRYPT_SALT_ROUNDS`, `CORS_ORIGIN`, `TRUST_PROXY`, `MAIL_*`, `SMTP_*`, `LOG_LEVEL` |
+| `apps/web` | [`apps/web/.env.example`](apps/web/.env.example) | `VITE_API_URL`: API base URL. Only `VITE_*` variables reach the browser                                                                                                                  |
+
+- The API checks its variables with zod at startup and refuses to start if one is invalid.
+  The full table is in the [API README](apps/api/README.md#environment-variables).
+- `apps/api/.env.test` is committed and points to the test database. It is used when `NODE_ENV=test`.
+- The defaults line up across apps: the web runs on port 3000, and the API defaults
+  `APP_WEB_URL` and `CORS_ORIGIN` to `http://localhost:3000`.
+
+## Scripts (root)
+
+| Script                         | What it does                                                                       |
+| ------------------------------ | ---------------------------------------------------------------------------------- |
+| `pnpm dev`                     | `turbo run dev`: shared (watch), api and web in parallel                           |
+| `pnpm build`                   | Build every package (`shared` first)                                               |
+| `pnpm typecheck`               | `tsc --noEmit` in every package                                                    |
+| `pnpm lint`                    | ESLint in every package                                                            |
+| `pnpm test`                    | Unit and integration tests. Integration needs `docker compose up -d postgres-test` |
+| `pnpm test:unit`               | Unit tests only (no database)                                                      |
+| `pnpm test:integration`        | API HTTP tests against PostgreSQL (port 5434)                                      |
+| `pnpm format` / `format:check` | Prettier at the root and in every package                                          |
+
+### Turborepo
+
+[`turbo.json`](turbo.json) defines these tasks:
+
+- **`build`**: depends on `^build`, which builds a package's dependencies first. Outputs go to `dist/**`.
+- **`typecheck`**, **`lint`** and **`test:unit`**: also depend on `^build`, because
+  `api` and `web` read the compiled types of `shared`.
+- **`test:integration`**: never cached, because its result depends on the database.
+- **`dev`**: persistent, never cached.
+
+When nothing has changed, Turborepo replays results from its cache. A second `pnpm build`
+finishes in milliseconds (`FULL TURBO`). Use `--force` to skip the cache.
+
+## The shared package
+
+`@sellmanager/shared` is built with **tsup** to ESM, CommonJS and `.d.ts`/`.d.cts`. The API
+runs as compiled CommonJS in production, and Node doesn't execute TypeScript inside
+`node_modules`. Vite uses the ESM build. Rules:
+
+- Only `zod` is allowed as a dependency: no Express, TypeORM or React. `zod` is a
+  **peerDependency**, so each app has a single zod instance.
+- Response DTOs carry `.meta({ id: 'Product' })`. The API's OpenAPI generator turns that into
+  a named component.
+- After changing a schema, `pnpm dev` rebuilds it automatically. Otherwise run `pnpm build`.
+
+```ts
+import {
+  createOrderBodySchema,
+  type Order,
+  ORDER_STATUSES,
+} from '@sellmanager/shared';
 ```
 
-In production, use `MAIL_DRIVER=smtp` with a real provider. Set `CORS_ORIGIN` to the
-front-end origin and `TRUST_PROXY` if the app runs behind a proxy. Uploaded avatars are
-stored on local disk (`tmp/uploads`), so mount a persistent volume or replace the
-`IStorageProvider` implementation.
+## Adding a new package
+
+1. Create the folder under `apps/` (an application) or `packages/` (a library). Both are already
+   matched by `pnpm-workspace.yaml`.
+2. Add a `package.json` named `@sellmanager/<name>`, with `"private": true` and the scripts that
+   Turborepo knows about: `build`, `dev`, `typecheck`, `lint`, `test:unit`, `format`, `format:check`.
+   A package doesn't need all of them; missing scripts are skipped.
+3. Reuse the shared tooling:
+   - tsconfig: `"extends": "@sellmanager/config/tsconfig.base.json"`, or the `.node.json` or `.react.json` variant
+   - ESLint: in `eslint.config.mjs`, `export default createConfig({ tsconfigRootDir: import.meta.dirname })`
+     from `@sellmanager/config/eslint`
+   - Prettier: `"prettier": "@sellmanager/config/prettier"` in `package.json`
+   - Add `"@sellmanager/config": "workspace:*"` (and `"@sellmanager/shared": "workspace:*"` if
+     needed) to the dependencies.
+4. Libraries that others import must expose `exports` and a `build` script whose output goes to `dist/`.
+   Turborepo then builds them before their dependents.
+5. Run `pnpm install` at the root.
+
+## Infrastructure
+
+`docker-compose.yml` (at the root, shared by every app):
+
+| Service         | Port        | Use                                              |
+| --------------- | ----------- | ------------------------------------------------ |
+| `postgres`      | 5433        | Development database                             |
+| `postgres-test` | 5434        | Throwaway database for integration tests (tmpfs) |
+| `mailpit`       | 1025 / 8025 | SMTP and web inbox for development emails        |
+
+On every push and pull request, CI (GitHub Actions) installs with pnpm and runs
+`lint`, `format:check`, `typecheck`, `build`, `test:unit` and `test:integration` through
+Turborepo, against a PostgreSQL service.
 
 ## License
 
