@@ -6,6 +6,7 @@ import AppError from '../erros/AppError';
 import '../typeorm';
 import {errors} from "celebrate"
 import upload from '@config/upload';
+import { env } from '@config/env';
 
 const app = express();
 
@@ -33,6 +34,6 @@ app.use((error: AppError | Error, _request: Request, response: Response, _next: 
 });
 
 
-app.listen(3333, () => {
-  console.log("Server is running on port 3333! 🚀");
+app.listen(env.PORT, () => {
+  console.log(`Server is running on port ${env.PORT}! 🚀`);
 });

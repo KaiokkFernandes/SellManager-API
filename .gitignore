@@ -10,3 +10,6 @@ dist
 
 uploads/*
 !uploads/.gitkeep
+# uploads locais
+tmp/*
+!tmp/.gitkeep

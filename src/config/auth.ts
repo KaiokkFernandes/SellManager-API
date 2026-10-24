@@ -1,6 +1,8 @@
+import { env } from './env';
+
 export default {
   jwt: {
-    secret: 'f5b4',
-    expiresIn: '1d'
-  }
+    secret: env.JWT_SECRET,
+    expiresIn: env.JWT_EXPIRES_IN,
+  },
 };
