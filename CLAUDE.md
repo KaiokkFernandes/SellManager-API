@@ -24,3 +24,18 @@
   rotas principais (supertest).
 - ESLint + Prettier, `.env.example`, documentação OpenAPI em `/docs`.
 - Monorepo e front-end ficam para depois: não iniciar sem pedido explícito.
+
+## Comandos
+
+- Banco e e-mail locais: `docker compose up -d postgres postgres-test mailpit`
+- `yarn dev`, `yarn build`, `yarn typecheck`, `yarn lint`, `yarn format:check`
+- `yarn test:unit` (sem banco) e `yarn test:integration` (usa o postgres-test, porta 5434)
+- Migrations: `yarn migration:run` / `yarn migration:revert`; novas migrations
+  precisam ser registradas em `src/shared/infra/typeorm/data-source.ts`
+
+## Estrutura
+
+- Cada módulo (`src/modules/<m>`) tem `domain/` (interfaces puras), `services/`
+  (casos de uso), `fakes/` (repositórios em memória) e `infra/{typeorm,http}`.
+- Implementações concretas só são instanciadas em `src/shared/container`.
+- Entidades TypeORM via `EntitySchema` (sem decorators).
