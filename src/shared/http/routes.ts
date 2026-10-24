@@ -4,6 +4,7 @@ import { makeProductsRoutes } from '@modules/products/infra/http/routes';
 import { makeUsersRoutes } from '@modules/users/infra/http/routes';
 import { Container } from '@shared/container';
 import { ensureAuthenticated } from './middlewares/ensureAuthenticated';
+import { authRateLimiter } from './middlewares/rateLimiter';
 
 export function createRoutes(container: Container): Router {
   const authenticated = ensureAuthenticated(container.providers.token);
@@ -12,9 +13,9 @@ export function createRoutes(container: Container): Router {
   const routes = Router();
 
   routes.use('/users', users.usersRouter);
-  routes.use('/sessions', users.sessionsRouter);
+  routes.use('/sessions', authRateLimiter, users.sessionsRouter);
   routes.use('/profile', users.profileRouter);
-  routes.use('/password', users.passwordRouter);
+  routes.use('/password', authRateLimiter, users.passwordRouter);
   routes.use('/products', makeProductsRoutes(container, authenticated));
   routes.use('/customers', makeCustomersRoutes(container, authenticated));
 

@@ -1,6 +1,8 @@
 import 'reflect-metadata';
 import express, { Express } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import { env } from '@config/env';
 import { pinoHttp } from 'pino-http';
 import uploadConfig from '@config/upload';
 import { Container } from '@shared/container';
@@ -11,9 +13,15 @@ import { createRoutes } from './routes';
 export function createApp(container: Container): Express {
   const app = express();
 
+  app.set('trust proxy', env.TRUST_PROXY);
+
   app.use(pinoHttp({ logger }));
-  app.use(cors());
-  app.use(express.json());
+  // cross-origin: o front-end (outra origem) precisa carregar os avatares em /files
+  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+  app.use(
+    cors({ origin: env.CORS_ORIGIN.includes('*') ? '*' : env.CORS_ORIGIN }),
+  );
+  app.use(express.json({ limit: '100kb' }));
   app.use('/files', express.static(uploadConfig.uploadsFolder));
   app.use(createRoutes(container));
   app.use(notFoundHandler);

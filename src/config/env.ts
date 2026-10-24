@@ -27,6 +27,14 @@ const envSchema = z.object({
     .min(32, 'JWT_SECRET precisa ter ao menos 32 caracteres'),
   JWT_EXPIRES_IN: z.string().default('1d'),
 
+  // Origens permitidas no CORS, separadas por vírgula ('*' libera todas)
+  CORS_ORIGIN: z
+    .string()
+    .default('http://localhost:3000')
+    .transform(value => value.split(',').map(origin => origin.trim())),
+  // Número de proxies reversos à frente da API (para o IP real no rate limit)
+  TRUST_PROXY: z.coerce.number().int().nonnegative().default(0),
+
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
     .optional(),
