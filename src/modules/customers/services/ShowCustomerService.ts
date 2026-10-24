@@ -1,22 +1,21 @@
-import AppError from "@shared/erros/AppError";
-import Customer from "../typeorm/entities/Customers";
-import CustomerRepository from "../typeorm/repositories/CustomersRepository";
+import AppError from '@shared/erros/AppError';
+import Customer from '../typeorm/entities/Customers';
+import CustomerRepository from '../typeorm/repositories/CustomersRepository';
 
 interface IRequest {
   id: string;
 }
 
 class ShowCostumerServices {
-   public async execute({id}: IRequest): Promise<Customer> {
-   const customerRepository = new CustomerRepository();
+  public async execute({ id }: IRequest): Promise<Customer> {
+    const customerRepository = new CustomerRepository();
 
-   const users = await customerRepository.findById(id);
+    const users = await customerRepository.findById(id);
 
-   if(!users) {
-    throw new AppError('Customer not found', 404);
-   }
-   return users;
-
+    if (!users) {
+      throw new AppError('Customer not found', 404);
+    }
+    return users;
   }
 }
 export default ShowCostumerServices;

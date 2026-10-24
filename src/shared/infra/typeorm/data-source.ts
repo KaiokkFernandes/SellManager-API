@@ -21,4 +21,3 @@ export const AppDataSource = new DataSource({
   synchronize: false,
   logging: env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
 });
-

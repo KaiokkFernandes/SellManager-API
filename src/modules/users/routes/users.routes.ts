@@ -13,24 +13,30 @@ const useravatarController = new UsersAvatarController();
 
 const upload = multer(updateConfig);
 // Rota para listar todos os usuários
-UsersRouter.get('/', isAuthenticated, asyncHandler(usersController.index.bind(usersController)));
+UsersRouter.get(
+  '/',
+  isAuthenticated,
+  asyncHandler(usersController.index.bind(usersController)),
+);
 
 // Rota para criar usuarios
-UsersRouter.post('/',
+UsersRouter.post(
+  '/',
   celebrate({
     body: {
       name: Joi.string().required(),
       email: Joi.string().email().required(),
       password: Joi.string().required(),
-    }
+    },
   }),
-  asyncHandler(usersController.create.bind(usersController)));
+  asyncHandler(usersController.create.bind(usersController)),
+);
 
 UsersRouter.patch(
   '/avatar',
   isAuthenticated,
   upload.single('avatar'),
-  asyncHandler(useravatarController.update.bind(useravatarController))
-)
+  asyncHandler(useravatarController.update.bind(useravatarController)),
+);
 
 export default UsersRouter;

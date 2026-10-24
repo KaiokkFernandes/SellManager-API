@@ -17,11 +17,17 @@ export default tseslint.config(
     },
     rules: {
       'no-console': 'warn',
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_' },
+      ],
       '@typescript-eslint/consistent-type-imports': 'off',
       // TODO(etapa 8): volta a 'error' quando os bodies forem validados/tipados com zod
       '@typescript-eslint/no-unsafe-assignment': 'warn',
-      '@typescript-eslint/no-misused-promises': ['error', { checksVoidReturn: { arguments: false } }],
+      '@typescript-eslint/no-misused-promises': [
+        'error',
+        { checksVoidReturn: { arguments: false } },
+      ],
     },
   },
   {

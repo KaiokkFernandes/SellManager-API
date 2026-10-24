@@ -1,15 +1,13 @@
-import Customer from "../typeorm/entities/Customers";
-import CustomerRepository from "../typeorm/repositories/CustomersRepository";
-
+import Customer from '../typeorm/entities/Customers';
+import CustomerRepository from '../typeorm/repositories/CustomersRepository';
 
 class ListCostumerServices {
-   public async execute(): Promise<Customer[]>{
-   const usersRepository = new CustomerRepository();
+  public async execute(): Promise<Customer[]> {
+    const usersRepository = new CustomerRepository();
 
-   const customers = await usersRepository.findAll();
+    const customers = await usersRepository.findAll();
 
-   return  customers;
-
+    return customers;
   }
 }
 export default ListCostumerServices;

@@ -1,15 +1,13 @@
-import Users from "../typeorm/entities/Users";
-import UserRepository from "../typeorm/repositories/UserRepository";
-
+import Users from '../typeorm/entities/Users';
+import UserRepository from '../typeorm/repositories/UserRepository';
 
 class ListUsersServices {
-   public async execute(): Promise<Users[]>{
-   const usersRepository = new UserRepository();
+  public async execute(): Promise<Users[]> {
+    const usersRepository = new UserRepository();
 
-   const users = await usersRepository.findAll();
+    const users = await usersRepository.findAll();
 
-   return users;
-
+    return users;
   }
 }
 export default ListUsersServices;

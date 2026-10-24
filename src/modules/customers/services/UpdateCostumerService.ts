@@ -1,6 +1,6 @@
-import AppError from "@shared/erros/AppError";
-import Customer from "../typeorm/entities/Customers";
-import CustomerRepository from "../typeorm/repositories/CustomersRepository";
+import AppError from '@shared/erros/AppError';
+import Customer from '../typeorm/entities/Customers';
+import CustomerRepository from '../typeorm/repositories/CustomersRepository';
 
 interface IRequest {
   id: string;
@@ -11,32 +11,26 @@ interface IRequest {
 }
 
 class UpdateCustomerServices {
-   public async execute({
-    id,
-    name,
-    email,
-   }: IRequest): Promise<Customer>{
-   const customerRepository = new CustomerRepository();
-   const customer = await customerRepository.findById(id);
+  public async execute({ id, name, email }: IRequest): Promise<Customer> {
+    const customerRepository = new CustomerRepository();
+    const customer = await customerRepository.findById(id);
 
-   if(!customer) {
-    throw new AppError('Customer not found', 404);
-   }
+    if (!customer) {
+      throw new AppError('Customer not found', 404);
+    }
 
-   const customerExist = await customerRepository.findByEmail(email);
+    const customerExist = await customerRepository.findByEmail(email);
 
-    if(customerExist && customerExist.id !== id) {
+    if (customerExist && customerExist.id !== id) {
       throw new AppError('Email already in use');
     }
 
-  customer.name = name;
-  customer.email = email;
+    customer.name = name;
+    customer.email = email;
 
+    await customerRepository.save(customer);
 
-  await customerRepository.save(customer)
-
-   return customer;
-
+    return customer;
   }
 }
 export default UpdateCustomerServices;

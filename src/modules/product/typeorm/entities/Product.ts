@@ -1,7 +1,12 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('products')
-
 class Product {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -9,7 +14,14 @@ class Product {
   name: string;
 
   // pg devolve decimal como string; converte para number na leitura
-  @Column('decimal', { precision: 10, scale: 2, transformer: { to: (value: number) => value, from: (value: string) => Number(value) } })
+  @Column('decimal', {
+    precision: 10,
+    scale: 2,
+    transformer: {
+      to: (value: number) => value,
+      from: (value: string) => Number(value),
+    },
+  })
   price: number;
 
   @Column('int')
@@ -17,9 +29,8 @@ class Product {
 
   @CreateDateColumn()
   created_at: Date;
- @UpdateDateColumn()
+  @UpdateDateColumn()
   updated_at: Date;
 }
-
 
 export default Product;

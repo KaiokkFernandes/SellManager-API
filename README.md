@@ -2,7 +2,7 @@
 
 ## Description
 
-**SellManager API* is a RESTful API developed in **Node.js** with **TypeScript**. This project is part of my studies in **Clean Architecture**, software design principles, and scalable API development.
+*_SellManager API_ is a RESTful API developed in **Node.js** with **TypeScript**. This project is part of my studies in **Clean Architecture**, software design principles, and scalable API development.
 
 The goal is to apply concepts like **separation of concerns**, **SOLID principles**, and a clear distinction between **domain, infrastructure, and application layers**.
 
@@ -10,26 +10,26 @@ The goal is to apply concepts like **separation of concerns**, **SOLID principle
 
 ## Main Features
 
-* ✅ **Authentication with JWT**
-* ✅ **Customer management (CRUD)**
-* ✅ **Product management (CRUD) with image uploads**
-* ✅ **Order management with item tracking**
-* ✅ **Middleware-based validation and authentication**
-* ✅ **Centralized error handling with custom exceptions**
-* ✅ **Environment-based configuration**
-* ✅ **Clean, modular, and scalable code structure inspired by Clean Architecture principles**
+- ✅ **Authentication with JWT**
+- ✅ **Customer management (CRUD)**
+- ✅ **Product management (CRUD) with image uploads**
+- ✅ **Order management with item tracking**
+- ✅ **Middleware-based validation and authentication**
+- ✅ **Centralized error handling with custom exceptions**
+- ✅ **Environment-based configuration**
+- ✅ **Clean, modular, and scalable code structure inspired by Clean Architecture principles**
 
 ---
 
 ## Tech Stack
 
-* **Node.js**
-* **TypeScript**
-* **Express.js**
-* **TypeORM** (MySQL / PostgreSQL)
-* **JWT** (Authentication)
-* **Multer** (File uploads)
-* **Yarn** (Package manager)
+- **Node.js**
+- **TypeScript**
+- **Express.js**
+- **TypeORM** (MySQL / PostgreSQL)
+- **JWT** (Authentication)
+- **Multer** (File uploads)
+- **Yarn** (Package manager)
 
 ---
 
@@ -43,9 +43,9 @@ The goal is to apply concepts like **separation of concerns**, **SOLID principle
 
 ### Requirements
 
-* Node.js (v18+)
-* Yarn
-* MySQL or PostgreSQL database
+- Node.js (v18+)
+- Yarn
+- MySQL or PostgreSQL database
 
 ### Clone the repository
 
@@ -147,7 +147,7 @@ src/
 
 ## Usage Example
 
-* **Login:**
+- **Login:**
 
 ```http
 POST /sessions
@@ -157,7 +157,7 @@ POST /sessions
 }
 ```
 
-* Response:
+- Response:
 
 ```json
 {
@@ -189,4 +189,3 @@ node build/index.js
 ## 🚀 Disclaimer
 
 > This project is for **educational purposes only**, focusing on practicing **Clean Architecture** concepts, modular code organization, and best practices for Node.js APIs. Not intended for production use.
-

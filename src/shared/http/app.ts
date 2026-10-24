@@ -15,20 +15,27 @@ app.use(routes);
 app.use(errors());
 
 // Middleware para tratamento de erros
-app.use((error: AppError | Error, _request: Request, response: Response, _next: NextFunction): void => {
-  if (error instanceof AppError) {
-    response.status(error.statusCode).json({
-      status: 'error',
-      message: error.message,
-    });
-    return;
-  }
+app.use(
+  (
+    error: AppError | Error,
+    _request: Request,
+    response: Response,
+    _next: NextFunction,
+  ): void => {
+    if (error instanceof AppError) {
+      response.status(error.statusCode).json({
+        status: 'error',
+        message: error.message,
+      });
+      return;
+    }
 
-  console.error('Erro não tratado:', error);
-  response.status(500).json({
-    status: 'error',
-    message: 'Internal server error',
-  });
-});
+    console.error('Erro não tratado:', error);
+    response.status(500).json({
+      status: 'error',
+      message: 'Internal server error',
+    });
+  },
+);
 
 export default app;

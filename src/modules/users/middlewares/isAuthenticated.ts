@@ -5,7 +5,11 @@ import AppError from '@shared/erros/AppError';
 
 const secret = new TextEncoder().encode(auth.jwt.secret);
 
-export default function isAuthenticated(req: Request, _res: Response, next: NextFunction): void {
+export default function isAuthenticated(
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+): void {
   const authHeader = req.headers.authorization;
 
   if (!authHeader) {

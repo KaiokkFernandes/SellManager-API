@@ -6,12 +6,11 @@ interface ImailContact {
   email: string;
 }
 
-interface ITemplateVariable{
+interface ITemplateVariable {
   [key: string]: string | number;
 }
 
-
-interface IParseMailTemplate{
+interface IParseMailTemplate {
   file: string;
   variables: ITemplateVariable;
 }
@@ -23,10 +22,13 @@ interface IsendMail {
   templateData: IParseMailTemplate;
 }
 
-
 export default class EtherealMail {
-  static async sendMail({to, from, subject, templateData}: IsendMail): Promise<void> {
-
+  static async sendMail({
+    to,
+    from,
+    subject,
+    templateData,
+  }: IsendMail): Promise<void> {
     const account = await nodemailer.createTestAccount();
     const mailTemplate = new handlebarsMailTemplate();
 
@@ -43,7 +45,8 @@ export default class EtherealMail {
     const message = await transporter.sendMail({
       from: {
         name: from?.name || 'Equipe API Vendas',
-        address: from?.email || 'equipe@vendas.com.br'},
+        address: from?.email || 'equipe@vendas.com.br',
+      },
       to: {
         name: to.name,
         address: to.email,
