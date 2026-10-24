@@ -1,42 +1,53 @@
-import AppError from "@shared/erros/AppError";
-import { getCustomRepository } from "typeorm";
-import UserRepository from "../typeorm/repositories/UserRepository";
-import UserTokenRepository from "../typeorm/repositories/UserTokenRepository";
-import {isAfter, addHours} from 'date-fns';
-import { hash } from "bcryptjs";
+import { addHours, isAfter } from 'date-fns';
+import AppError from '@shared/errors/AppError';
+import { IHashProvider } from '@shared/providers/HashProvider/IHashProvider';
+import { IUsersRepository } from '../domain/repositories/IUsersRepository';
+import { IUserTokensRepository } from '../domain/repositories/IUserTokensRepository';
+import { hashResetToken } from '../domain/resetToken';
 
-interface IRequest{
-    token: string;
-    password: string;
+interface IRequest {
+  token: string;
+  password: string;
 }
 
-class ResetPasswordService{
-   public async execute({ token, password}: IRequest): Promise<void>{
-     const usersRepository = getCustomRepository(UserRepository);
-     const userTokenRepository = getCustomRepository(UserTokenRepository);
+const TOKEN_EXPIRATION_HOURS = 2;
 
-     const userToken = await userTokenRepository.findByToken(token);
+export class ResetPasswordService {
+  constructor(
+    private readonly usersRepository: IUsersRepository,
+    private readonly userTokensRepository: IUserTokensRepository,
+    private readonly hashProvider: IHashProvider,
+  ) {}
 
-     if(!userToken){
-        throw new AppError('User does not exists');
-     }
-     const user = await usersRepository.findById(userToken.user_id);
+  public async execute({ token, password }: IRequest): Promise<void> {
+    const userToken = await this.userTokensRepository.findByTokenHash(
+      hashResetToken(token),
+    );
 
-     if(!user){
-      throw new AppError('User does not exists');
-   }
-    const tokenCreatedAt = userToken.created_at;
-    const compareDate = addHours(tokenCreatedAt, 2);
-
-    if(isAfter(Date.now(), compareDate)){
-      throw new AppError('Token expired');
+    if (!userToken) {
+      throw new AppError('Invalid or expired token');
     }
-    user.password = await hash(password, 8);
 
-    await usersRepository.save(user);
-   }
+    if (
+      isAfter(
+        Date.now(),
+        addHours(userToken.created_at, TOKEN_EXPIRATION_HOURS),
+      )
+    ) {
+      await this.userTokensRepository.deleteByUserId(userToken.user_id);
+      throw new AppError('Invalid or expired token');
+    }
 
+    const user = await this.usersRepository.findById(userToken.user_id);
+
+    if (!user) {
+      throw new AppError('Invalid or expired token');
+    }
+
+    user.password = await this.hashProvider.generateHash(password);
+    await this.usersRepository.save(user);
+
+    // Uso único: o token deixa de valer depois de redefinir a senha.
+    await this.userTokensRepository.deleteByUserId(user.id);
+  }
 }
-
-
-export default ResetPasswordService;

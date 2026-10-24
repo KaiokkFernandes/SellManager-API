@@ -1,48 +1,48 @@
-import AppError from "@shared/erros/AppError";
-import { getCustomRepository } from "typeorm";
-import UserRepository from "../typeorm/repositories/UserRepository";
-import UserTokenRepository from "../typeorm/repositories/UserTokenRepository";
-import EtherealMail from "@config/mail/EtherealMail";
-import path from 'path';
-import { link } from "joi";
+import path from 'node:path';
+import { IMailProvider } from '@shared/providers/MailProvider/IMailProvider';
+import { IUsersRepository } from '../domain/repositories/IUsersRepository';
+import { IUserTokensRepository } from '../domain/repositories/IUserTokensRepository';
+import { generateResetToken, hashResetToken } from '../domain/resetToken';
 
-interface IRequest{
-    email: string;
+interface IRequest {
+  email: string;
 }
 
-class SendForgotPasswordEmailService{
-   public async execute({ email}: IRequest): Promise<void>{
-     const usersRepository = getCustomRepository(UserRepository);
-     const userTokenRepository = getCustomRepository(UserTokenRepository);
+export class SendForgotPasswordEmailService {
+  constructor(
+    private readonly usersRepository: IUsersRepository,
+    private readonly userTokensRepository: IUserTokensRepository,
+    private readonly mailProvider: IMailProvider,
+    private readonly webUrl: string,
+  ) {}
 
-     const user = await usersRepository.findByEmail(email);
+  public async execute({ email }: IRequest): Promise<void> {
+    const user = await this.usersRepository.findByEmail(email);
 
-     if(!user){
-        throw new AppError('User does not exists');
-     }
+    // Responde igual para e-mails inexistentes, para não permitir enumeração.
+    if (!user) {
+      return;
+    }
 
+    // Um pedido novo invalida os links enviados anteriormente.
+    await this.userTokensRepository.deleteByUserId(user.id);
 
-     const token =  await userTokenRepository.generate(user.id);
+    const token = generateResetToken();
+    await this.userTokensRepository.create({
+      user_id: user.id,
+      token_hash: hashResetToken(token),
+    });
 
-     const forgotPasswordTemplate = path.resolve(__dirname, '..', 'views', 'forgot_password.hbs');
-
-     await EtherealMail.sendMail({
-        to: {
-            name: user.name,
-            email: user.email,
+    await this.mailProvider.sendMail({
+      to: { name: user.name, email: user.email },
+      subject: '[SellManager] Recuperação de senha',
+      templateData: {
+        file: path.resolve(__dirname, '..', 'views', 'forgot_password.hbs'),
+        variables: {
+          name: user.name,
+          link: `${this.webUrl}/reset_password?token=${token}`,
         },
-        subject: '[API Vendas] Recuperação de senha',
-        templateData:{
-            file: forgotPasswordTemplate,
-            variables:{
-              name: user.name,
-              link: `http:/localhost:3000/reset_password?token=${token.token}`,
-            }
-        }
-     })
-   }
-
+      },
+    });
+  }
 }
-
-
-export default SendForgotPasswordEmailService;
