@@ -17,7 +17,7 @@ app.use(errors());
 
 
 // Middleware para tratamento de erros
-app.use((error: AppError | Error, request: Request, response: Response, next: NextFunction): void => {
+app.use((error: AppError | Error, _request: Request, response: Response, _next: NextFunction): void => {
   console.error('Erro capturado pelo middleware:', error); // Log adicional para depuração
   if (error instanceof AppError) {
     response.status(error.statusCode).json({

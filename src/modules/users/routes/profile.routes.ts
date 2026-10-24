@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import asyncHandler from '@config/Middleware';
-import { celebrate, Joi, Segments } from 'celebrate';
+import { celebrate, Joi } from 'celebrate';
 import isAuthenticated from '../middlewares/isAuthenticated';
 import ProfileController from '../controllers/ProfileController';
 

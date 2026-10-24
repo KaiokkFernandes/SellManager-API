@@ -2,7 +2,6 @@ import { Router } from 'express';
 import asyncHandler from '@config/Middleware';
 import { celebrate, Joi, Segments } from 'celebrate';
 import AuthenticationSessionController from '../controllers/AuthenticationSessionController';
-import isAuthenticated from '../middlewares/isAuthenticated';
 
 
 const sessionsRouter = Router();

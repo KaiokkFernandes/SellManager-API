@@ -1,7 +1,5 @@
-import AppError from "@shared/erros/AppError";
 import { getCustomRepository } from "typeorm";
 import Users from "../typeorm/entities/Users";
-import { create } from "domain";
 import UserRepository from "../typeorm/repositories/UserRepository";
 
 

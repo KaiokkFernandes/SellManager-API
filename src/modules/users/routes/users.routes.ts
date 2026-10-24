@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import UsersController from '../controllers/UsersController';
 import asyncHandler from '@config/Middleware';
-import { celebrate, Joi, Segments } from 'celebrate';
+import { celebrate, Joi } from 'celebrate';
 import multer from 'multer';
 import updateConfig from '@config/upload';
 import isAuthenticated from '../middlewares/isAuthenticated';

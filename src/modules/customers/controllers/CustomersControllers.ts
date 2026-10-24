@@ -6,7 +6,7 @@ import DeleteCostumerService from '../services/DeleteCostumerService';
 import CreateCustomerService from '../services/CreateCustomerService';
 
 export default class CustomerController {
-   public  async index(request: Request, response: Response): Promise<Response>{
+   public async index(_request: Request, response: Response): Promise<Response>{
     const listCostumers = new ListCostumerServices();
 
     const products = await listCostumers.execute();
