@@ -1,7 +1,6 @@
 import 'reflect-metadata';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
-import { errors } from 'celebrate';
 import routes from './router';
 import AppError from '../erros/AppError';
 import upload from '@config/upload';
@@ -12,7 +11,6 @@ app.use(cors());
 app.use(express.json());
 app.use('/files', express.static(upload.directory));
 app.use(routes);
-app.use(errors());
 
 // Middleware para tratamento de erros
 app.use(
@@ -26,6 +24,7 @@ app.use(
       response.status(error.statusCode).json({
         status: 'error',
         message: error.message,
+        ...(error.details !== undefined && { details: error.details }),
       });
       return;
     }

@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { ProductBody } from '../routes/products.schemas';
 import ListProductService from '../service/ListProductService';
 import ShowProductService from '../service/ShowProductService';
 import CreateProducService from '../service/CreateProductService';
@@ -25,7 +26,7 @@ export default class ProductController {
   }
 
   public async create(request: Request, response: Response) {
-    const { name, price, quantity } = request.body;
+    const { name, price, quantity } = request.body as ProductBody;
 
     const createProduct = new CreateProducService();
 
@@ -35,7 +36,7 @@ export default class ProductController {
   }
 
   public async update(request: Request, response: Response): Promise<Response> {
-    const { name, price, quantity } = request.body;
+    const { name, price, quantity } = request.body as ProductBody;
     const { id } = request.params;
 
     const updateProduct = new UpdateProductService();

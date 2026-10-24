@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import asyncHandler from '@config/Middleware';
-import { celebrate, Joi, Segments } from 'celebrate';
+import { idParamsSchema, validate } from '@shared/http/middlewares/validate';
 import CustomerController from '../controllers/CustomersControllers';
 import isAuthenticated from '@modules/users/middlewares/isAuthenticated';
+import { customerBodySchema } from './customers.schemas';
 
 const CustomerRouter = Router();
 const customerController = new CustomerController();
@@ -16,46 +17,25 @@ CustomerRouter.get(
 
 CustomerRouter.get(
   '/:id',
-  celebrate({
-    [Segments.PARAMS]: {
-      id: Joi.string().uuid().required(),
-    },
-  }),
+  validate({ params: idParamsSchema }),
   asyncHandler(customerController.show.bind(customerController)),
 );
 
 CustomerRouter.post(
   '/',
-  celebrate({
-    [Segments.BODY]: {
-      name: Joi.string().required(),
-      email: Joi.string().email().required(),
-    },
-  }),
+  validate({ body: customerBodySchema }),
   asyncHandler(customerController.create.bind(customerController)),
 );
 
 CustomerRouter.put(
   '/:id',
-  celebrate({
-    [Segments.BODY]: {
-      name: Joi.string().required(),
-      email: Joi.string().email().required(),
-    },
-    [Segments.PARAMS]: {
-      id: Joi.string().uuid().required(),
-    },
-  }),
+  validate({ params: idParamsSchema, body: customerBodySchema }),
   asyncHandler(customerController.update.bind(customerController)),
 );
 
 CustomerRouter.delete(
   '/:id',
-  celebrate({
-    [Segments.PARAMS]: {
-      id: Joi.string().uuid().required(),
-    },
-  }),
+  validate({ params: idParamsSchema }),
   asyncHandler(customerController.delete.bind(customerController)),
 );
 

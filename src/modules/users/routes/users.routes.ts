@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import UsersController from '../controllers/UsersController';
 import asyncHandler from '@config/Middleware';
-import { celebrate, Joi } from 'celebrate';
+import { validate } from '@shared/http/middlewares/validate';
+import { createUserBodySchema } from './users.schemas';
 import multer from 'multer';
 import updateConfig from '@config/upload';
 import isAuthenticated from '../middlewares/isAuthenticated';
@@ -22,13 +23,7 @@ UsersRouter.get(
 // Rota para criar usuarios
 UsersRouter.post(
   '/',
-  celebrate({
-    body: {
-      name: Joi.string().required(),
-      email: Joi.string().email().required(),
-      password: Joi.string().required(),
-    },
-  }),
+  validate({ body: createUserBodySchema }),
   asyncHandler(usersController.create.bind(usersController)),
 );
 

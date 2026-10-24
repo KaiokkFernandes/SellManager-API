@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { UpdateProfileBody } from '../routes/users.schemas';
 import { toUserResponse } from '../mappers/UserMapper';
 import UpdateProfileServices from '../services/UpdateProfileService';
 import ShowProfileServices from '../services/ShowPerfil';
@@ -14,7 +15,8 @@ export default class ProfileController {
   }
 
   public async update(request: Request, response: Response): Promise<Response> {
-    const { name, email, password, old_password } = request.body;
+    const { name, email, password, old_password } =
+      request.body as UpdateProfileBody;
 
     const updateProfile = new UpdateProfileServices();
 

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import asyncHandler from '@config/Middleware';
-import { celebrate, Joi } from 'celebrate';
+import { validate } from '@shared/http/middlewares/validate';
+import { updateProfileBodySchema } from './users.schemas';
 import isAuthenticated from '../middlewares/isAuthenticated';
 import ProfileController from '../controllers/ProfileController';
 
@@ -14,24 +15,9 @@ profileRoutes.get(
   asyncHandler(profileController.show.bind(profileController)),
 );
 
-// Rota para criar usuarios
-profileRoutes.post(
+profileRoutes.put(
   '/',
-  celebrate({
-    body: {
-      name: Joi.string().required(),
-      email: Joi.string().email().required(),
-      old_password: Joi.string(),
-      password: Joi.string().optional(),
-      password_confirmation: Joi.string()
-        .optional()
-        .valid(Joi.ref('password'))
-        .when('password', {
-          is: Joi.exist(),
-          then: Joi.required(),
-        }),
-    },
-  }),
+  validate({ body: updateProfileBodySchema }),
   asyncHandler(profileController.update.bind(profileController)),
 );
 

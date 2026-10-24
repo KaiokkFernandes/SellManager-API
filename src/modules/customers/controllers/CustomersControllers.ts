@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { CustomerBody } from '../routes/customers.schemas';
 import ListCostumerServices from '../services/ListCutomersServices';
 import ShowCostumerServices from '../services/ShowCustomerService';
 import UpdateCostumerService from '../services/UpdateCostumerService';
@@ -25,7 +26,7 @@ export default class CustomerController {
   }
 
   public async create(request: Request, response: Response) {
-    const { name, email } = request.body;
+    const { name, email } = request.body as CustomerBody;
 
     const createProduct = new CreateCustomerService();
 
@@ -35,7 +36,7 @@ export default class CustomerController {
   }
 
   public async update(request: Request, response: Response): Promise<Response> {
-    const { name, email } = request.body;
+    const { name, email } = request.body as CustomerBody;
     const { id } = request.params;
 
     const updateCostumer = new UpdateCostumerService();
