@@ -1,4 +1,5 @@
 import {Request, Response} from 'express';
+import { toUserResponse } from "../mappers/UserMapper";
 import AuthenticationUserService from '../services/AuthenticationUserService';
 
 
@@ -8,11 +9,11 @@ export default class AuthenticationSessionController {
 
      const createSession = new AuthenticationUserService();
 
-     const user = await createSession.execute({
+     const { user, token } = await createSession.execute({
       email,
       password
      })
 
-     return response.json(user);
+     return response.json({ user: toUserResponse(user), token });
    }
 }

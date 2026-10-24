@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { toUserResponse } from "../mappers/UserMapper";
 import UpdateProfileServices from "../services/UpdateProfileService";
 import ShowProfileServices from "../services/ShowPerfil";
 
@@ -10,7 +11,7 @@ export default class ProfileController {
    const user_id = request.user.id;
 
    const user = await showUser.execute({ user_id });
-    return response.json(user);
+    return response.json(toUserResponse(user));
    }
 
     public async update(request: Request, response: Response): Promise<Response>{
@@ -26,6 +27,6 @@ export default class ProfileController {
         old_password,
      });
 
-     return response.json(user);
+     return response.json(toUserResponse(user));
     }
 }

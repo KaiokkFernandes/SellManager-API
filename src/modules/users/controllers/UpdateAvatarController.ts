@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { toUserResponse } from "../mappers/UserMapper";
 import UpdateAvatarService from "../services/updateAvatarService";
 
 
@@ -10,6 +11,6 @@ export default class UsersAvatarController {
       avatarFileName: request.file?.filename || '',
     });
 
-    return response.json(user);
+    return response.json(toUserResponse(user));
     }
 }

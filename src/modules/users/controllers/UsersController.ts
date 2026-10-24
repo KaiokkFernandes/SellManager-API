@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { toUserResponse } from "../mappers/UserMapper";
 import ListUsersServices from "../services/listUserService";
 import CreateUserService from "../services/CreateUserService";
 
@@ -9,7 +10,7 @@ export default class UsersController {
 
     const users = await ListUsers.execute();
 
-    return response.json(users);
+    return response.json(users.map(toUserResponse));
    }
 
     public async create(request: Request, response: Response): Promise<Response>{
@@ -23,6 +24,6 @@ export default class UsersController {
         password,
      });
 
-     return response.json(user);
+     return response.status(201).json(toUserResponse(user));
     }
 }
