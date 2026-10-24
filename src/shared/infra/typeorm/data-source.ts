@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import { env } from '@config/env';
-import Customer from '@modules/customers/typeorm/entities/Customers';
+import { CustomerSchema } from '@modules/customers/infra/typeorm/schemas/CustomerSchema';
 import { ProductSchema } from '@modules/products/infra/typeorm/schemas/ProductSchema';
 import { UserSchema } from '@modules/users/infra/typeorm/schemas/UserSchema';
 import { UserTokenSchema } from '@modules/users/infra/typeorm/schemas/UserTokenSchema';
@@ -16,7 +16,7 @@ export const AppDataSource = new DataSource({
   username: env.DB_USER,
   password: env.DB_PASSWORD,
   database: env.DB_NAME,
-  entities: [UserSchema, UserTokenSchema, ProductSchema, Customer],
+  entities: [UserSchema, UserTokenSchema, ProductSchema, CustomerSchema],
   migrations: [CreateInitialSchema1761350400000],
   synchronize: false,
   logging: env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
