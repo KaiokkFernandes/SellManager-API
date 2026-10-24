@@ -1,27 +1,8 @@
 {
+  "extends": "@sellmanager/config/tsconfig.node.json",
   "compilerOptions": {
-    "target": "ES2023",
-    "lib": ["ES2023"],
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
-    "types": ["node"],
     "rootDir": ".",
     "outDir": "dist",
-    "sourceMap": true,
-
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "noImplicitOverride": true,
-    "exactOptionalPropertyTypes": false,
-
-    "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-
     "paths": {
       "@config/*": ["./src/config/*"],
       "@modules/*": ["./src/modules/*"],

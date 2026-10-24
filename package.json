@@ -17,7 +17,12 @@
     "test": "pnpm -r test",
     "test:unit": "pnpm -r test:unit",
     "test:integration": "pnpm -r test:integration",
-    "format": "pnpm -r format",
-    "format:check": "pnpm -r format:check"
+    "format": "prettier --write . && pnpm -r format",
+    "format:check": "prettier --check . && pnpm -r format:check"
+  },
+  "prettier": "@sellmanager/config/prettier",
+  "devDependencies": {
+    "@sellmanager/config": "workspace:*",
+    "prettier": "^3.9.10"
   }
 }
