@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Apps Node (CommonJS, resolução nodenext)",
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "types": ["node"]
+  }
+}

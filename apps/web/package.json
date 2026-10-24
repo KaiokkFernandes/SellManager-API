@@ -1,0 +1,36 @@
+{
+  "name": "@sellmanager/web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Front-end do SellManager (placeholder: só o esqueleto, sem telas)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "prettier": "@sellmanager/config/prettier",
+  "dependencies": {
+    "@sellmanager/shared": "workspace:*",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@sellmanager/config": "workspace:*",
+    "@types/node": "^24",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "eslint": "^10.13.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "prettier": "^3.9.10",
+    "typescript": "6.0.3",
+    "vite": "^8"
+  }
+}

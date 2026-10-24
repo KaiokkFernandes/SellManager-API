@@ -1,0 +1,13 @@
+{
+  "extends": "@sellmanager/config/tsconfig.node.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist",
+    "paths": {
+      "@config/*": ["./src/config/*"],
+      "@modules/*": ["./src/modules/*"],
+      "@shared/*": ["./src/shared/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts", "vitest.config.mts"]
+}

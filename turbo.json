@@ -1,0 +1,43 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "ui": "stream",
+  "globalDependencies": [
+    "packages/config/*.json",
+    "packages/config/*.js",
+    ".nvmrc"
+  ],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.spec.ts", "!test/**", "!**/*.md"],
+      "outputs": ["dist/**"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "lint": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "test:unit": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "test:integration": {
+      "dependsOn": ["^build"],
+      "cache": false
+    },
+    "format:check": {
+      "outputs": []
+    },
+    "format": {
+      "cache": false
+    },
+    "dev": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "persistent": true
+    }
+  }
+}

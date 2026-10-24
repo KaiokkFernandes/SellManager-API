@@ -5,11 +5,9 @@ build/
 temp/
 .env
 coverage
-ormconfig.json
 dist
 
-uploads/*
-!uploads/.gitkeep
-# uploads locais
-tmp/*
-!tmp/.gitkeep
+# uploads locais da api
+apps/api/tmp/*
+!apps/api/tmp/.gitkeep
+.turbo

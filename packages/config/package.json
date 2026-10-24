@@ -1,0 +1,33 @@
+{
+  "name": "@sellmanager/config",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Configurações compartilhadas: tsconfig, ESLint e Prettier",
+  "type": "module",
+  "exports": {
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./tsconfig.node.json": "./tsconfig.node.json",
+    "./tsconfig.react.json": "./tsconfig.react.json",
+    "./eslint": "./eslint.config.js",
+    "./prettier": "./prettier.json"
+  },
+  "dependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.13.0",
+    "typescript-eslint": "^8.72.0"
+  },
+  "peerDependencies": {
+    "eslint": "^10.13.0",
+    "prettier": "^3.9.10",
+    "typescript": "6.0.3"
+  },
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "prettier": "./prettier.json",
+  "devDependencies": {
+    "prettier": "^3.9.10"
+  }
+}
