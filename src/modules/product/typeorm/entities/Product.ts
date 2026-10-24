@@ -8,7 +8,8 @@ class Product {
   @Column('varchar')
   name: string;
 
-  @Column('decimal')
+  // pg devolve decimal como string; converte para number na leitura
+  @Column('decimal', { precision: 10, scale: 2, transformer: { to: (value: number) => value, from: (value: string) => Number(value) } })
   price: number;
 
   @Column('int')
