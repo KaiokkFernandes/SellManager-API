@@ -3,7 +3,7 @@ import { ForgotPasswordBody } from '../routes/users.schemas';
 import SendForgotPasswordEmailService from '../services/SendForgotPasswordEmailService';
 
 export default class ForgotPasswordController {
-  public async create(request: Request, response: Response): Promise<Response> {
+  public async create(request: Request, response: Response): Promise<void> {
     const { email } = request.body as ForgotPasswordBody;
 
     const sendForgotPasswordEmail = new SendForgotPasswordEmailService();
@@ -12,8 +12,6 @@ export default class ForgotPasswordController {
       email,
     });
 
-    return response
-      .status(204)
-      .json({ message: 'Email de recuperação enviado com sucesso!' });
+    response.status(204).send();
   }
 }

@@ -3,7 +3,7 @@ import { ResetPasswordBody } from '../routes/users.schemas';
 import ResetPasswordService from '../services/ResetPasswordService';
 
 export default class ResetPasswordController {
-  public async create(request: Request, response: Response): Promise<Response> {
+  public async create(request: Request, response: Response): Promise<void> {
     const { password, token } = request.body as ResetPasswordBody;
 
     const resetPassword = new ResetPasswordService();
@@ -13,8 +13,6 @@ export default class ResetPasswordController {
       token,
     });
 
-    return response
-      .status(204)
-      .json({ message: 'Email de recuperação enviado com sucesso!' });
+    response.status(204).send();
   }
 }

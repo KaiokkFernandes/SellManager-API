@@ -5,16 +5,16 @@ import UpdateProfileServices from '../services/UpdateProfileService';
 import ShowProfileServices from '../services/ShowPerfil';
 
 export default class ProfileController {
-  public async show(request: Request, response: Response): Promise<Response> {
+  public async show(request: Request, response: Response): Promise<void> {
     const showUser = new ShowProfileServices();
 
     const user_id = request.user.id;
 
     const user = await showUser.execute({ user_id });
-    return response.json(toUserResponse(user));
+    response.json(toUserResponse(user));
   }
 
-  public async update(request: Request, response: Response): Promise<Response> {
+  public async update(request: Request, response: Response): Promise<void> {
     const { name, email, password, old_password } =
       request.body as UpdateProfileBody;
 
@@ -28,6 +28,6 @@ export default class ProfileController {
       old_password,
     });
 
-    return response.json(toUserResponse(user));
+    response.json(toUserResponse(user));
   }
 }

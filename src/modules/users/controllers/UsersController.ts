@@ -5,15 +5,15 @@ import ListUsersServices from '../services/listUserService';
 import CreateUserService from '../services/CreateUserService';
 
 export default class UsersController {
-  public async index(_request: Request, response: Response): Promise<Response> {
+  public async index(_request: Request, response: Response): Promise<void> {
     const ListUsers = new ListUsersServices();
 
     const users = await ListUsers.execute();
 
-    return response.json(users.map(toUserResponse));
+    response.json(users.map(toUserResponse));
   }
 
-  public async create(request: Request, response: Response): Promise<Response> {
+  public async create(request: Request, response: Response): Promise<void> {
     const { name, email, password } = request.body as CreateUserBody;
 
     const createUser = new CreateUserService();
@@ -24,6 +24,6 @@ export default class UsersController {
       password,
     });
 
-    return response.status(201).json(toUserResponse(user));
+    response.status(201).json(toUserResponse(user));
   }
 }

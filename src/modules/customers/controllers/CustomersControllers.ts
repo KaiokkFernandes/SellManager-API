@@ -7,35 +7,35 @@ import DeleteCostumerService from '../services/DeleteCostumerService';
 import CreateCustomerService from '../services/CreateCustomerService';
 
 export default class CustomerController {
-  public async index(_request: Request, response: Response): Promise<Response> {
+  public async index(_request: Request, response: Response): Promise<void> {
     const listCostumers = new ListCostumerServices();
 
     const products = await listCostumers.execute();
 
-    return response.json(products);
+    response.json(products);
   }
 
-  public async show(request: Request, response: Response): Promise<Response> {
+  public async show(request: Request, response: Response): Promise<void> {
     const { id } = request.params;
 
     const showCostumer = new ShowCostumerServices();
 
     const product = await showCostumer.execute({ id });
 
-    return response.json(product);
+    response.json(product);
   }
 
-  public async create(request: Request, response: Response) {
+  public async create(request: Request, response: Response): Promise<void> {
     const { name, email } = request.body as CustomerBody;
 
     const createProduct = new CreateCustomerService();
 
     const costumer = await createProduct.execute({ name, email });
 
-    return response.json(costumer);
+    response.json(costumer);
   }
 
-  public async update(request: Request, response: Response): Promise<Response> {
+  public async update(request: Request, response: Response): Promise<void> {
     const { name, email } = request.body as CustomerBody;
     const { id } = request.params;
 
@@ -43,16 +43,16 @@ export default class CustomerController {
 
     const costumer = await updateCostumer.execute({ id, name, email });
 
-    return response.json(costumer);
+    response.json(costumer);
   }
 
-  public async delete(request: Request, response: Response): Promise<Response> {
+  public async delete(request: Request, response: Response): Promise<void> {
     const { id } = request.params;
 
     const deleteCostumer = new DeleteCostumerService();
 
     await deleteCostumer.execute({ id });
 
-    return response.json([]);
+    response.json([]);
   }
 }

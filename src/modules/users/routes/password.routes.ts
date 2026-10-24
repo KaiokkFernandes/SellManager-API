@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import asyncHandler from '@config/Middleware';
 import { validate } from '@shared/http/middlewares/validate';
 import {
   forgotPasswordBodySchema,
@@ -15,13 +14,13 @@ const resetPasswordController = new ResetPasswordController();
 passwordRoutes.post(
   '/forgot',
   validate({ body: forgotPasswordBodySchema }),
-  asyncHandler(forgotPasswordController.create.bind(forgotPasswordController)),
+  forgotPasswordController.create.bind(forgotPasswordController),
 );
 
 passwordRoutes.post(
   '/reset',
   validate({ body: resetPasswordBodySchema }),
-  asyncHandler(resetPasswordController.create.bind(resetPasswordController)),
+  resetPasswordController.create.bind(resetPasswordController),
 );
 
 export default passwordRoutes;
