@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import CustomerRouter from '@modules/customers/routes/costumer.routes';
-import productRouter from '@modules/product/routes/products.routes';
+import { makeProductsRoutes } from '@modules/products/infra/http/routes';
 import { makeUsersRoutes } from '@modules/users/infra/http/routes';
 import { Container } from '@shared/container';
 import { ensureAuthenticated } from './middlewares/ensureAuthenticated';
@@ -15,7 +15,7 @@ export function createRoutes(container: Container): Router {
   routes.use('/sessions', users.sessionsRouter);
   routes.use('/profile', users.profileRouter);
   routes.use('/password', users.passwordRouter);
-  routes.use('/products', productRouter);
+  routes.use('/products', makeProductsRoutes(container, authenticated));
   routes.use('/customers', CustomerRouter);
 
   return routes;

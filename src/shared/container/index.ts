@@ -1,6 +1,7 @@
 import { DataSource } from 'typeorm';
 import { env } from '@config/env';
 import uploadConfig from '@config/upload';
+import { ProductsRepository } from '@modules/products/infra/typeorm/repositories/ProductsRepository';
 import { UsersRepository } from '@modules/users/infra/typeorm/repositories/UsersRepository';
 import { UserTokensRepository } from '@modules/users/infra/typeorm/repositories/UserTokensRepository';
 import { BcryptHashProvider } from '@shared/providers/HashProvider/BcryptHashProvider';
@@ -42,6 +43,7 @@ export function makeContainer(
   const repositories = {
     users: new UsersRepository(dataSource),
     userTokens: new UserTokensRepository(dataSource),
+    products: new ProductsRepository(dataSource),
   };
 
   return { config: env, providers, repositories };
