@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { MulterError } from 'multer';
+import { QueryFailedError } from 'typeorm';
 import AppError from '@shared/errors/AppError';
 import { logger } from '@shared/logger';
 
@@ -35,6 +36,21 @@ export function errorHandler(
     response
       .status(400)
       .json({ status: 'error', message: error.message, code: error.code });
+    return;
+  }
+
+  // 23503 foreign_key_violation / 23001 restrict_violation:
+  // ex.: apagar cliente ou produto que tem pedidos
+  if (
+    error instanceof QueryFailedError &&
+    ['23503', '23001'].includes(
+      String((error.driverError as { code?: string }).code),
+    )
+  ) {
+    response.status(409).json({
+      status: 'error',
+      message: 'Resource is referenced by other records',
+    });
     return;
   }
 

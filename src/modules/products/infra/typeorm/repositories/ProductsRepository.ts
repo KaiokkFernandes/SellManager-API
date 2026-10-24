@@ -1,4 +1,4 @@
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, Repository } from 'typeorm';
 import { Product } from '../../../domain/entities/Product';
 import {
   ICreateProductDTO,
@@ -9,8 +9,9 @@ import { ProductSchema } from '../schemas/ProductSchema';
 export class ProductsRepository implements IProductsRepository {
   private readonly ormRepository: Repository<Product>;
 
-  constructor(dataSource: DataSource) {
-    this.ormRepository = dataSource.getRepository(ProductSchema);
+  // EntityManager permite usar o repositório dentro de uma transação.
+  constructor(connection: DataSource | EntityManager) {
+    this.ormRepository = connection.getRepository(ProductSchema);
   }
 
   public findAll(): Promise<Product[]> {
@@ -23,6 +24,15 @@ export class ProductsRepository implements IProductsRepository {
 
   public findByName(name: string): Promise<Product | null> {
     return this.ormRepository.findOneBy({ name });
+  }
+
+  public findByIdsForUpdate(ids: string[]): Promise<Product[]> {
+    return this.ormRepository.find({
+      where: { id: In(ids) },
+      // ordem fixa evita deadlock entre pedidos concorrentes
+      order: { id: 'ASC' },
+      lock: { mode: 'pessimistic_write' },
+    });
   }
 
   public create(data: ICreateProductDTO): Promise<Product> {

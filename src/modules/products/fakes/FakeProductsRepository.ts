@@ -22,6 +22,14 @@ export class FakeProductsRepository implements IProductsRepository {
     return Promise.resolve(product ? { ...product } : null);
   }
 
+  public findByIdsForUpdate(ids: string[]): Promise<Product[]> {
+    return Promise.resolve(
+      this.products
+        .filter(product => ids.includes(product.id))
+        .map(product => ({ ...product })),
+    );
+  }
+
   public create(data: ICreateProductDTO): Promise<Product> {
     const now = new Date();
     const product: Product = {

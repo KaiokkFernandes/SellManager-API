@@ -2,6 +2,8 @@ import { DataSource } from 'typeorm';
 import { env } from '@config/env';
 import uploadConfig from '@config/upload';
 import { CustomersRepository } from '@modules/customers/infra/typeorm/repositories/CustomersRepository';
+import { OrdersUnitOfWork } from '@modules/orders/infra/typeorm/OrdersUnitOfWork';
+import { OrdersRepository } from '@modules/orders/infra/typeorm/repositories/OrdersRepository';
 import { ProductsRepository } from '@modules/products/infra/typeorm/repositories/ProductsRepository';
 import { UsersRepository } from '@modules/users/infra/typeorm/repositories/UsersRepository';
 import { UserTokensRepository } from '@modules/users/infra/typeorm/repositories/UserTokensRepository';
@@ -69,9 +71,15 @@ export function makeContainer(
     userTokens: new UserTokensRepository(dataSource),
     products: new ProductsRepository(dataSource),
     customers: new CustomersRepository(dataSource),
+    orders: new OrdersRepository(dataSource),
   };
 
-  return { config: env, providers, repositories };
+  return {
+    config: env,
+    providers,
+    repositories,
+    ordersUnitOfWork: new OrdersUnitOfWork(dataSource),
+  };
 }
 
 export type Container = ReturnType<typeof makeContainer>;
