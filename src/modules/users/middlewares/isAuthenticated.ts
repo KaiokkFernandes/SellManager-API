@@ -1,7 +1,7 @@
 import { jwtVerify } from 'jose';
 import { Request, Response, NextFunction } from 'express';
 import auth from '@config/auth';
-import AppError from '@shared/erros/AppError';
+import AppError from '@shared/errors/AppError';
 
 const secret = new TextEncoder().encode(auth.jwt.secret);
 

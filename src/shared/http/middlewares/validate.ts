@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { z, ZodType } from 'zod';
-import AppError from '@shared/erros/AppError';
+import AppError from '@shared/errors/AppError';
 
 interface ValidationSchemas {
   body?: ZodType;

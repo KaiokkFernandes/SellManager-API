@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import AppError from '@shared/erros/AppError';
+import AppError from '@shared/errors/AppError';
 import { validate } from './validate';
 
 function run(

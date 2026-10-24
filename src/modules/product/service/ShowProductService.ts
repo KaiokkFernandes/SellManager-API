@@ -1,6 +1,6 @@
 import ProductRepository from '../typeorm/repositories/ProductRepository';
 import Product from '../typeorm/entities/Product';
-import AppError from '@shared/erros/AppError';
+import AppError from '@shared/errors/AppError';
 
 interface IProduct {
   id: string;

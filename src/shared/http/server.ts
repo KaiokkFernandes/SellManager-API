@@ -1,9 +1,12 @@
 import { env } from '@config/env';
+import { makeContainer } from '@shared/container';
 import { AppDataSource } from '@shared/infra/typeorm/data-source';
-import app from './app';
+import { createApp } from './app';
 
 async function bootstrap(): Promise<void> {
   await AppDataSource.initialize();
+
+  const app = createApp(makeContainer(AppDataSource));
 
   const server = app.listen(env.PORT, () => {
     console.log(`Server is running on port ${env.PORT}! 🚀`);

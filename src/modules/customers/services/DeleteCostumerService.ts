@@ -1,4 +1,4 @@
-import AppError from '@shared/erros/AppError';
+import AppError from '@shared/errors/AppError';
 import CustomerRepository from '../typeorm/repositories/CustomersRepository';
 
 interface IRequest {

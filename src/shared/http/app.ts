@@ -1,40 +1,19 @@
 import 'reflect-metadata';
-import express, { Request, Response, NextFunction } from 'express';
+import express, { Express } from 'express';
 import cors from 'cors';
-import routes from './router';
-import AppError from '../erros/AppError';
-import upload from '@config/upload';
+import uploadConfig from '@config/upload';
+import { Container } from '@shared/container';
+import { errorHandler } from './middlewares/errorHandler';
+import { createRoutes } from './routes';
 
-const app = express();
+export function createApp(container: Container): Express {
+  const app = express();
 
-app.use(cors());
-app.use(express.json());
-app.use('/files', express.static(upload.directory));
-app.use(routes);
+  app.use(cors());
+  app.use(express.json());
+  app.use('/files', express.static(uploadConfig.uploadsFolder));
+  app.use(createRoutes(container));
+  app.use(errorHandler);
 
-// Middleware para tratamento de erros
-app.use(
-  (
-    error: AppError | Error,
-    _request: Request,
-    response: Response,
-    _next: NextFunction,
-  ): void => {
-    if (error instanceof AppError) {
-      response.status(error.statusCode).json({
-        status: 'error',
-        message: error.message,
-        ...(error.details !== undefined && { details: error.details }),
-      });
-      return;
-    }
-
-    console.error('Erro não tratado:', error);
-    response.status(500).json({
-      status: 'error',
-      message: 'Internal server error',
-    });
-  },
-);
-
-export default app;
+  return app;
+}

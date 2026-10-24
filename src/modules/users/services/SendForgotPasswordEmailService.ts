@@ -1,49 +1,40 @@
-import AppError from '@shared/erros/AppError';
-import UserRepository from '../typeorm/repositories/UserRepository';
-import UserTokenRepository from '../typeorm/repositories/UserTokenRepository';
-import EtherealMail from '@config/mail/EtherealMail';
-import path from 'path';
-import { env } from '@config/env';
+import path from 'node:path';
+import AppError from '@shared/errors/AppError';
+import { IMailProvider } from '@shared/providers/MailProvider/IMailProvider';
+import { IUsersRepository } from '../domain/repositories/IUsersRepository';
+import { IUserTokensRepository } from '../domain/repositories/IUserTokensRepository';
 
 interface IRequest {
   email: string;
 }
 
-class SendForgotPasswordEmailService {
-  public async execute({ email }: IRequest): Promise<void> {
-    const usersRepository = new UserRepository();
-    const userTokenRepository = new UserTokenRepository();
+export class SendForgotPasswordEmailService {
+  constructor(
+    private readonly usersRepository: IUsersRepository,
+    private readonly userTokensRepository: IUserTokensRepository,
+    private readonly mailProvider: IMailProvider,
+    private readonly webUrl: string,
+  ) {}
 
-    const user = await usersRepository.findByEmail(email);
+  public async execute({ email }: IRequest): Promise<void> {
+    const user = await this.usersRepository.findByEmail(email);
 
     if (!user) {
       throw new AppError('User does not exists');
     }
 
-    const token = await userTokenRepository.generate(user.id);
+    const { token } = await this.userTokensRepository.generate(user.id);
 
-    const forgotPasswordTemplate = path.resolve(
-      __dirname,
-      '..',
-      'views',
-      'forgot_password.hbs',
-    );
-
-    await EtherealMail.sendMail({
-      to: {
-        name: user.name,
-        email: user.email,
-      },
-      subject: '[API Vendas] Recuperação de senha',
+    await this.mailProvider.sendMail({
+      to: { name: user.name, email: user.email },
+      subject: '[SellManager] Recuperação de senha',
       templateData: {
-        file: forgotPasswordTemplate,
+        file: path.resolve(__dirname, '..', 'views', 'forgot_password.hbs'),
         variables: {
           name: user.name,
-          link: `${env.APP_WEB_URL}/reset_password?token=${token.token}`,
+          link: `${this.webUrl}/reset_password?token=${token}`,
         },
       },
     });
   }
 }
-
-export default SendForgotPasswordEmailService;
