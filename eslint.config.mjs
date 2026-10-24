@@ -29,6 +29,16 @@ export default tseslint.config(
     },
   },
   {
+    // response.body do supertest é any
+    files: ['test/**/*.ts', 'src/**/*.spec.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+    },
+  },
+  {
     files: ['**/*.mjs', '**/*.js'],
     extends: [tseslint.configs.disableTypeChecked],
   },
