@@ -26,11 +26,17 @@ const envSchema = z.object({
     .string()
     .min(32, 'JWT_SECRET precisa ter ao menos 32 caracteres'),
   JWT_EXPIRES_IN: z.string().default('1d'),
+
+  LOG_LEVEL: z
+    .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
+    .optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
 
 if (!parsed.success) {
+  // o logger depende do env validado, por isso console aqui
+  // eslint-disable-next-line no-console
   console.error(
     'Variáveis de ambiente inválidas:',
     z.treeifyError(parsed.error).properties,

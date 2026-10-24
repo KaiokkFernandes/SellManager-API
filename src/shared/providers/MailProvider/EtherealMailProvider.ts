@@ -1,4 +1,5 @@
 import nodemailer, { Transporter } from 'nodemailer';
+import { logger } from '@shared/logger';
 import { IMailTemplateProvider } from '../MailTemplateProvider/IMailTemplateProvider';
 import { IMailProvider, ISendMailDTO } from './IMailProvider';
 
@@ -42,6 +43,9 @@ export class EtherealMailProvider implements IMailProvider {
       html: await this.mailTemplateProvider.parse(templateData),
     })) as Parameters<typeof nodemailer.getTestMessageUrl>[0];
 
-    console.log('Preview URL: %s', nodemailer.getTestMessageUrl(message));
+    logger.info(
+      { previewUrl: nodemailer.getTestMessageUrl(message) },
+      'E-mail enviado (Ethereal)',
+    );
   }
 }

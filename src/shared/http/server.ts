@@ -1,6 +1,7 @@
 import { env } from '@config/env';
 import { makeContainer } from '@shared/container';
 import { AppDataSource } from '@shared/infra/typeorm/data-source';
+import { logger } from '@shared/logger';
 import { createApp } from './app';
 
 async function bootstrap(): Promise<void> {
@@ -9,11 +10,11 @@ async function bootstrap(): Promise<void> {
   const app = createApp(makeContainer(AppDataSource));
 
   const server = app.listen(env.PORT, () => {
-    console.log(`Server is running on port ${env.PORT}! 🚀`);
+    logger.info(`Server is running on port ${env.PORT}`);
   });
 
   const shutdown = (signal: string) => {
-    console.log(`${signal} recebido, encerrando...`);
+    logger.info(`${signal} recebido, encerrando...`);
     server.close(() => {
       void AppDataSource.destroy().finally(() => process.exit(0));
     });
@@ -24,6 +25,6 @@ async function bootstrap(): Promise<void> {
 }
 
 bootstrap().catch(error => {
-  console.error('Falha ao iniciar a aplicação:', error);
+  logger.fatal({ err: error }, 'Falha ao iniciar a aplicação');
   process.exit(1);
 });

@@ -1,9 +1,23 @@
 import { NextFunction, Request, Response } from 'express';
 import AppError from '@shared/errors/AppError';
+import { logger } from '@shared/logger';
+
+interface HttpError extends Error {
+  status?: number;
+  type?: string;
+}
+
+export function notFoundHandler(
+  request: Request,
+  _response: Response,
+  next: NextFunction,
+): void {
+  next(new AppError(`Route ${request.method} ${request.path} not found`, 404));
+}
 
 export function errorHandler(
-  error: Error,
-  _request: Request,
+  error: HttpError,
+  request: Request,
   response: Response,
   _next: NextFunction,
 ): void {
@@ -16,9 +30,19 @@ export function errorHandler(
     return;
   }
 
-  console.error('Erro não tratado:', error);
-  response.status(500).json({
-    status: 'error',
-    message: 'Internal server error',
-  });
+  // Erros do body-parser (JSON malformado, payload grande demais etc.)
+  if (
+    error.type === 'entity.parse.failed' ||
+    error.type === 'entity.too.large'
+  ) {
+    response
+      .status(error.status ?? 400)
+      .json({ status: 'error', message: error.message });
+    return;
+  }
+
+  (request.log ?? logger).error({ err: error }, 'Unhandled error');
+  response
+    .status(500)
+    .json({ status: 'error', message: 'Internal server error' });
 }
