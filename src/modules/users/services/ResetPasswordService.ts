@@ -1,5 +1,4 @@
 import AppError from "@shared/erros/AppError";
-import { getCustomRepository } from "typeorm";
 import UserRepository from "../typeorm/repositories/UserRepository";
 import UserTokenRepository from "../typeorm/repositories/UserTokenRepository";
 import {isAfter, addHours} from 'date-fns';
@@ -12,8 +11,8 @@ interface IRequest{
 
 class ResetPasswordService{
    public async execute({ token, password}: IRequest): Promise<void>{
-     const usersRepository = getCustomRepository(UserRepository);
-     const userTokenRepository = getCustomRepository(UserTokenRepository);
+     const usersRepository = new UserRepository();
+     const userTokenRepository = new UserTokenRepository();
 
      const userToken = await userTokenRepository.findByToken(token);
 

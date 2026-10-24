@@ -15,7 +15,12 @@
     "start": "node dist/shared/http/server.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "typeorm": "tsx ./node_modules/typeorm/cli.js",
+    "migration:run": "yarn typeorm migration:run -d src/shared/infra/typeorm/data-source.ts",
+    "migration:revert": "yarn typeorm migration:revert -d src/shared/infra/typeorm/data-source.ts",
+    "migration:create": "yarn typeorm migration:create",
+    "migration:run:prod": "typeorm migration:run -d dist/shared/infra/typeorm/data-source.js"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -44,9 +49,9 @@
     "jose": "^6.2.13",
     "multer": "^1.4.5-lts.2",
     "nodemailer": "^7.0.3",
-    "pg": "^8.13.0",
+    "pg": "^8.23.1",
     "reflect-metadata": "^0.2.2",
-    "typeorm": "0.2.29",
+    "typeorm": "^1.1.2",
     "zod": "^4.6.7"
   }
 }

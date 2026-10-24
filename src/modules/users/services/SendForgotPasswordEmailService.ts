@@ -1,5 +1,4 @@
 import AppError from "@shared/erros/AppError";
-import { getCustomRepository } from "typeorm";
 import UserRepository from "../typeorm/repositories/UserRepository";
 import UserTokenRepository from "../typeorm/repositories/UserTokenRepository";
 import EtherealMail from "@config/mail/EtherealMail";
@@ -12,8 +11,8 @@ interface IRequest{
 
 class SendForgotPasswordEmailService{
    public async execute({ email}: IRequest): Promise<void>{
-     const usersRepository = getCustomRepository(UserRepository);
-     const userTokenRepository = getCustomRepository(UserTokenRepository);
+     const usersRepository = new UserRepository();
+     const userTokenRepository = new UserTokenRepository();
 
      const user = await usersRepository.findByEmail(email);
 

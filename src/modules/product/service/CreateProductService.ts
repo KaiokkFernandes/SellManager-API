@@ -1,4 +1,3 @@
-import { getCustomRepository } from "typeorm";
 import ProductRepository from "../typeorm/repositories/ProductRepository";
 import AppError from "@shared/erros/AppError";
 
@@ -11,7 +10,7 @@ interface IProduct{
 
 class CreateProducService {
    public async execute({name, price, quantity}: IProduct) : Promise<IProduct>{
-     const productRepository = getCustomRepository(ProductRepository);
+     const productRepository = new ProductRepository();
 
      const productExists = await productRepository.findByName(name);
 
@@ -20,13 +19,11 @@ class CreateProducService {
      }
 
 
-     const product = productRepository.create({
+     const product = await productRepository.create({
         name,
         price,
         quantity
-     })
-
-     await productRepository.save(product);
+     });
      return product;
    }
 }

@@ -5,7 +5,7 @@ import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateCol
 class Product {
   @PrimaryGeneratedColumn('uuid')
   id: string;
-  @Column()
+  @Column('varchar')
   name: string;
 
   @Column('decimal')

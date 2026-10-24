@@ -5,17 +5,17 @@ class Users {
    @PrimaryGeneratedColumn('uuid')
    id: string;
 
-   @Column()
+   @Column('varchar')
    name: string;
 
-   @Column()
+   @Column('varchar')
    email: string;
 
-   @Column()
+   @Column('varchar')
    password: string;
 
-   @Column()
-   avatar: string;
+   @Column({ type: 'varchar', nullable: true })
+   avatar: string | null;
 
   @CreateDateColumn()
   created_at: Date;

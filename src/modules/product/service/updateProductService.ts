@@ -1,4 +1,3 @@
-import { getCustomRepository } from "typeorm";
 import ProductRepository from "../typeorm/repositories/ProductRepository";
 import AppError from "@shared/erros/AppError";
 
@@ -12,9 +11,9 @@ interface IProduct{
 
 class UpdateProductService{
   public async execute({id, name, price, quantity}: IProduct): Promise<IProduct>{
-   const productRepository = getCustomRepository(ProductRepository);
+   const productRepository = new ProductRepository();
 
-   const product = await productRepository.findOne(id);
+   const product = await productRepository.findById(id);
 
    if(!product){
      throw new AppError("Product not found");

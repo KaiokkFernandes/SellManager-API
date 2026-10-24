@@ -1,5 +1,4 @@
 import AppError from "@shared/erros/AppError";
-import { getCustomRepository } from "typeorm";
 import Customer from "../typeorm/entities/Customers";
 import CustomerRepository from "../typeorm/repositories/CustomersRepository";
 
@@ -17,7 +16,7 @@ class UpdateCustomerServices {
     name,
     email,
    }: IRequest): Promise<Customer>{
-   const customerRepository = getCustomRepository(CustomerRepository);
+   const customerRepository = new CustomerRepository();
    const customer = await customerRepository.findById(id);
 
    if(!customer) {

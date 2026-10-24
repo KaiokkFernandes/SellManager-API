@@ -1,5 +1,4 @@
 import AppError from "@shared/erros/AppError";
-import { getCustomRepository } from "typeorm";
 import Users from "../typeorm/entities/Users";
 import UserRepository from "../typeorm/repositories/UserRepository";
 import { compare } from "bcryptjs";
@@ -19,7 +18,7 @@ interface IResponse {
 
 class AuthenticationUserService {
   public async execute({ email, password, }: IRequest): Promise<IResponse>{
-    const usersRepository = getCustomRepository(UserRepository);
+    const usersRepository = new UserRepository();
 
     const user = await usersRepository.findByEmail(email);
     if(!user){

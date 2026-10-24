@@ -1,35 +1,43 @@
-import { EntityRepository, Repository } from "typeorm";
-import Customer from "../entities/Customers";
+import { Repository } from 'typeorm';
+import { AppDataSource } from '@shared/infra/typeorm/data-source';
+import Customer from '../entities/Customers';
 
-@EntityRepository(Customer)
-class CustomerRepository extends Repository<Customer>{
-    public async findByName(name:string): Promise<Customer | undefined>{
-      const customer = await this.findOne({
-        where: {
-          name
-        },
-      });
-      return customer;
-    }
-
-    public async findById(id:string): Promise<Customer | undefined>{
-      const customer = await this.findOne({
-        where: {
-          id
-        },
-      });
-      return customer;
-    }
-
-    public async findByEmail(email:string): Promise<Customer | undefined>{
-      const customer = await this.findOne({
-        where: {
-          email
-        },
-      });
-      return customer;
-    }
+interface ICreateCustomer {
+  name: string;
+  email: string;
 }
 
+class CustomerRepository {
+  private ormRepository: Repository<Customer>;
+
+  constructor() {
+    this.ormRepository = AppDataSource.getRepository(Customer);
+  }
+
+  public async findAll(): Promise<Customer[]> {
+    return this.ormRepository.find();
+  }
+
+  public async findById(id: string): Promise<Customer | null> {
+    return this.ormRepository.findOneBy({ id });
+  }
+
+  public async findByEmail(email: string): Promise<Customer | null> {
+    return this.ormRepository.findOneBy({ email });
+  }
+
+  public async create(data: ICreateCustomer): Promise<Customer> {
+    const customer = this.ormRepository.create(data);
+    return this.ormRepository.save(customer);
+  }
+
+  public async save(customer: Customer): Promise<Customer> {
+    return this.ormRepository.save(customer);
+  }
+
+  public async remove(customer: Customer): Promise<void> {
+    await this.ormRepository.remove(customer);
+  }
+}
 
 export default CustomerRepository;

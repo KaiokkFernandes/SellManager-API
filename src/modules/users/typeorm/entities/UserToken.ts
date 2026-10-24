@@ -5,11 +5,11 @@ class UserToken {
    @PrimaryGeneratedColumn('uuid')
    id: string;
 
-   @Column()
+   @Column('uuid')
    @Generated('uuid')
    token: string;
 
-   @Column()
+   @Column('uuid')
    user_id: string;
 
   @CreateDateColumn()
