@@ -1,4 +1,9 @@
 import { randomUUID } from 'node:crypto';
+import {
+  PageResult,
+  PaginationParams,
+  slicePage,
+} from '@shared/domain/pagination';
 import { Order, OrderStatus } from '../domain/entities/Order';
 import {
   ICreateOrderDTO,
@@ -13,14 +18,20 @@ export class FakeOrdersRepository implements IOrdersRepository {
     return { ...order, items: order.items.map(item => ({ ...item })) };
   }
 
-  public findAll(filter: IFindOrdersFilter = {}): Promise<Order[]> {
+  public findAll(
+    filter: IFindOrdersFilter,
+    pagination: PaginationParams,
+  ): Promise<PageResult<Order>> {
     return Promise.resolve(
-      this.orders
-        .filter(
-          order =>
-            !filter.customer_id || order.customer_id === filter.customer_id,
-        )
-        .map(order => this.clone(order)),
+      slicePage(
+        this.orders
+          .filter(
+            order =>
+              !filter.customer_id || order.customer_id === filter.customer_id,
+          )
+          .map(order => this.clone(order)),
+        pagination,
+      ),
     );
   }
 

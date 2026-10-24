@@ -1,4 +1,8 @@
 import { Request, Response } from 'express';
+import {
+  PaginationQuery,
+  validatedQuery,
+} from '@shared/http/middlewares/validate';
 import { CreateUserService } from '../../../services/CreateUserService';
 import { ListUsersService } from '../../../services/ListUsersService';
 import { CreateUserBody } from '../schemas';
@@ -12,11 +16,16 @@ export class UsersController {
   ) {}
 
   public index = async (
-    _request: Request,
+    request: Request,
     response: Response,
   ): Promise<void> => {
-    const users = await this.listUsers.execute();
-    response.json(users.map(user => toUserResponse(user, this.apiUrl)));
+    const { data, meta } = await this.listUsers.execute(
+      validatedQuery<PaginationQuery>(request),
+    );
+    response.json({
+      data: data.map(user => toUserResponse(user, this.apiUrl)),
+      meta,
+    });
   };
 
   public create = async (

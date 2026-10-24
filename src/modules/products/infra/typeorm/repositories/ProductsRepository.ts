@@ -1,4 +1,9 @@
 import { DataSource, EntityManager, In, Repository } from 'typeorm';
+import {
+  PageResult,
+  PaginationParams,
+  toSkipTake,
+} from '@shared/domain/pagination';
 import { Product } from '../../../domain/entities/Product';
 import {
   ICreateProductDTO,
@@ -14,8 +19,14 @@ export class ProductsRepository implements IProductsRepository {
     this.ormRepository = connection.getRepository(ProductSchema);
   }
 
-  public findAll(): Promise<Product[]> {
-    return this.ormRepository.find({ order: { name: 'ASC' } });
+  public async findAll(
+    pagination: PaginationParams,
+  ): Promise<PageResult<Product>> {
+    const [items, total] = await this.ormRepository.findAndCount({
+      order: { name: 'ASC', id: 'ASC' },
+      ...toSkipTake(pagination),
+    });
+    return { items, total };
   }
 
   public findById(id: string): Promise<Product | null> {

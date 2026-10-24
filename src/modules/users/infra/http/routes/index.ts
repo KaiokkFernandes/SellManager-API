@@ -3,7 +3,10 @@ import multer from 'multer';
 import uploadConfig from '@config/upload';
 import { Container } from '@shared/container';
 import { authRateLimiter } from '@shared/http/middlewares/rateLimiter';
-import { validate } from '@shared/http/middlewares/validate';
+import {
+  paginationQuerySchema,
+  validate,
+} from '@shared/http/middlewares/validate';
 import { AuthenticateUserService } from '../../../services/AuthenticateUserService';
 import { CreateUserService } from '../../../services/CreateUserService';
 import { ListUsersService } from '../../../services/ListUsersService';
@@ -64,7 +67,12 @@ export function makeUsersRoutes(
   const upload = multer(uploadConfig.multer);
 
   const usersRouter = Router();
-  usersRouter.get('/', authenticated, usersController.index);
+  usersRouter.get(
+    '/',
+    authenticated,
+    validate({ query: paginationQuerySchema }),
+    usersController.index,
+  );
   usersRouter.post(
     '/',
     authRateLimiter,

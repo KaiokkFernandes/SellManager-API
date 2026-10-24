@@ -1,4 +1,8 @@
 import { Request, Response } from 'express';
+import {
+  PaginationQuery,
+  validatedQuery,
+} from '@shared/http/middlewares/validate';
 import { CreateProductService } from '../../../services/CreateProductService';
 import { DeleteProductService } from '../../../services/DeleteProductService';
 import { ListProductsService } from '../../../services/ListProductsService';
@@ -18,10 +22,14 @@ export class ProductsController {
   constructor(private readonly services: ProductsServices) {}
 
   public index = async (
-    _request: Request,
+    request: Request,
     response: Response,
   ): Promise<void> => {
-    response.json(await this.services.list.execute());
+    response.json(
+      await this.services.list.execute(
+        validatedQuery<PaginationQuery>(request),
+      ),
+    );
   };
 
   public show = async (

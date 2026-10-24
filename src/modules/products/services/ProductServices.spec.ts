@@ -18,7 +18,10 @@ describe('Product services', () => {
   it('cria e lista produtos', async () => {
     await new CreateProductService(repository).execute(keyboard);
 
-    const products = await new ListProductsService(repository).execute();
+    const { data: products, meta } = await new ListProductsService(
+      repository,
+    ).execute();
+    expect(meta).toEqual({ page: 1, limit: 20, total: 1, total_pages: 1 });
     expect(products).toEqual([expect.objectContaining(keyboard)]);
   });
 

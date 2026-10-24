@@ -1,4 +1,9 @@
 import { randomUUID } from 'node:crypto';
+import {
+  PageResult,
+  PaginationParams,
+  slicePage,
+} from '@shared/domain/pagination';
 import { Product } from '../domain/entities/Product';
 import {
   ICreateProductDTO,
@@ -8,8 +13,13 @@ import {
 export class FakeProductsRepository implements IProductsRepository {
   public readonly products: Product[] = [];
 
-  public findAll(): Promise<Product[]> {
-    return Promise.resolve(this.products.map(product => ({ ...product })));
+  public findAll(pagination: PaginationParams): Promise<PageResult<Product>> {
+    return Promise.resolve(
+      slicePage(
+        this.products.map(product => ({ ...product })),
+        pagination,
+      ),
+    );
   }
 
   public findById(id: string): Promise<Product | null> {

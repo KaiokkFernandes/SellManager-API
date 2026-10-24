@@ -1,4 +1,9 @@
 import { randomUUID } from 'node:crypto';
+import {
+  PageResult,
+  PaginationParams,
+  slicePage,
+} from '@shared/domain/pagination';
 import { Customer } from '../domain/entities/Customer';
 import {
   ICreateCustomerDTO,
@@ -8,8 +13,13 @@ import {
 export class FakeCustomersRepository implements ICustomersRepository {
   public readonly customers: Customer[] = [];
 
-  public findAll(): Promise<Customer[]> {
-    return Promise.resolve(this.customers.map(customer => ({ ...customer })));
+  public findAll(pagination: PaginationParams): Promise<PageResult<Customer>> {
+    return Promise.resolve(
+      slicePage(
+        this.customers.map(customer => ({ ...customer })),
+        pagination,
+      ),
+    );
   }
 
   public findById(id: string): Promise<Customer | null> {

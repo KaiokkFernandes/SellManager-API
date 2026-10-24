@@ -1,4 +1,9 @@
 import { DataSource, Repository } from 'typeorm';
+import {
+  PageResult,
+  PaginationParams,
+  toSkipTake,
+} from '@shared/domain/pagination';
 import { User } from '../../../domain/entities/User';
 import {
   ICreateUserDTO,
@@ -13,8 +18,14 @@ export class UsersRepository implements IUsersRepository {
     this.ormRepository = dataSource.getRepository(UserSchema);
   }
 
-  public findAll(): Promise<User[]> {
-    return this.ormRepository.find({ order: { created_at: 'ASC' } });
+  public async findAll(
+    pagination: PaginationParams,
+  ): Promise<PageResult<User>> {
+    const [items, total] = await this.ormRepository.findAndCount({
+      order: { created_at: 'ASC', id: 'ASC' },
+      ...toSkipTake(pagination),
+    });
+    return { items, total };
   }
 
   public findById(id: string): Promise<User | null> {

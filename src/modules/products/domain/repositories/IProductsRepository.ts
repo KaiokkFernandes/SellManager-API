@@ -1,4 +1,5 @@
 import { Product } from '../entities/Product';
+import { PageResult, PaginationParams } from '@shared/domain/pagination';
 
 export interface ICreateProductDTO {
   name: string;
@@ -7,7 +8,7 @@ export interface ICreateProductDTO {
 }
 
 export interface IProductsRepository {
-  findAll(): Promise<Product[]>;
+  findAll(pagination: PaginationParams): Promise<PageResult<Product>>;
   findById(id: string): Promise<Product | null>;
   findByName(name: string): Promise<Product | null>;
   /** Busca e trava os produtos até o fim da unidade de trabalho atual. */

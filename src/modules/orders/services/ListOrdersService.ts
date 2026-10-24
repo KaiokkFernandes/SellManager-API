@@ -1,3 +1,9 @@
+import {
+  DEFAULT_PAGINATION,
+  paginate,
+  Paginated,
+  PaginationParams,
+} from '@shared/domain/pagination';
 import { Order } from '../domain/entities/Order';
 import {
   IFindOrdersFilter,
@@ -7,7 +13,13 @@ import {
 export class ListOrdersService {
   constructor(private readonly ordersRepository: IOrdersRepository) {}
 
-  public execute(filter: IFindOrdersFilter = {}): Promise<Order[]> {
-    return this.ordersRepository.findAll(filter);
+  public async execute(
+    filter: IFindOrdersFilter = {},
+    pagination: PaginationParams = DEFAULT_PAGINATION,
+  ): Promise<Paginated<Order>> {
+    return paginate(
+      await this.ordersRepository.findAll(filter, pagination),
+      pagination,
+    );
   }
 }

@@ -1,6 +1,10 @@
 import { RequestHandler, Router } from 'express';
 import { Container } from '@shared/container';
-import { idParamsSchema, validate } from '@shared/http/middlewares/validate';
+import {
+  idParamsSchema,
+  paginationQuerySchema,
+  validate,
+} from '@shared/http/middlewares/validate';
 import { CreateProductService } from '../../../services/CreateProductService';
 import { DeleteProductService } from '../../../services/DeleteProductService';
 import { ListProductsService } from '../../../services/ListProductsService';
@@ -25,7 +29,7 @@ export function makeProductsRoutes(
 
   const router = Router();
 
-  router.get('/', controller.index);
+  router.get('/', validate({ query: paginationQuerySchema }), controller.index);
   router.get('/:id', validate({ params: idParamsSchema }), controller.show);
   router.post(
     '/',

@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { validatedQuery } from '@shared/http/middlewares/validate';
 import { CreateOrderService } from '../../../services/CreateOrderService';
 import { ListOrdersService } from '../../../services/ListOrdersService';
 import { ShowOrderService } from '../../../services/ShowOrderService';
@@ -23,8 +24,11 @@ export class OrdersController {
     request: Request,
     response: Response,
   ): Promise<void> => {
-    const { customer_id } = request.query as ListOrdersQuery;
-    response.json(await this.services.list.execute({ customer_id }));
+    const { customer_id, page, limit } =
+      validatedQuery<ListOrdersQuery>(request);
+    response.json(
+      await this.services.list.execute({ customer_id }, { page, limit }),
+    );
   };
 
   public show = async (

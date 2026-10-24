@@ -17,9 +17,9 @@ describe('Customer services', () => {
   it('cria e lista clientes', async () => {
     await new CreateCustomerService(repository).execute(ana);
 
-    expect(await new ListCustomersService(repository).execute()).toEqual([
-      expect.objectContaining(ana),
-    ]);
+    expect((await new ListCustomersService(repository).execute()).data).toEqual(
+      [expect.objectContaining(ana)],
+    );
   });
 
   it('não permite e-mail duplicado', async () => {

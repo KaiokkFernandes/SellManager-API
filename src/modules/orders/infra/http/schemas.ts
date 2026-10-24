@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { paginationQuerySchema } from '@shared/http/middlewares/validate';
 import { ORDER_STATUSES } from '../../domain/entities/Order';
 
 export const createOrderBodySchema = z.object({
@@ -14,7 +15,7 @@ export const createOrderBodySchema = z.object({
     .max(100),
 });
 
-export const listOrdersQuerySchema = z.object({
+export const listOrdersQuerySchema = paginationQuerySchema.extend({
   customer_id: z.uuid().optional(),
 });
 

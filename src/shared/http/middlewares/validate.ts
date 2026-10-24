@@ -57,3 +57,15 @@ export function validate(schemas: ValidationSchemas) {
 export const idParamsSchema = z.object({
   id: z.uuid(),
 });
+
+export const paginationQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(20),
+});
+
+export type PaginationQuery = z.infer<typeof paginationQuerySchema>;
+
+/** Query já validada/convertida pelo validate(); o Express a tipa como ParsedQs. */
+export function validatedQuery<T>(request: Request): T {
+  return request.query as unknown as T;
+}

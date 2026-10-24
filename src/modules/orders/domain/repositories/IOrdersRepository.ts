@@ -1,4 +1,5 @@
 import { Order, OrderItem, OrderStatus } from '../entities/Order';
+import { PageResult, PaginationParams } from '@shared/domain/pagination';
 
 export interface ICreateOrderDTO {
   customer_id: string;
@@ -12,7 +13,10 @@ export interface IFindOrdersFilter {
 }
 
 export interface IOrdersRepository {
-  findAll(filter?: IFindOrdersFilter): Promise<Order[]>;
+  findAll(
+    filter: IFindOrdersFilter,
+    pagination: PaginationParams,
+  ): Promise<PageResult<Order>>;
   findById(id: string): Promise<Order | null>;
   /** Busca e trava o pedido até o fim da unidade de trabalho atual. */
   findByIdForUpdate(id: string): Promise<Order | null>;

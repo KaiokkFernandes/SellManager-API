@@ -1,4 +1,5 @@
 import { Customer } from '../entities/Customer';
+import { PageResult, PaginationParams } from '@shared/domain/pagination';
 
 export interface ICreateCustomerDTO {
   name: string;
@@ -6,7 +7,7 @@ export interface ICreateCustomerDTO {
 }
 
 export interface ICustomersRepository {
-  findAll(): Promise<Customer[]>;
+  findAll(pagination: PaginationParams): Promise<PageResult<Customer>>;
   findById(id: string): Promise<Customer | null>;
   findByEmail(email: string): Promise<Customer | null>;
   create(data: ICreateCustomerDTO): Promise<Customer>;

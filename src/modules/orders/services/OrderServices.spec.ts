@@ -152,7 +152,7 @@ describe('Order services', () => {
       const list = await new ListOrdersService(orders).execute({
         customer_id: customer.id,
       });
-      expect(list.map(item => item.id)).toEqual([order.id]);
+      expect(list.data.map(item => item.id)).toEqual([order.id]);
 
       const shown = await new ShowOrderService(orders).execute({
         id: order.id,

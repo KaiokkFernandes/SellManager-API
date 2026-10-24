@@ -1,6 +1,10 @@
 import { RequestHandler, Router } from 'express';
 import { Container } from '@shared/container';
-import { idParamsSchema, validate } from '@shared/http/middlewares/validate';
+import {
+  idParamsSchema,
+  paginationQuerySchema,
+  validate,
+} from '@shared/http/middlewares/validate';
 import { CreateCustomerService } from '../../../services/CreateCustomerService';
 import { DeleteCustomerService } from '../../../services/DeleteCustomerService';
 import { ListCustomersService } from '../../../services/ListCustomersService';
@@ -26,7 +30,7 @@ export function makeCustomersRoutes(
   const router = Router();
 
   router.use(authenticated);
-  router.get('/', controller.index);
+  router.get('/', validate({ query: paginationQuerySchema }), controller.index);
   router.get('/:id', validate({ params: idParamsSchema }), controller.show);
   router.post('/', validate({ body: customerBodySchema }), controller.create);
   router.put(

@@ -1,4 +1,9 @@
 import { DataSource, EntityManager, In, Repository } from 'typeorm';
+import {
+  PageResult,
+  PaginationParams,
+  toSkipTake,
+} from '@shared/domain/pagination';
 import { Order, OrderItem, OrderStatus } from '../../../domain/entities/Order';
 import {
   ICreateOrderDTO,
@@ -45,12 +50,16 @@ export class OrdersRepository implements IOrdersRepository {
     }));
   }
 
-  public async findAll(filter: IFindOrdersFilter = {}): Promise<Order[]> {
-    const rows = await this.orders.find({
+  public async findAll(
+    filter: IFindOrdersFilter,
+    pagination: PaginationParams,
+  ): Promise<PageResult<Order>> {
+    const [rows, total] = await this.orders.findAndCount({
       where: filter.customer_id ? { customer_id: filter.customer_id } : {},
-      order: { created_at: 'DESC' },
+      order: { created_at: 'DESC', id: 'ASC' },
+      ...toSkipTake(pagination),
     });
-    return this.withItems(rows);
+    return { items: await this.withItems(rows), total };
   }
 
   public async findById(id: string): Promise<Order | null> {

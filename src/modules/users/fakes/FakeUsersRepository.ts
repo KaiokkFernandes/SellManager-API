@@ -1,4 +1,9 @@
 import { randomUUID } from 'node:crypto';
+import {
+  PageResult,
+  PaginationParams,
+  slicePage,
+} from '@shared/domain/pagination';
 import { User } from '../domain/entities/User';
 import {
   ICreateUserDTO,
@@ -8,8 +13,8 @@ import {
 export class FakeUsersRepository implements IUsersRepository {
   public readonly users: User[] = [];
 
-  public findAll(): Promise<User[]> {
-    return Promise.resolve([...this.users]);
+  public findAll(pagination: PaginationParams): Promise<PageResult<User>> {
+    return Promise.resolve(slicePage([...this.users], pagination));
   }
 
   public findById(id: string): Promise<User | null> {

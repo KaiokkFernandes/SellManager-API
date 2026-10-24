@@ -1,4 +1,5 @@
 import { User } from '../entities/User';
+import { PageResult, PaginationParams } from '@shared/domain/pagination';
 
 export interface ICreateUserDTO {
   name: string;
@@ -7,7 +8,7 @@ export interface ICreateUserDTO {
 }
 
 export interface IUsersRepository {
-  findAll(): Promise<User[]>;
+  findAll(pagination: PaginationParams): Promise<PageResult<User>>;
   findById(id: string): Promise<User | null>;
   findByEmail(email: string): Promise<User | null>;
   create(data: ICreateUserDTO): Promise<User>;
