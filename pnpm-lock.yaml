@@ -167,7 +167,9 @@ overrides:
 
 importers:
 
-  .:
+  .: {}
+
+  apps/api:
     dependencies:
       '@asteasolutions/zod-to-openapi':
         specifier: ^9.1.0

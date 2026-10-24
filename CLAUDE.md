@@ -30,12 +30,12 @@
 - Banco e e-mail locais: `docker compose up -d postgres postgres-test mailpit`
 - `pnpm dev`, `pnpm build`, `pnpm typecheck`, `pnpm lint`, `pnpm format:check`
 - `pnpm test:unit` (sem banco) e `pnpm test:integration` (usa o postgres-test, porta 5434)
-- Migrations: `pnpm migration:run` / `pnpm migration:revert`; novas migrations
-  precisam ser registradas em `src/shared/infra/typeorm/data-source.ts`
+- Migrations: `pnpm --filter api migration:run` / `migration:revert`; novas migrations
+  precisam ser registradas em `apps/api/src/shared/infra/typeorm/data-source.ts`
 
 ## Estrutura
 
-- Cada módulo (`src/modules/<m>`) tem `domain/` (interfaces puras), `services/`
+- Cada módulo (`apps/api/src/modules/<m>`) tem `domain/` (interfaces puras), `services/`
   (casos de uso), `fakes/` (repositórios em memória) e `infra/{typeorm,http}`.
-- Implementações concretas só são instanciadas em `src/shared/container`.
+- Implementações concretas só são instanciadas em `apps/api/src/shared/container`.
 - Entidades TypeORM via `EntitySchema` (sem decorators).

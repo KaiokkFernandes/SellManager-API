@@ -1,7 +1,15 @@
 import { existsSync } from 'node:fs';
+import path from 'node:path';
 import { z } from 'zod';
 
-const envFile = process.env.NODE_ENV === 'test' ? '.env.test' : '.env';
+// Relativo à pasta do app (apps/api), não ao cwd: funciona rodando pela raiz
+// do monorepo, pelo Turborepo ou de dentro de apps/api (src/ e dist/).
+const envFile = path.resolve(
+  __dirname,
+  '..',
+  '..',
+  process.env.NODE_ENV === 'test' ? '.env.test' : '.env',
+);
 
 // Variáveis já definidas no ambiente (CI, Docker) têm precedência sobre o arquivo.
 if (existsSync(envFile)) {
