@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { AuthenticateUserService } from '../../../services/AuthenticateUserService';
-import { SessionBody } from '../schemas';
+import { SessionBody } from '@sellmanager/shared';
 import { toUserResponse } from '../UserMapper';
 
 export class SessionsController {

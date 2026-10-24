@@ -8,7 +8,7 @@ import {
   CreateOrderBody,
   ListOrdersQuery,
   UpdateOrderStatusBody,
-} from '../schemas';
+} from '@sellmanager/shared';
 
 interface OrdersServices {
   list: ListOrdersService;

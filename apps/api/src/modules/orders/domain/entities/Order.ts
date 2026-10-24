@@ -1,6 +1,8 @@
-export const ORDER_STATUSES = ['pending', 'completed', 'canceled'] as const;
+import type { OrderStatus } from '@sellmanager/shared';
 
-export type OrderStatus = (typeof ORDER_STATUSES)[number];
+// Fonte única dos status: @sellmanager/shared (usado também pelo front-end).
+export { ORDER_STATUSES } from '@sellmanager/shared';
+export type { OrderStatus };
 
 export interface OrderItem {
   id: string;

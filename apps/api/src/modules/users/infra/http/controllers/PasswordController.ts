@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { ResetPasswordService } from '../../../services/ResetPasswordService';
 import { SendForgotPasswordEmailService } from '../../../services/SendForgotPasswordEmailService';
-import { ForgotPasswordBody, ResetPasswordBody } from '../schemas';
+import { ForgotPasswordBody, ResetPasswordBody } from '@sellmanager/shared';
 
 export class PasswordController {
   constructor(

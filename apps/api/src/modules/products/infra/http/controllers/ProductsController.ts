@@ -1,14 +1,12 @@
 import { Request, Response } from 'express';
-import {
-  PaginationQuery,
-  validatedQuery,
-} from '@shared/http/middlewares/validate';
+import { validatedQuery } from '@shared/http/middlewares/validate';
+import { PaginationQuery } from '@sellmanager/shared';
 import { CreateProductService } from '../../../services/CreateProductService';
 import { DeleteProductService } from '../../../services/DeleteProductService';
 import { ListProductsService } from '../../../services/ListProductsService';
 import { ShowProductService } from '../../../services/ShowProductService';
 import { UpdateProductService } from '../../../services/UpdateProductService';
-import { ProductBody } from '../schemas';
+import { ProductBody } from '@sellmanager/shared';
 
 interface ProductsServices {
   list: ListProductsService;

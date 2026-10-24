@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { ShowProfileService } from '../../../services/ShowProfileService';
 import { UpdateProfileService } from '../../../services/UpdateProfileService';
-import { UpdateProfileBody } from '../schemas';
+import { UpdateProfileBody } from '@sellmanager/shared';
 import { toUserResponse } from '../UserMapper';
 
 export class ProfileController {

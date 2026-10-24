@@ -1,0 +1,10 @@
+{
+  "extends": "@sellmanager/config/tsconfig.base.json",
+  "compilerOptions": {
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "types": [],
+    "lib": ["ES2023", "DOM"]
+  },
+  "include": ["src/**/*.ts", "tsup.config.ts"]
+}

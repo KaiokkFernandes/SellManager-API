@@ -1,6 +1,7 @@
 import { RequestHandler, Router } from 'express';
 import { Container } from '@shared/container';
-import { idParamsSchema, validate } from '@shared/http/middlewares/validate';
+import { validate } from '@shared/http/middlewares/validate';
+import { idParamsSchema } from '@sellmanager/shared';
 import { CreateOrderService } from '../../../services/CreateOrderService';
 import { ListOrdersService } from '../../../services/ListOrdersService';
 import { ShowOrderService } from '../../../services/ShowOrderService';
@@ -10,7 +11,7 @@ import {
   createOrderBodySchema,
   listOrdersQuerySchema,
   updateOrderStatusBodySchema,
-} from '../schemas';
+} from '@sellmanager/shared';
 
 export function makeOrdersRoutes(
   container: Container,

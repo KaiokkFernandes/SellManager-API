@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import {
   bearerAuth,
   body,
@@ -8,36 +7,15 @@ import {
   json,
   paginated,
 } from '@shared/http/docs/helpers';
-import { ORDER_STATUSES } from '../../domain/entities/Order';
 import {
   createOrderBodySchema,
   listOrdersQuerySchema,
+  orderSchema,
   updateOrderStatusBodySchema,
-} from './schemas';
+} from '@sellmanager/shared';
 
 export function registerOrdersDocs(registry: DocsRegistry): void {
-  const OrderItem = registry.register(
-    'OrderItem',
-    z.object({
-      id: z.uuid(),
-      order_id: z.uuid(),
-      product_id: z.uuid(),
-      price: z.number().describe('Preço unitário no momento da compra'),
-      quantity: z.number().int(),
-    }),
-  );
-  const Order = registry.register(
-    'Order',
-    z.object({
-      id: z.uuid(),
-      customer_id: z.uuid(),
-      status: z.enum(ORDER_STATUSES),
-      total: z.number(),
-      items: z.array(OrderItem),
-      created_at: z.iso.datetime(),
-      updated_at: z.iso.datetime(),
-    }),
-  );
+  const Order = orderSchema;
   const tags = ['Pedidos'];
   const security = bearerAuth;
 

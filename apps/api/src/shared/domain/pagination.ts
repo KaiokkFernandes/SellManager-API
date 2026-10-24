@@ -1,3 +1,7 @@
+import type { Paginated } from '@sellmanager/shared';
+
+export type { Paginated };
+
 export interface PaginationParams {
   page: number;
   limit: number;
@@ -6,16 +10,6 @@ export interface PaginationParams {
 export interface PageResult<T> {
   items: T[];
   total: number;
-}
-
-export interface Paginated<T> {
-  data: T[];
-  meta: {
-    page: number;
-    limit: number;
-    total: number;
-    total_pages: number;
-  };
 }
 
 export const DEFAULT_PAGINATION: PaginationParams = { page: 1, limit: 20 };

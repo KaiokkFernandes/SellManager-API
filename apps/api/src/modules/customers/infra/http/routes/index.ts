@@ -1,17 +1,14 @@
 import { RequestHandler, Router } from 'express';
 import { Container } from '@shared/container';
-import {
-  idParamsSchema,
-  paginationQuerySchema,
-  validate,
-} from '@shared/http/middlewares/validate';
+import { validate } from '@shared/http/middlewares/validate';
+import { idParamsSchema, paginationQuerySchema } from '@sellmanager/shared';
 import { CreateCustomerService } from '../../../services/CreateCustomerService';
 import { DeleteCustomerService } from '../../../services/DeleteCustomerService';
 import { ListCustomersService } from '../../../services/ListCustomersService';
 import { ShowCustomerService } from '../../../services/ShowCustomerService';
 import { UpdateCustomerService } from '../../../services/UpdateCustomerService';
 import { CustomersController } from '../controllers/CustomersController';
-import { customerBodySchema } from '../schemas';
+import { customerBodySchema } from '@sellmanager/shared';
 
 export function makeCustomersRoutes(
   container: Container,

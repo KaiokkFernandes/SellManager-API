@@ -1,11 +1,9 @@
 import { Request, Response } from 'express';
-import {
-  PaginationQuery,
-  validatedQuery,
-} from '@shared/http/middlewares/validate';
+import { validatedQuery } from '@shared/http/middlewares/validate';
+import { PaginationQuery } from '@sellmanager/shared';
 import { CreateUserService } from '../../../services/CreateUserService';
 import { ListUsersService } from '../../../services/ListUsersService';
-import { CreateUserBody } from '../schemas';
+import { CreateUserBody } from '@sellmanager/shared';
 import { toUserResponse } from '../UserMapper';
 
 export class UsersController {

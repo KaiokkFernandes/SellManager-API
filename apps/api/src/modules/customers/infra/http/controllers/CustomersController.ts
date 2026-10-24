@@ -1,14 +1,12 @@
 import { Request, Response } from 'express';
-import {
-  PaginationQuery,
-  validatedQuery,
-} from '@shared/http/middlewares/validate';
+import { validatedQuery } from '@shared/http/middlewares/validate';
+import { PaginationQuery } from '@sellmanager/shared';
 import { CreateCustomerService } from '../../../services/CreateCustomerService';
 import { DeleteCustomerService } from '../../../services/DeleteCustomerService';
 import { ListCustomersService } from '../../../services/ListCustomersService';
 import { ShowCustomerService } from '../../../services/ShowCustomerService';
 import { UpdateCustomerService } from '../../../services/UpdateCustomerService';
-import { CustomerBody } from '../schemas';
+import { CustomerBody } from '@sellmanager/shared';
 
 interface CustomersServices {
   list: ListCustomersService;

@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import {
   bearerAuth,
   body,
@@ -9,21 +8,11 @@ import {
   noContent,
   paginated,
 } from '@shared/http/docs/helpers';
-import { paginationQuerySchema } from '@shared/http/middlewares/validate';
-import { productBodySchema } from './schemas';
+import { paginationQuerySchema, productSchema } from '@sellmanager/shared';
+import { productBodySchema } from '@sellmanager/shared';
 
 export function registerProductsDocs(registry: DocsRegistry): void {
-  const Product = registry.register(
-    'Product',
-    z.object({
-      id: z.uuid(),
-      name: z.string(),
-      price: z.number(),
-      quantity: z.number().int(),
-      created_at: z.iso.datetime(),
-      updated_at: z.iso.datetime(),
-    }),
-  );
+  const Product = productSchema;
   const tags = ['Produtos'];
 
   registry.registerPath({

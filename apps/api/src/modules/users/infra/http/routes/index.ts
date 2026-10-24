@@ -3,10 +3,8 @@ import multer from 'multer';
 import uploadConfig from '@config/upload';
 import { Container } from '@shared/container';
 import { authRateLimiter } from '@shared/http/middlewares/rateLimiter';
-import {
-  paginationQuerySchema,
-  validate,
-} from '@shared/http/middlewares/validate';
+import { validate } from '@shared/http/middlewares/validate';
+import { paginationQuerySchema } from '@sellmanager/shared';
 import { AuthenticateUserService } from '../../../services/AuthenticateUserService';
 import { CreateUserService } from '../../../services/CreateUserService';
 import { ListUsersService } from '../../../services/ListUsersService';
@@ -26,7 +24,7 @@ import {
   resetPasswordBodySchema,
   sessionBodySchema,
   updateProfileBodySchema,
-} from '../schemas';
+} from '@sellmanager/shared';
 
 export function makeUsersRoutes(
   container: Container,

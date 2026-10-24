@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import {
   bearerAuth,
   body,
@@ -9,20 +8,11 @@ import {
   noContent,
   paginated,
 } from '@shared/http/docs/helpers';
-import { paginationQuerySchema } from '@shared/http/middlewares/validate';
-import { customerBodySchema } from './schemas';
+import { customerSchema, paginationQuerySchema } from '@sellmanager/shared';
+import { customerBodySchema } from '@sellmanager/shared';
 
 export function registerCustomersDocs(registry: DocsRegistry): void {
-  const Customer = registry.register(
-    'Customer',
-    z.object({
-      id: z.uuid(),
-      name: z.string(),
-      email: z.email(),
-      created_at: z.iso.datetime(),
-      updated_at: z.iso.datetime(),
-    }),
-  );
+  const Customer = customerSchema;
   const tags = ['Clientes'];
   const security = bearerAuth;
 

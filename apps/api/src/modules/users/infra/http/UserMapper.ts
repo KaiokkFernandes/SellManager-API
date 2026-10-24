@@ -1,24 +1,21 @@
-import { User } from '../../domain/entities/User';
+import type { User } from '@sellmanager/shared';
+import { User as UserEntity } from '../../domain/entities/User';
 
-export interface IUserResponse {
-  id: string;
-  name: string;
-  email: string;
-  avatar: string | null;
-  avatar_url: string | null;
-  created_at: Date;
-  updated_at: Date;
-}
+export type IUserResponse = User;
 
 // Representação pública do usuário: nunca expõe o hash da senha.
-export function toUserResponse(user: User, apiUrl: string): IUserResponse {
+export function toUserResponse(
+  user: UserEntity,
+  apiUrl: string,
+): IUserResponse {
   return {
     id: user.id,
     name: user.name,
     email: user.email,
     avatar: user.avatar,
     avatar_url: user.avatar ? `${apiUrl}/files/${user.avatar}` : null,
-    created_at: user.created_at,
-    updated_at: user.updated_at,
+    // mesmo valor que o JSON.stringify de Date já produzia
+    created_at: user.created_at.toISOString(),
+    updated_at: user.updated_at.toISOString(),
   };
 }

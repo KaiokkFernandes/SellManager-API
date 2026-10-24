@@ -8,28 +8,17 @@ import {
   noContent,
   paginated,
 } from '@shared/http/docs/helpers';
-import { paginationQuerySchema } from '@shared/http/middlewares/validate';
+import { paginationQuerySchema, userSchema } from '@sellmanager/shared';
 import {
   createUserBodySchema,
   forgotPasswordBodySchema,
   resetPasswordBodySchema,
   sessionBodySchema,
   updateProfileBodySchema,
-} from './schemas';
+} from '@sellmanager/shared';
 
 export function registerUsersDocs(registry: DocsRegistry): void {
-  const User = registry.register(
-    'User',
-    z.object({
-      id: z.uuid(),
-      name: z.string(),
-      email: z.email(),
-      avatar: z.string().nullable(),
-      avatar_url: z.url().nullable(),
-      created_at: z.iso.datetime(),
-      updated_at: z.iso.datetime(),
-    }),
-  );
+  const User = userSchema;
 
   registry.registerPath({
     method: 'post',

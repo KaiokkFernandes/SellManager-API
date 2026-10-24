@@ -1,9 +1,12 @@
 import { z } from 'zod';
+import { isoDateSchema } from './common';
 
 const email = z.string().trim().toLowerCase().pipe(z.email());
 
 // bcrypt considera só os primeiros 72 bytes
 const newPassword = z.string().min(8).max(72);
+
+// ---- Entradas
 
 export const createUserBodySchema = z.object({
   name: z.string().trim().min(1),
@@ -52,3 +55,27 @@ export type SessionBody = z.infer<typeof sessionBodySchema>;
 export type ForgotPasswordBody = z.infer<typeof forgotPasswordBodySchema>;
 export type ResetPasswordBody = z.infer<typeof resetPasswordBodySchema>;
 export type UpdateProfileBody = z.infer<typeof updateProfileBodySchema>;
+
+// ---- Respostas
+
+export const userSchema = z
+  .object({
+    id: z.uuid(),
+    name: z.string(),
+    email: z.email(),
+    avatar: z.string().nullable(),
+    avatar_url: z.url().nullable(),
+    created_at: isoDateSchema,
+    updated_at: isoDateSchema,
+  })
+  .meta({ id: 'User' });
+
+export const sessionSchema = z
+  .object({
+    user: userSchema,
+    token: z.string(),
+  })
+  .meta({ id: 'Session' });
+
+export type User = z.infer<typeof userSchema>;
+export type Session = z.infer<typeof sessionSchema>;

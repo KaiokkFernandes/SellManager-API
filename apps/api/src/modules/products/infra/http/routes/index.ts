@@ -1,17 +1,14 @@
 import { RequestHandler, Router } from 'express';
 import { Container } from '@shared/container';
-import {
-  idParamsSchema,
-  paginationQuerySchema,
-  validate,
-} from '@shared/http/middlewares/validate';
+import { validate } from '@shared/http/middlewares/validate';
+import { idParamsSchema, paginationQuerySchema } from '@sellmanager/shared';
 import { CreateProductService } from '../../../services/CreateProductService';
 import { DeleteProductService } from '../../../services/DeleteProductService';
 import { ListProductsService } from '../../../services/ListProductsService';
 import { ShowProductService } from '../../../services/ShowProductService';
 import { UpdateProductService } from '../../../services/UpdateProductService';
 import { ProductsController } from '../controllers/ProductsController';
-import { productBodySchema } from '../schemas';
+import { productBodySchema } from '@sellmanager/shared';
 
 export function makeProductsRoutes(
   container: Container,
