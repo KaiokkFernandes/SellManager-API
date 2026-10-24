@@ -34,5 +34,13 @@ services:
       timeout: 5s
       retries: 10
 
+  # Caixa de e-mail local para desenvolvimento (UI em http://localhost:8025)
+  mailpit:
+    image: axllent/mailpit:v1.27
+    container_name: sellmanager-mailpit
+    ports:
+      - '1025:1025'
+      - '8025:8025'
+
 volumes:
   postgres-data:

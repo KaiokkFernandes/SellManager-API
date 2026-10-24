@@ -9,11 +9,34 @@ import { BcryptHashProvider } from '@shared/providers/HashProvider/BcryptHashPro
 import { IHashProvider } from '@shared/providers/HashProvider/IHashProvider';
 import { EtherealMailProvider } from '@shared/providers/MailProvider/EtherealMailProvider';
 import { IMailProvider } from '@shared/providers/MailProvider/IMailProvider';
+import { SmtpMailProvider } from '@shared/providers/MailProvider/SmtpMailProvider';
 import { HandlebarsMailTemplateProvider } from '@shared/providers/MailTemplateProvider/HandlebarsMailTemplateProvider';
 import { DiskStorageProvider } from '@shared/providers/StorageProvider/DiskStorageProvider';
 import { IStorageProvider } from '@shared/providers/StorageProvider/IStorageProvider';
 import { ITokenProvider } from '@shared/providers/TokenProvider/ITokenProvider';
 import { JoseTokenProvider } from '@shared/providers/TokenProvider/JoseTokenProvider';
+
+function makeMailProvider(): IMailProvider {
+  const templateProvider = new HandlebarsMailTemplateProvider();
+  const from = { name: env.MAIL_FROM_NAME, email: env.MAIL_FROM_EMAIL };
+
+  if (env.MAIL_DRIVER === 'smtp') {
+    return new SmtpMailProvider(
+      templateProvider,
+      {
+        host: env.SMTP_HOST,
+        port: env.SMTP_PORT,
+        secure: env.SMTP_SECURE,
+        auth: env.SMTP_USER
+          ? { user: env.SMTP_USER, pass: env.SMTP_PASS }
+          : undefined,
+      },
+      from,
+    );
+  }
+
+  return new EtherealMailProvider(templateProvider, from);
+}
 
 export interface Providers {
   hash: IHashProvider;
@@ -33,7 +56,7 @@ export function makeContainer(
   const providers: Providers = {
     hash: new BcryptHashProvider(env.BCRYPT_SALT_ROUNDS),
     token: new JoseTokenProvider(env.JWT_SECRET, env.JWT_EXPIRES_IN),
-    mail: new EtherealMailProvider(new HandlebarsMailTemplateProvider()),
+    mail: makeMailProvider(),
     storage: new DiskStorageProvider(
       uploadConfig.tmpFolder,
       uploadConfig.uploadsFolder,

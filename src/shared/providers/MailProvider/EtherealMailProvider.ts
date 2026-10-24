@@ -1,18 +1,16 @@
 import nodemailer, { Transporter } from 'nodemailer';
 import { logger } from '@shared/logger';
 import { IMailTemplateProvider } from '../MailTemplateProvider/IMailTemplateProvider';
-import { IMailProvider, ISendMailDTO } from './IMailProvider';
-
-const defaultFrom = {
-  name: 'Equipe SellManager',
-  email: 'equipe@sellmanager.dev',
-};
+import { IMailContact, IMailProvider, ISendMailDTO } from './IMailProvider';
 
 /** Provider de desenvolvimento: envia para uma caixa de teste do Ethereal. */
 export class EtherealMailProvider implements IMailProvider {
   private transporter?: Promise<Transporter>;
 
-  constructor(private readonly mailTemplateProvider: IMailTemplateProvider) {}
+  constructor(
+    private readonly mailTemplateProvider: IMailTemplateProvider,
+    private readonly defaultFrom: IMailContact,
+  ) {}
 
   // A conta de teste é criada uma vez e reaproveitada (antes era uma por e-mail).
   private getTransporter(): Promise<Transporter> {
@@ -34,7 +32,7 @@ export class EtherealMailProvider implements IMailProvider {
     templateData,
   }: ISendMailDTO): Promise<void> {
     const transporter = await this.getTransporter();
-    const sender = from ?? defaultFrom;
+    const sender = from ?? this.defaultFrom;
 
     const message = (await transporter.sendMail({
       from: { name: sender.name, address: sender.email },
