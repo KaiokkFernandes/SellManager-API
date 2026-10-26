@@ -54,7 +54,9 @@ export class UsersController {
     reply,
   }) => {
     if (!request.file) {
-      throw new AppError('Avatar file is required');
+      throw new AppError('Avatar file is required', 400, {
+        code: 'INVALID_UPLOAD',
+      });
     }
 
     const user = await this.services.updateAvatar.execute({

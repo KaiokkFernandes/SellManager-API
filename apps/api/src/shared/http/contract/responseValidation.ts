@@ -1,4 +1,5 @@
 import type { ZodType } from 'zod';
+import { env } from '@config/env';
 import { logger } from '@shared/logger';
 
 /**
@@ -7,6 +8,10 @@ import { logger } from '@shared/logger';
  * off (produção): não valida nada.
  */
 export type ResponseValidationMode = 'strict' | 'warn' | 'off';
+
+export const responseValidationMode: ResponseValidationMode = (
+  { test: 'strict', development: 'warn', production: 'off' } as const
+)[env.NODE_ENV];
 
 export class ContractViolationError extends Error {
   constructor(

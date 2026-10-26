@@ -34,7 +34,8 @@ describe('validate', () => {
     const error = next.mock.calls[0]?.[0] as AppError;
     expect(error).toBeInstanceOf(AppError);
     expect(error.statusCode).toBe(400);
-    expect(error.details).toEqual(
+    expect(error.code).toBe('VALIDATION_FAILED');
+    expect(error.issues).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ segment: 'params', path: 'id' }),
         expect.objectContaining({ segment: 'body', path: 'name' }),

@@ -27,7 +27,7 @@ export interface RouteConfig {
   request?: RouteRequest;
   /** Respostas de sucesso; `null` = sem corpo (204). */
   responses: Partial<Record<SuccessStatus, z.ZodType | null>>;
-  /** Erros de domínio (404, 409…). 400, 401, 429 e 500 são deduzidos. */
+  /** Erros de domínio (404, 409…). 400, 401, 413, 429 e 500 são deduzidos. */
   errors?: readonly ErrorStatus[];
 }
 
@@ -38,8 +38,8 @@ export type RouteDefinition<C extends RouteConfig = RouteConfig> = C & {
 
 /**
  * Declara uma rota do contrato. Os erros automáticos saem da própria
- * configuração: 400 se há entrada, 401 se exige auth, 429 se tem rate limit
- * e 500 sempre.
+ * configuração: 400 se há entrada, 413 se há corpo JSON, 401 se exige auth,
+ * 429 se tem rate limit e 500 sempre.
  */
 export function defineRoute<const C extends RouteConfig>(
   config: C,
@@ -48,6 +48,7 @@ export function defineRoute<const C extends RouteConfig>(
   const { params, query, body } = config.request ?? {};
 
   if (params || query || body) errors.add(400);
+  if (body && config.request?.bodyType !== 'multipart') errors.add(413);
   if (config.auth) errors.add(401);
   if (config.rateLimited) errors.add(429);
   errors.add(500);

@@ -29,25 +29,60 @@ export function paginatedSchema<T extends z.ZodType>(item: T) {
   return z.object({ data: z.array(item), meta: paginationMetaSchema });
 }
 
-export const validationIssueSchema = z.object({
-  segment: z.enum(['params', 'query', 'body']),
-  path: z.string(),
-  message: z.string(),
-});
+export const validationIssueSchema = z
+  .object({
+    segment: z.enum(['params', 'query', 'body']),
+    path: z.string(),
+    message: z.string(),
+  })
+  .meta({ id: 'ValidationIssue' });
+
+/**
+ * Códigos estáveis de erro: o front decide pelo `code`, nunca pelo texto de
+ * `message` (que é para humanos e pode mudar).
+ */
+export const API_ERROR_CODES = [
+  'VALIDATION_FAILED',
+  'BAD_REQUEST',
+  'INVALID_UPLOAD',
+  'UNAUTHORIZED',
+  'NOT_FOUND',
+  'CONFLICT',
+  'INSUFFICIENT_STOCK',
+  'RESOURCE_IN_USE',
+  'PAYLOAD_TOO_LARGE',
+  'RATE_LIMITED',
+  'INTERNAL_ERROR',
+] as const;
+
+export const apiErrorCodeSchema = z.enum(API_ERROR_CODES);
 
 /** Formato de todas as respostas de erro da API. */
 export const apiErrorSchema = z
   .object({
     status: z.literal('error'),
+    code: apiErrorCodeSchema,
     message: z.string(),
+    /** Presente em VALIDATION_FAILED: um item por campo inválido. */
+    issues: z.array(validationIssueSchema).optional(),
+    /** Dados extras do erro de domínio (ex.: estoque disponível). */
     details: z.unknown().optional(),
   })
-  .meta({ id: 'ApiError' });
+  .meta({
+    id: 'ApiError',
+    example: {
+      status: 'error',
+      code: 'VALIDATION_FAILED',
+      message: 'Validation failed',
+      issues: [{ segment: 'body', path: 'email', message: 'Invalid email address' }],
+    },
+  });
 
 export type IdParams = z.infer<typeof idParamsSchema>;
 export type PaginationQuery = z.infer<typeof paginationQuerySchema>;
 export type PaginationMeta = z.infer<typeof paginationMetaSchema>;
 export type ValidationIssue = z.infer<typeof validationIssueSchema>;
+export type ApiErrorCode = z.infer<typeof apiErrorCodeSchema>;
 export type ApiError = z.infer<typeof apiErrorSchema>;
 
 export interface Paginated<T> {

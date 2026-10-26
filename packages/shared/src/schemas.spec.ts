@@ -81,10 +81,9 @@ describe('contrato de rotas', () => {
     const { routes } = await import('./index');
 
     expect(routes.products.show.errorStatuses).toEqual([400, 404, 500]);
-    expect(routes.orders.create.errorStatuses).toEqual([
-      400, 401, 404, 409, 500,
-    ]);
-    expect(routes.sessions.create.errorStatuses).toEqual([400, 401, 429, 500]);
+    expect(routes.orders.create.errorStatuses).toEqual([400, 401, 404, 409, 413, 500]);
+    expect(routes.sessions.create.errorStatuses).toEqual([400, 401, 413, 429, 500]);
+    expect(routes.users.updateAvatar.errorStatuses).toEqual([400, 401, 500]);
     expect(routes.profile.show.errorStatuses).toEqual([401, 404, 500]);
   });
 });

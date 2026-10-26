@@ -43,7 +43,12 @@ export function validate(request: RouteRequest = {}) {
     }
 
     if (issues.length > 0) {
-      return next(new AppError('Validation failed', 400, issues));
+      return next(
+        new AppError('Validation failed', 400, {
+          code: 'VALIDATION_FAILED',
+          issues,
+        }),
+      );
     }
 
     next();

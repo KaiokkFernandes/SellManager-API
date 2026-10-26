@@ -79,13 +79,72 @@
               "error"
             ]
           },
+          "code": {
+            "type": "string",
+            "enum": [
+              "VALIDATION_FAILED",
+              "BAD_REQUEST",
+              "INVALID_UPLOAD",
+              "UNAUTHORIZED",
+              "NOT_FOUND",
+              "CONFLICT",
+              "INSUFFICIENT_STOCK",
+              "RESOURCE_IN_USE",
+              "PAYLOAD_TOO_LARGE",
+              "RATE_LIMITED",
+              "INTERNAL_ERROR"
+            ]
+          },
           "message": {
             "type": "string"
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValidationIssue"
+            }
           },
           "details": {}
         },
         "required": [
           "status",
+          "code",
+          "message"
+        ],
+        "example": {
+          "status": "error",
+          "code": "VALIDATION_FAILED",
+          "message": "Validation failed",
+          "issues": [
+            {
+              "segment": "body",
+              "path": "email",
+              "message": "Invalid email address"
+            }
+          ]
+        }
+      },
+      "ValidationIssue": {
+        "type": "object",
+        "properties": {
+          "segment": {
+            "type": "string",
+            "enum": [
+              "params",
+              "query",
+              "body"
+            ]
+          },
+          "path": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "segment",
+          "path",
           "message"
         ]
       },
@@ -324,6 +383,16 @@
           },
           "409": {
             "description": "Conflito com o estado atual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload grande demais",
             "content": {
               "application/json": {
                 "schema": {
@@ -595,6 +664,16 @@
               }
             }
           },
+          "413": {
+            "description": "Payload grande demais",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
           "429": {
             "description": "Muitas requisições",
             "content": {
@@ -769,6 +848,16 @@
               }
             }
           },
+          "413": {
+            "description": "Payload grande demais",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Erro interno",
             "content": {
@@ -815,6 +904,16 @@
           },
           "400": {
             "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload grande demais",
             "content": {
               "application/json": {
                 "schema": {
@@ -891,6 +990,16 @@
           },
           "400": {
             "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload grande demais",
             "content": {
               "application/json": {
                 "schema": {
@@ -1102,6 +1211,16 @@
               }
             }
           },
+          "413": {
+            "description": "Payload grande demais",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Erro interno",
             "content": {
@@ -1271,6 +1390,16 @@
           },
           "409": {
             "description": "Conflito com o estado atual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload grande demais",
             "content": {
               "application/json": {
                 "schema": {
@@ -1559,6 +1688,16 @@
               }
             }
           },
+          "413": {
+            "description": "Payload grande demais",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Erro interno",
             "content": {
@@ -1736,6 +1875,16 @@
           },
           "409": {
             "description": "Conflito com o estado atual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload grande demais",
             "content": {
               "application/json": {
                 "schema": {
@@ -2063,6 +2212,16 @@
               }
             }
           },
+          "413": {
+            "description": "Payload grande demais",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Erro interno",
             "content": {
@@ -2242,6 +2401,16 @@
           },
           "409": {
             "description": "Conflito com o estado atual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload grande demais",
             "content": {
               "application/json": {
                 "schema": {

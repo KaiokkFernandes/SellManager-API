@@ -83,11 +83,15 @@ describe('/orders', () => {
     const cable = await createProduct('Cabo', 1, 10);
     const mouse = await createProduct('Mouse', 1, 1);
 
-    await order([
+    const response = await order([
       { id: cable.id, quantity: 1 },
       { id: mouse.id, quantity: 2 },
     ]).expect(409);
 
+    expect(response.body).toMatchObject({
+      code: 'INSUFFICIENT_STOCK',
+      details: [{ product_id: mouse.id, available: 1, requested: 2 }],
+    });
     expect(await stockOf(cable)).toBe(10);
     expect(await stockOf(mouse)).toBe(1);
     const list = await request(ctx.app)
@@ -144,17 +148,21 @@ describe('/orders', () => {
       .expect(404);
 
     const response = await order([{ id: missing, quantity: 1 }]).expect(404);
-    expect(response.body.details).toEqual({ product_ids: [missing] });
+    expect(response.body).toMatchObject({
+      code: 'NOT_FOUND',
+      details: { product_ids: [missing] },
+    });
   });
 
   it('não permite apagar produto ou cliente que tem pedidos', async () => {
     const cable = await createProduct('Cabo', 1, 10);
     await order([{ id: cable.id, quantity: 1 }]).expect(201);
 
-    await request(ctx.app)
+    const response = await request(ctx.app)
       .delete(`/products/${cable.id}`)
       .set('Authorization', auth)
       .expect(409);
+    expect(response.body.code).toBe('RESOURCE_IN_USE');
     await request(ctx.app)
       .delete(`/customers/${customerId}`)
       .set('Authorization', auth)

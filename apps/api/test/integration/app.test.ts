@@ -14,6 +14,7 @@ describe('Aplicação', () => {
     const response = await request(ctx.app).get('/nao-existe').expect(404);
     expect(response.body).toEqual({
       status: 'error',
+      code: 'NOT_FOUND',
       message: 'Route GET /nao-existe not found',
     });
   });

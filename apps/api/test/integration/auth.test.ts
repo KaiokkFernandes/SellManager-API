@@ -49,7 +49,8 @@ describe('Usuários, sessão, perfil e senha', () => {
       .post('/users')
       .send({ name: '', email: 'nao-e-email', password: '123' })
       .expect(400);
-    expect(invalid.body.details).toHaveLength(3);
+    expect(invalid.body.code).toBe('VALIDATION_FAILED');
+    expect(invalid.body.issues).toHaveLength(3);
 
     await request(ctx.app).post('/users').send(defaultUser).expect(201);
     await request(ctx.app).post('/users').send(defaultUser).expect(409);

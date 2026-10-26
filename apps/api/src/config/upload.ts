@@ -34,7 +34,9 @@ export default {
     ) => {
       if (!(file.mimetype in allowedImageTypes)) {
         return callback(
-          new AppError('Invalid file type. Allowed: jpeg, png, webp', 400),
+          new AppError('Invalid file type. Allowed: jpeg, png, webp', 400, {
+            code: 'INVALID_UPLOAD',
+          }),
         );
       }
       callback(null, true);

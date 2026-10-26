@@ -10,6 +10,7 @@ export const authRateLimiter = rateLimit({
   skip: () => env.NODE_ENV === 'test',
   message: {
     status: 'error',
+    code: 'RATE_LIMITED',
     message: 'Too many requests, please try again later.',
   },
 });
