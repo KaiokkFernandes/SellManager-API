@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { ApiClientError, unwrap, type Product } from '@sellmanager/api-client';
 import { ORDER_STATUSES } from '@sellmanager/shared';
-import { api, tokenStore } from '@/lib/api';
+import { api } from '@/lib/api';
+import { tokenStorage } from '@/lib/tokenStorage';
 
 const brl = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -30,7 +31,7 @@ export function App() {
       const session = await unwrap(
         api.POST('/sessions', { body: { email, password } }),
       );
-      tokenStore.set(session.token);
+      tokenStorage.set(session.token);
       setUserName(session.user.name);
     } catch (caught) {
       setError(describeError(caught));

@@ -1,18 +1,23 @@
 import { createApiClient } from '@sellmanager/api-client';
-import { env } from '@/app/env';
+import { env } from './env';
+import { tokenStorage } from './tokenStorage';
 
-const TOKEN_KEY = 'sellmanager:token';
+type UnauthorizedHandler = () => void;
+let unauthorizedHandler: UnauthorizedHandler | undefined;
 
-export const tokenStore = {
-  get: () => localStorage.getItem(TOKEN_KEY),
-  set: (token: string) => localStorage.setItem(TOKEN_KEY, token),
-  clear: () => localStorage.removeItem(TOKEN_KEY),
-};
+/**
+ * O AuthProvider registra aqui o que fazer em um 401 de requisição autenticada
+ * (logout + ida ao login). Fica fora do client para ele ser criado uma única vez.
+ */
+export function setUnauthorizedHandler(
+  handler: UnauthorizedHandler | undefined,
+): void {
+  unauthorizedHandler = handler;
+}
 
 /** Client único do app, tipado pelo openapi.json da API. */
 export const api = createApiClient({
   baseUrl: env.VITE_API_URL,
-  getToken: tokenStore.get,
-  // token expirado/inválido: o app decide; aqui só esquecemos o token
-  onUnauthorized: tokenStore.clear,
+  getToken: tokenStorage.get,
+  onUnauthorized: () => unauthorizedHandler?.(),
 });
