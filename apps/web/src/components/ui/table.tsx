@@ -4,7 +4,10 @@ import { cn } from '@/lib/utils';
 export function Table({ className, ...props }: ComponentProps<'table'>) {
   return (
     <div className="relative w-full overflow-x-auto">
-      <table className={cn('w-full caption-bottom text-sm', className)} {...props} />
+      <table
+        className={cn('w-full caption-bottom text-sm', className)}
+        {...props}
+      />
     </div>
   );
 }
@@ -14,18 +17,28 @@ export function TableHeader({ className, ...props }: ComponentProps<'thead'>) {
 }
 
 export function TableBody({ className, ...props }: ComponentProps<'tbody'>) {
-  return <tbody className={cn('[&_tr:last-child]:border-0', className)} {...props} />;
+  return (
+    <tbody className={cn('[&_tr:last-child]:border-0', className)} {...props} />
+  );
 }
 
 export function TableRow({ className, ...props }: ComponentProps<'tr'>) {
-  return <tr className={cn('border-b transition-colors hover:bg-muted/50', className)} {...props} />;
+  return (
+    <tr
+      className={cn('border-b transition-colors hover:bg-muted/50', className)}
+      {...props}
+    />
+  );
 }
 
 export function TableHead({ className, ...props }: ComponentProps<'th'>) {
   return (
     <th
       scope="col"
-      className={cn('h-10 px-3 text-left align-middle font-medium whitespace-nowrap text-muted-foreground', className)}
+      className={cn(
+        'h-10 px-3 text-left align-middle font-medium whitespace-nowrap text-muted-foreground',
+        className,
+      )}
       {...props}
     />
   );

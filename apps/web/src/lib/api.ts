@@ -18,6 +18,8 @@ export function setUnauthorizedHandler(
 /** Client único do app, tipado pelo openapi.json da API. */
 export const api = createApiClient({
   baseUrl: env.VITE_API_URL,
+  // resolve o fetch a cada chamada (e não na criação): testes com MSW o substituem depois
+  fetch: (input, init) => globalThis.fetch(input, init),
   getToken: tokenStorage.get,
   onUnauthorized: () => unauthorizedHandler?.(),
 });

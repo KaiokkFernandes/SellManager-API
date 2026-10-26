@@ -98,7 +98,10 @@ export function DataTable<T>({
       </Table>
 
       {!isLoading && hasError ? (
-        <div role="alert" className="flex flex-col items-center gap-3 p-8 text-center">
+        <div
+          role="alert"
+          className="flex flex-col items-center gap-3 p-8 text-center"
+        >
           <p className="text-sm text-destructive">{getErrorMessage(error)}</p>
           {onRetry ? (
             <Button variant="outline" size="sm" onClick={onRetry}>
@@ -109,13 +112,17 @@ export function DataTable<T>({
       ) : null}
 
       {!isLoading && !hasError && data?.length === 0 ? (
-        <p className="p-8 text-center text-sm text-muted-foreground">{emptyMessage}</p>
+        <p className="p-8 text-center text-sm text-muted-foreground">
+          {emptyMessage}
+        </p>
       ) : null}
 
       {meta && !hasError && meta.total > 0 ? (
         <nav
           aria-label="Paginação"
-          className={cn('flex items-center justify-between gap-2 border-t p-3 text-sm')}
+          className={cn(
+            'flex items-center justify-between gap-2 border-t p-3 text-sm',
+          )}
         >
           <p className="text-muted-foreground" aria-live="polite">
             Página {meta.page} de {meta.total_pages} · {meta.total}{' '}

@@ -11,7 +11,12 @@
  */
 import { unwrap } from '@sellmanager/api-client';
 import type { ProductBody } from '@sellmanager/shared';
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { notify } from '@/lib/notify';
 import { queryKeys } from '@/lib/queryKeys';
@@ -34,7 +39,8 @@ export function useProductsList(params: ProductsListParams) {
 export function useProduct(id: string) {
   return useQuery({
     queryKey: queryKeys.products.detail(id),
-    queryFn: () => unwrap(api.GET('/products/{id}', { params: { path: { id } } })),
+    queryFn: () =>
+      unwrap(api.GET('/products/{id}', { params: { path: { id } } })),
   });
 }
 

@@ -36,7 +36,9 @@ export function ConfirmDialog({
         <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/50" />
         <AlertDialog.Content className="fixed top-1/2 left-1/2 z-50 grid w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border bg-card p-6 shadow-lg">
           <div className="grid gap-2">
-            <AlertDialog.Title className="text-lg font-semibold">{title}</AlertDialog.Title>
+            <AlertDialog.Title className="text-lg font-semibold">
+              {title}
+            </AlertDialog.Title>
             <AlertDialog.Description className="text-sm text-muted-foreground">
               {description}
             </AlertDialog.Description>
@@ -55,9 +57,15 @@ export function ConfirmDialog({
                 event.preventDefault();
                 onConfirm();
               }}
-              className={cn(buttonVariants({ variant: destructive ? 'destructive' : 'default' }))}
+              className={cn(
+                buttonVariants({
+                  variant: destructive ? 'destructive' : 'default',
+                }),
+              )}
             >
-              {isPending ? <Loader2 className="animate-spin" aria-hidden="true" /> : null}
+              {isPending ? (
+                <Loader2 className="animate-spin" aria-hidden="true" />
+              ) : null}
               {confirmLabel}
             </AlertDialog.Action>
           </div>
