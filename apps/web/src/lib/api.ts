@@ -1,4 +1,5 @@
 import { createApiClient } from '@sellmanager/api-client';
+import { env } from '@/app/env';
 
 const TOKEN_KEY = 'sellmanager:token';
 
@@ -10,7 +11,7 @@ export const tokenStore = {
 
 /** Client único do app, tipado pelo openapi.json da API. */
 export const api = createApiClient({
-  baseUrl: import.meta.env.VITE_API_URL,
+  baseUrl: env.VITE_API_URL,
   getToken: tokenStore.get,
   // token expirado/inválido: o app decide; aqui só esquecemos o token
   onUnauthorized: tokenStore.clear,

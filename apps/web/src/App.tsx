@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { ApiClientError, unwrap, type Product } from '@sellmanager/api-client';
 import { ORDER_STATUSES } from '@sellmanager/shared';
-import { api, tokenStore } from './api';
+import { api, tokenStore } from '@/lib/api';
 
 const brl = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
