@@ -63,7 +63,6 @@ export function LoginPage() {
               label="E-mail"
               type="email"
               autoComplete="email"
-              autoFocus
             />
             <TextField
               control={form.control}
