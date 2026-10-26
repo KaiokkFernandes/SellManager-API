@@ -133,7 +133,7 @@ variables are listed with comments in [`.env.example`](.env.example).
 | `APP_WEB_URL`                                                         | `http://localhost:3000`                           | Front-end URL used in the recovery link           |
 | `DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASSWORD` / `DB_NAME`         | Docker values                                     | PostgreSQL connection                             |
 | `JWT_SECRET`                                                          | —                                                 | **Required**, at least 32 characters              |
-| `JWT_EXPIRES_IN`                                                      | `1d`                                              |                                                   |
+| `JWT_EXPIRES_IN`                                                      | `2h`                                              |                                                   |
 | `BCRYPT_SALT_ROUNDS`                                                  | `12`                                              | 10–15                                             |
 | `CORS_ORIGIN`                                                         | `http://localhost:3000`                           | Comma-separated; `*` allows any origin            |
 | `TRUST_PROXY`                                                         | `0`                                               | Number of reverse proxies in front                |
