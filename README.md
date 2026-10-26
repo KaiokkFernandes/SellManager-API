@@ -15,7 +15,8 @@ both the API and the front-end import.
 │   ├── api/            @sellmanager/api     Express 5 + TypeORM + PostgreSQL REST API
 │   └── web/            @sellmanager/web     Vite + React front-end (skeleton only, no screens yet)
 ├── packages/
-│   ├── shared/         @sellmanager/shared  zod schemas, response DTOs and types (no back-end deps)
+│   ├── shared/         @sellmanager/shared      the API contract: zod schemas, DTOs and the route registry
+│   ├── api-client/     @sellmanager/api-client  typed client generated from openapi.json
 │   └── config/         @sellmanager/config  shared tsconfig, ESLint and Prettier configs
 ├── docker-compose.yml  PostgreSQL (dev + test) and Mailpit
 ├── turbo.json          task pipeline (build, dev, lint, typecheck, tests)
@@ -23,14 +24,54 @@ both the API and the front-end import.
 └── package.json        private root: only scripts and tooling
 ```
 
-| Package               | What it is                                                                  | Docs                                                   |
-| --------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------ |
-| `@sellmanager/api`    | Users, products, customers and orders; JWT auth, OpenAPI at `/docs`         | [apps/api/README.md](apps/api/README.md)               |
-| `@sellmanager/web`    | Front-end placeholder that proves the integration with `shared`             | [apps/web/README.md](apps/web/README.md)               |
-| `@sellmanager/shared` | Request schemas, response DTOs (`User`, `Product`, `Order`…), enums, errors | [packages/shared/README.md](packages/shared/README.md) |
-| `@sellmanager/config` | `tsconfig.*.json`, `createConfig()` for ESLint, Prettier config             | —                                                      |
+| Package                   | What it is                                                                                   | Docs                                                           |
+| ------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `@sellmanager/api`        | Users, products, customers and orders; JWT auth, OpenAPI at `/docs`                          | [apps/api/README.md](apps/api/README.md)                       |
+| `@sellmanager/web`        | Front-end placeholder that proves the integration with `shared`                              | [apps/web/README.md](apps/web/README.md)                       |
+| `@sellmanager/shared`     | The contract: request schemas, response DTOs, error format and the registry of every route   | [packages/shared/README.md](packages/shared/README.md)         |
+| `@sellmanager/api-client` | `openapi-fetch` client typed from `apps/api/openapi.json`: JWT, 401 callback, errors, upload | [packages/api-client/README.md](packages/api-client/README.md) |
+| `@sellmanager/config`     | `tsconfig.*.json`, `createConfig()` for ESLint, Prettier config                              | —                                                              |
 
-Dependency graph: `config` ← `shared` ← `api`, `web`. `api` and `web` never import each other.
+## The API contract
+
+The front-end and the back-end can't drift apart, because both follow one contract:
+
+```
+packages/shared  (zod schemas + route registry)
+      │  build
+      ▼
+apps/api         mountRoute: routing, validation and typed replies from the registry
+      │  openapi:generate
+      ▼
+apps/api/openapi.json   (committed; served at /docs)
+      │  generate (openapi-typescript)
+      ▼
+packages/api-client     (typed openapi-fetch client)
+      │
+      ▼
+apps/web
+```
+
+Turborepo runs this chain in order and caches each step. Here is what fails when someone
+changes the contract and forgets something:
+
+- **TypeScript:** if a response field is renamed in `shared`, the API (`reply`/mappers), the
+  api-client and the web all fail to compile.
+- **Tests:** in the test environment every API response is checked against its schema, so a
+  mismatch makes the request return 500.
+- **CI:** `pnpm lint` runs `openapi:check`, and after the build CI runs
+  `git diff --exit-code -- apps/api/openapi.json`. Either fails if the committed `openapi.json`
+  is out of date.
+
+Two conventions hold across the whole API:
+
+- **Money** is an integer number of cents, in fields ending with `_cents`.
+- **Errors** have the shape `{ status, code, message, issues?, details? }`, and `code` is a stable value that clients can rely on.
+
+Dates are ISO 8601 strings, and ids are UUIDs.
+
+Dependency graph: `config` ← `shared` ← `api`, `web`. `api-client` is generated from the API's
+`openapi.json`, but it doesn't import `api`. `api` and `web` never import each other.
 
 ## Requirements
 
@@ -81,6 +122,8 @@ pnpm --filter shared build
 
 `turbo run dev --filter=@sellmanager/web...` runs the web app together with everything it depends on.
 
+API docs (Swagger UI, generated from the contract): http://localhost:3333/docs
+
 ## Environment variables
 
 Each app has its own `.env.example`, and the variables are documented there.
@@ -108,6 +151,8 @@ Each app has its own `.env.example`, and the variables are documented there.
 | `pnpm test:unit`               | Unit tests only (no database)                                                      |
 | `pnpm test:integration`        | API HTTP tests against PostgreSQL (port 5434)                                      |
 | `pnpm format` / `format:check` | Prettier at the root and in every package                                          |
+| `pnpm openapi:generate`        | Rewrite `apps/api/openapi.json` from the contract (`pnpm build` also does it)      |
+| `pnpm openapi:check`           | Fail if `apps/api/openapi.json` is out of date (also part of `pnpm lint`)          |
 
 ### Turborepo
 
@@ -117,6 +162,9 @@ Each app has its own `.env.example`, and the variables are documented there.
 - **`typecheck`**, **`lint`** and **`test:unit`**: also depend on `^build`, because
   `api` and `web` read the compiled types of `shared`.
 - **`test:integration`**: never cached, because its result depends on the database.
+- **`openapi:generate`** (api) → **`generate`** (api-client): the contract chain. Its outputs
+  are `openapi.json` and `src/generated/**`.
+- **`openapi:check`**: runs before `lint` in a separate step, so that nothing regenerates the file first.
 - **`dev`**: persistent, never cached.
 
 When nothing has changed, Turborepo replays results from its cache. A second `pnpm build`
@@ -141,6 +189,35 @@ import {
   ORDER_STATUSES,
 } from '@sellmanager/shared';
 ```
+
+## How to add or change a route
+
+Example: a `GET /products/{id}/stock` route.
+
+1. **Schemas** (`packages/shared/src/<resource>.ts`): add or adjust the zod schemas for the
+   body, query and response.
+   - Response DTOs get `.meta({ id: 'Name', example })`.
+   - Money goes in `*_cents` fields; dates use `isoDateSchema`; ids use `z.uuid()`.
+2. **Registry** (`packages/shared/src/contract/routes.ts`): declare the route with `defineRoute()`.
+   Give it `method`, `path` (OpenAPI style, `/products/{id}/stock`), a unique `operationId`, `tags`,
+   `auth`, `request` (`params`/`query`/`body`), `responses` (`{ 200: schema }` or `{ 204: null }`)
+   and the domain `errors` (`404`, `409`). The 400, 401, 413, 429 and 500 responses are added
+   automatically.
+3. **Handler** (`apps/api/src/modules/<module>/infra/http/`):
+   - In the controller, write a `RouteHandler<Routes['stock']>` that uses `input` (already
+     validated) and `reply(200, body)`. The compiler checks `body` against the DTO.
+   - Convert the entity in a typed mapper. Use `toCents()` for money.
+   - Register the route in `routes/index.ts` with `mount(routes.products.stock, controller.stock)`.
+     Extra middlewares, such as multer, go after the handler.
+4. **Generate:** run `pnpm openapi:generate`, or `pnpm build`. Commit `apps/api/openapi.json`
+   together with the change. `/docs` shows the new route right away.
+5. **Use it in the front-end:** `await unwrap(api.GET('/products/{id}/stock', { params: { path: { id } } }))`
+   is typed by path, params and response. `pnpm build` regenerates the api-client types.
+6. **Tests:** add an integration test in `apps/api/test/integration`. The response check in the
+   test environment already validates the body against the contract.
+
+For a breaking change (renaming or removing a field, changing a type), run `pnpm typecheck`.
+It lists everything that needs fixing in the API, the api-client and the web.
 
 ## Adding a new package
 
