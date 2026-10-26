@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ApiClientError, createApiClient, unwrap } from './index';
+import { ApiClientError, createApiClient, unwrap, type Product } from './index';
 
 const product = {
   id: '5c301fd4-233e-4eac-bb22-994b162e70d2',
@@ -8,7 +8,7 @@ const product = {
   quantity: 10,
   created_at: '2026-10-24T20:00:00.000Z',
   updated_at: '2026-10-24T20:00:00.000Z',
-};
+} satisfies Product;
 
 function fakeFetch(status: number, body?: unknown) {
   const calls: Request[] = [];
