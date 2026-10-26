@@ -1,19 +1,17 @@
-import { RequestHandler, Router } from 'express';
+import { routes } from '@sellmanager/shared';
 import { Container } from '@shared/container';
-import { validate } from '@shared/http/middlewares/validate';
-import { idParamsSchema, paginationQuerySchema } from '@sellmanager/shared';
+import type { MountRoute } from '@shared/http/contract/mountRoute';
 import { CreateCustomerService } from '../../../services/CreateCustomerService';
 import { DeleteCustomerService } from '../../../services/DeleteCustomerService';
 import { ListCustomersService } from '../../../services/ListCustomersService';
 import { ShowCustomerService } from '../../../services/ShowCustomerService';
 import { UpdateCustomerService } from '../../../services/UpdateCustomerService';
 import { CustomersController } from '../controllers/CustomersController';
-import { customerBodySchema } from '@sellmanager/shared';
 
-export function makeCustomersRoutes(
+export function registerCustomersRoutes(
+  mount: MountRoute,
   container: Container,
-  authenticated: RequestHandler,
-): Router {
+): void {
   const { customers } = container.repositories;
 
   const controller = new CustomersController({
@@ -24,22 +22,9 @@ export function makeCustomersRoutes(
     delete: new DeleteCustomerService(customers),
   });
 
-  const router = Router();
-
-  router.use(authenticated);
-  router.get('/', validate({ query: paginationQuerySchema }), controller.index);
-  router.get('/:id', validate({ params: idParamsSchema }), controller.show);
-  router.post('/', validate({ body: customerBodySchema }), controller.create);
-  router.put(
-    '/:id',
-    validate({ params: idParamsSchema, body: customerBodySchema }),
-    controller.update,
-  );
-  router.delete(
-    '/:id',
-    validate({ params: idParamsSchema }),
-    controller.delete,
-  );
-
-  return router;
+  mount(routes.customers.list, controller.list);
+  mount(routes.customers.show, controller.show);
+  mount(routes.customers.create, controller.create);
+  mount(routes.customers.update, controller.update);
+  mount(routes.customers.delete, controller.delete);
 }

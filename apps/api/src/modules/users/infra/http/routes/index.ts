@@ -1,10 +1,8 @@
-import { RequestHandler, Router } from 'express';
 import multer from 'multer';
+import { routes } from '@sellmanager/shared';
 import uploadConfig from '@config/upload';
 import { Container } from '@shared/container';
-import { authRateLimiter } from '@shared/http/middlewares/rateLimiter';
-import { validate } from '@shared/http/middlewares/validate';
-import { paginationQuerySchema } from '@sellmanager/shared';
+import type { MountRoute } from '@shared/http/contract/mountRoute';
 import { AuthenticateUserService } from '../../../services/AuthenticateUserService';
 import { CreateUserService } from '../../../services/CreateUserService';
 import { ListUsersService } from '../../../services/ListUsersService';
@@ -13,104 +11,46 @@ import { SendForgotPasswordEmailService } from '../../../services/SendForgotPass
 import { ShowProfileService } from '../../../services/ShowProfileService';
 import { UpdateProfileService } from '../../../services/UpdateProfileService';
 import { UpdateUserAvatarService } from '../../../services/UpdateUserAvatarService';
-import { PasswordController } from '../controllers/PasswordController';
-import { ProfileController } from '../controllers/ProfileController';
-import { SessionsController } from '../controllers/SessionsController';
-import { UserAvatarController } from '../controllers/UserAvatarController';
 import { UsersController } from '../controllers/UsersController';
-import {
-  createUserBodySchema,
-  forgotPasswordBodySchema,
-  resetPasswordBodySchema,
-  sessionBodySchema,
-  updateProfileBodySchema,
-} from '@sellmanager/shared';
 
-export function makeUsersRoutes(
+export function registerUsersRoutes(
+  mount: MountRoute,
   container: Container,
-  authenticated: RequestHandler,
-) {
+): void {
   const { users, userTokens } = container.repositories;
   const { hash, token, mail, storage } = container.providers;
-  const apiUrl = container.config.APP_API_URL;
 
-  const usersController = new UsersController(
-    new ListUsersService(users),
-    new CreateUserService(users, hash),
-    apiUrl,
-  );
-  const avatarController = new UserAvatarController(
-    new UpdateUserAvatarService(users, storage),
-    apiUrl,
-  );
-  const sessionsController = new SessionsController(
-    new AuthenticateUserService(users, hash, token),
-    apiUrl,
-  );
-  const profileController = new ProfileController(
-    new ShowProfileService(users),
-    new UpdateProfileService(users, hash),
-    apiUrl,
-  );
-  const passwordController = new PasswordController(
-    new SendForgotPasswordEmailService(
-      users,
-      userTokens,
-      mail,
-      container.config.APP_WEB_URL,
-    ),
-    new ResetPasswordService(users, userTokens, hash),
+  const controller = new UsersController(
+    {
+      list: new ListUsersService(users),
+      create: new CreateUserService(users, hash),
+      updateAvatar: new UpdateUserAvatarService(users, storage),
+      authenticate: new AuthenticateUserService(users, hash, token),
+      showProfile: new ShowProfileService(users),
+      updateProfile: new UpdateProfileService(users, hash),
+      sendForgotPasswordEmail: new SendForgotPasswordEmailService(
+        users,
+        userTokens,
+        mail,
+        container.config.APP_WEB_URL,
+      ),
+      resetPassword: new ResetPasswordService(users, userTokens, hash),
+    },
+    container.config.APP_API_URL,
   );
 
   const upload = multer(uploadConfig.multer);
 
-  const usersRouter = Router();
-  usersRouter.get(
-    '/',
-    authenticated,
-    validate({ query: paginationQuerySchema }),
-    usersController.index,
-  );
-  usersRouter.post(
-    '/',
-    authRateLimiter,
-    validate({ body: createUserBodySchema }),
-    usersController.create,
-  );
-  usersRouter.patch(
-    '/avatar',
-    authenticated,
+  mount(routes.users.create, controller.create);
+  mount(routes.users.list, controller.list);
+  mount(
+    routes.users.updateAvatar,
+    controller.updateAvatar,
     upload.single('avatar'),
-    avatarController.update,
   );
-
-  const sessionsRouter = Router();
-  sessionsRouter.post(
-    '/',
-    validate({ body: sessionBodySchema }),
-    sessionsController.create,
-  );
-
-  const profileRouter = Router();
-  profileRouter.use(authenticated);
-  profileRouter.get('/', profileController.show);
-  profileRouter.put(
-    '/',
-    validate({ body: updateProfileBodySchema }),
-    profileController.update,
-  );
-
-  const passwordRouter = Router();
-  passwordRouter.post(
-    '/forgot',
-    validate({ body: forgotPasswordBodySchema }),
-    passwordController.forgot,
-  );
-  passwordRouter.post(
-    '/reset',
-    validate({ body: resetPasswordBodySchema }),
-    passwordController.reset,
-  );
-
-  return { usersRouter, sessionsRouter, profileRouter, passwordRouter };
+  mount(routes.sessions.create, controller.createSession);
+  mount(routes.profile.show, controller.showProfile);
+  mount(routes.profile.update, controller.updateProfile);
+  mount(routes.password.forgot, controller.forgotPassword);
+  mount(routes.password.reset, controller.resetPassword);
 }

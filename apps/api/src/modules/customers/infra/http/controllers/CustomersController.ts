@@ -1,12 +1,11 @@
-import { Request, Response } from 'express';
-import { validatedQuery } from '@shared/http/middlewares/validate';
-import { PaginationQuery } from '@sellmanager/shared';
+import type { routes } from '@sellmanager/shared';
+import type { RouteHandler } from '@shared/http/contract/mountRoute';
 import { CreateCustomerService } from '../../../services/CreateCustomerService';
 import { DeleteCustomerService } from '../../../services/DeleteCustomerService';
 import { ListCustomersService } from '../../../services/ListCustomersService';
 import { ShowCustomerService } from '../../../services/ShowCustomerService';
 import { UpdateCustomerService } from '../../../services/UpdateCustomerService';
-import { CustomerBody } from '@sellmanager/shared';
+import { toCustomerResponse } from '../CustomerMapper';
 
 interface CustomersServices {
   list: ListCustomersService;
@@ -16,53 +15,36 @@ interface CustomersServices {
   delete: DeleteCustomerService;
 }
 
+type Routes = typeof routes.customers;
+
 export class CustomersController {
   constructor(private readonly services: CustomersServices) {}
 
-  public index = async (
-    request: Request,
-    response: Response,
-  ): Promise<void> => {
-    response.json(
-      await this.services.list.execute(
-        validatedQuery<PaginationQuery>(request),
-      ),
-    );
+  public list: RouteHandler<Routes['list']> = async ({ input, reply }) => {
+    const { data, meta } = await this.services.list.execute(input.query);
+    reply(200, { data: data.map(toCustomerResponse), meta });
   };
 
-  public show = async (
-    request: Request<{ id: string }>,
-    response: Response,
-  ): Promise<void> => {
-    response.json(await this.services.show.execute({ id: request.params.id }));
+  public show: RouteHandler<Routes['show']> = async ({ input, reply }) => {
+    const customer = await this.services.show.execute({ id: input.params.id });
+    reply(200, toCustomerResponse(customer));
   };
 
-  public create = async (
-    request: Request,
-    response: Response,
-  ): Promise<void> => {
-    const customer = await this.services.create.execute(
-      request.body as CustomerBody,
-    );
-    response.status(201).json(customer);
+  public create: RouteHandler<Routes['create']> = async ({ input, reply }) => {
+    const customer = await this.services.create.execute(input.body);
+    reply(201, toCustomerResponse(customer));
   };
 
-  public update = async (
-    request: Request<{ id: string }>,
-    response: Response,
-  ): Promise<void> => {
+  public update: RouteHandler<Routes['update']> = async ({ input, reply }) => {
     const customer = await this.services.update.execute({
-      id: request.params.id,
-      ...(request.body as CustomerBody),
+      id: input.params.id,
+      ...input.body,
     });
-    response.json(customer);
+    reply(200, toCustomerResponse(customer));
   };
 
-  public delete = async (
-    request: Request<{ id: string }>,
-    response: Response,
-  ): Promise<void> => {
-    await this.services.delete.execute({ id: request.params.id });
-    response.status(204).send();
+  public delete: RouteHandler<Routes['delete']> = async ({ input, reply }) => {
+    await this.services.delete.execute({ id: input.params.id });
+    reply(204);
   };
 }

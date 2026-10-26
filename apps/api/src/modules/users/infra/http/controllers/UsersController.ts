@@ -1,36 +1,119 @@
-import { Request, Response } from 'express';
-import { validatedQuery } from '@shared/http/middlewares/validate';
-import { PaginationQuery } from '@sellmanager/shared';
+import type { routes } from '@sellmanager/shared';
+import AppError from '@shared/errors/AppError';
+import type { RouteHandler } from '@shared/http/contract/mountRoute';
+import { AuthenticateUserService } from '../../../services/AuthenticateUserService';
 import { CreateUserService } from '../../../services/CreateUserService';
 import { ListUsersService } from '../../../services/ListUsersService';
-import { CreateUserBody } from '@sellmanager/shared';
+import { ResetPasswordService } from '../../../services/ResetPasswordService';
+import { SendForgotPasswordEmailService } from '../../../services/SendForgotPasswordEmailService';
+import { ShowProfileService } from '../../../services/ShowProfileService';
+import { UpdateProfileService } from '../../../services/UpdateProfileService';
+import { UpdateUserAvatarService } from '../../../services/UpdateUserAvatarService';
 import { toUserResponse } from '../UserMapper';
+
+interface UsersServices {
+  list: ListUsersService;
+  create: CreateUserService;
+  updateAvatar: UpdateUserAvatarService;
+  authenticate: AuthenticateUserService;
+  showProfile: ShowProfileService;
+  updateProfile: UpdateProfileService;
+  sendForgotPasswordEmail: SendForgotPasswordEmailService;
+  resetPassword: ResetPasswordService;
+}
+
+type Routes = typeof routes;
 
 export class UsersController {
   constructor(
-    private readonly listUsers: ListUsersService,
-    private readonly createUser: CreateUserService,
+    private readonly services: UsersServices,
     private readonly apiUrl: string,
   ) {}
 
-  public index = async (
-    request: Request,
-    response: Response,
-  ): Promise<void> => {
-    const { data, meta } = await this.listUsers.execute(
-      validatedQuery<PaginationQuery>(request),
-    );
-    response.json({
-      data: data.map(user => toUserResponse(user, this.apiUrl)),
-      meta,
-    });
+  private toResponse = (user: Parameters<typeof toUserResponse>[0]) =>
+    toUserResponse(user, this.apiUrl);
+
+  public create: RouteHandler<Routes['users']['create']> = async ({
+    input,
+    reply,
+  }) => {
+    const user = await this.services.create.execute(input.body);
+    reply(201, this.toResponse(user));
   };
 
-  public create = async (
-    request: Request,
-    response: Response,
-  ): Promise<void> => {
-    const user = await this.createUser.execute(request.body as CreateUserBody);
-    response.status(201).json(toUserResponse(user, this.apiUrl));
+  public list: RouteHandler<Routes['users']['list']> = async ({
+    input,
+    reply,
+  }) => {
+    const { data, meta } = await this.services.list.execute(input.query);
+    reply(200, { data: data.map(this.toResponse), meta });
+  };
+
+  public updateAvatar: RouteHandler<Routes['users']['updateAvatar']> = async ({
+    request,
+    reply,
+  }) => {
+    if (!request.file) {
+      throw new AppError('Avatar file is required');
+    }
+
+    const user = await this.services.updateAvatar.execute({
+      user_id: request.user.id,
+      avatarFileName: request.file.filename,
+    });
+    reply(200, this.toResponse(user));
+  };
+
+  public createSession: RouteHandler<Routes['sessions']['create']> = async ({
+    input,
+    reply,
+  }) => {
+    const { user, token } = await this.services.authenticate.execute(
+      input.body,
+    );
+    reply(200, { user: this.toResponse(user), token });
+  };
+
+  public showProfile: RouteHandler<Routes['profile']['show']> = async ({
+    request,
+    reply,
+  }) => {
+    const user = await this.services.showProfile.execute({
+      user_id: request.user.id,
+    });
+    reply(200, this.toResponse(user));
+  };
+
+  public updateProfile: RouteHandler<Routes['profile']['update']> = async ({
+    input,
+    request,
+    reply,
+  }) => {
+    const { name, email, password: newPassword, old_password } = input.body;
+    const user = await this.services.updateProfile.execute({
+      user_id: request.user.id,
+      name,
+      email,
+      password: newPassword,
+      old_password,
+    });
+    reply(200, this.toResponse(user));
+  };
+
+  public forgotPassword: RouteHandler<Routes['password']['forgot']> = async ({
+    input,
+    reply,
+  }) => {
+    await this.services.sendForgotPasswordEmail.execute(input.body);
+    reply(204);
+  };
+
+  public resetPassword: RouteHandler<Routes['password']['reset']> = async ({
+    input,
+    reply,
+  }) => {
+    const { token, password: newPassword } = input.body;
+    await this.services.resetPassword.execute({ token, password: newPassword });
+    reply(204);
   };
 }
