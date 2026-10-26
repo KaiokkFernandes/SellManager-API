@@ -23,7 +23,10 @@
 - Testes: unitários para os services (repositórios fake) e de integração das
   rotas principais (supertest).
 - ESLint + Prettier, `.env.example`, documentação OpenAPI em `/docs`.
-- O front-end (apps/web) é só um esqueleto: não criar telas sem pedido explícito.
+- O front-end (apps/web) tem só a fundação (login, layout, componentes base); Clientes,
+  Produtos e Pedidos são placeholders. Não criar telas de CRUD sem pedido explícito.
+  Convenções em `apps/web/README.md`; formulários sempre com schemas de `packages/shared`,
+  e todo acesso ao token só via `apps/web/src/lib/tokenStorage.ts`.
 
 ## Comandos (rodar na raiz do monorepo)
 

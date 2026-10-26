@@ -27,7 +27,7 @@ both the API and the front-end import.
 | Package                   | What it is                                                                                   | Docs                                                           |
 | ------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
 | `@sellmanager/api`        | Users, products, customers and orders; JWT auth, OpenAPI at `/docs`                          | [apps/api/README.md](apps/api/README.md)                       |
-| `@sellmanager/web`        | Front-end placeholder that proves the integration with `shared`                              | [apps/web/README.md](apps/web/README.md)                       |
+| `@sellmanager/web`        | Front-end foundation (login, layout, typed router, shared components)                        | [apps/web/README.md](apps/web/README.md)                       |
 | `@sellmanager/shared`     | The contract: request schemas, response DTOs, error format and the registry of every route   | [packages/shared/README.md](packages/shared/README.md)         |
 | `@sellmanager/api-client` | `openapi-fetch` client typed from `apps/api/openapi.json`: JWT, 401 callback, errors, upload | [packages/api-client/README.md](packages/api-client/README.md) |
 | `@sellmanager/config`     | `tsconfig.*.json`, `createConfig()` for ESLint, Prettier config                              | —                                                              |
@@ -131,7 +131,7 @@ Each app has its own `.env.example`, and the variables are documented there.
 | App        | File                                             | Variables                                                                                                                                                                                |
 | ---------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `apps/api` | [`apps/api/.env.example`](apps/api/.env.example) | `NODE_ENV`, `PORT`, `APP_API_URL`, `APP_WEB_URL`, `DB_*`, `JWT_SECRET` (required), `JWT_EXPIRES_IN`, `BCRYPT_SALT_ROUNDS`, `CORS_ORIGIN`, `TRUST_PROXY`, `MAIL_*`, `SMTP_*`, `LOG_LEVEL` |
-| `apps/web` | [`apps/web/.env.example`](apps/web/.env.example) | `VITE_API_URL`: API base URL. Only `VITE_*` variables reach the browser                                                                                                                  |
+| `apps/web` | [`apps/web/.env.example`](apps/web/.env.example) | `VITE_API_URL`: `/api` in dev (Vite proxy) or the API URL. Only `VITE_*` variables reach the browser                                                                                     |
 
 - The API checks its variables with zod at startup and refuses to start if one is invalid.
   The full table is in the [API README](apps/api/README.md#environment-variables).
