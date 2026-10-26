@@ -4,7 +4,10 @@ import { ApiClientError, type ApiErrorCode } from '@sellmanager/api-client';
  * Mapeamento ÚNICO do erro da API para texto amigável. Decide pelo `code`
  * (estável), nunca pelo `message` da API, que é para logs e pode mudar.
  */
-const MESSAGES: Record<ApiErrorCode | 'NETWORK_ERROR' | 'UNEXPECTED_RESPONSE', string> = {
+const MESSAGES: Record<
+  ApiErrorCode | 'NETWORK_ERROR' | 'UNEXPECTED_RESPONSE',
+  string
+> = {
   VALIDATION_FAILED: 'Confira os campos informados.',
   BAD_REQUEST: 'A requisição é inválida.',
   INVALID_UPLOAD: 'O arquivo enviado não é válido.',
@@ -16,7 +19,8 @@ const MESSAGES: Record<ApiErrorCode | 'NETWORK_ERROR' | 'UNEXPECTED_RESPONSE', s
   PAYLOAD_TOO_LARGE: 'Os dados enviados são grandes demais.',
   RATE_LIMITED: 'Muitas tentativas. Aguarde um instante e tente de novo.',
   INTERNAL_ERROR: 'Algo deu errado no servidor. Tente novamente.',
-  NETWORK_ERROR: 'Não foi possível conectar ao servidor. Verifique sua conexão.',
+  NETWORK_ERROR:
+    'Não foi possível conectar ao servidor. Verifique sua conexão.',
   UNEXPECTED_RESPONSE: 'Resposta inesperada do servidor. Tente novamente.',
 };
 

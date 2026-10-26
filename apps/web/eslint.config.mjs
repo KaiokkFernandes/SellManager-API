@@ -11,5 +11,23 @@ export default createConfig({
       ...reactHooks.configs.flat['recommended-latest'],
     },
     reactRefresh.configs.vite,
+    {
+      // TanStack Router redireciona com `throw redirect(...)`
+      files: ['**/*.{ts,tsx}'],
+      rules: {
+        '@typescript-eslint/only-throw-error': [
+          'error',
+          {
+            allow: [
+              {
+                from: 'package',
+                package: '@tanstack/router-core',
+                name: 'Redirect',
+              },
+            ],
+          },
+        ],
+      },
+    },
   ],
 });

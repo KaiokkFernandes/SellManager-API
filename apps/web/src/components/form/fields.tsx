@@ -17,7 +17,10 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { centsToInput, parseCents } from '@/lib/format';
 
-interface BaseFieldProps<TValues extends FieldValues, TName extends FieldPath<TValues>> {
+interface BaseFieldProps<
+  TValues extends FieldValues,
+  TName extends FieldPath<TValues>,
+> {
   control: Control<TValues, unknown, FieldValues | undefined>;
   name: TName;
   label: string;
@@ -46,7 +49,8 @@ function FieldShell({ id, label, description, error, children }: ShellProps) {
       {children({
         id,
         'aria-invalid': Boolean(error),
-        'aria-describedby': [descriptionId, errorId].filter(Boolean).join(' ') || undefined,
+        'aria-describedby':
+          [descriptionId, errorId].filter(Boolean).join(' ') || undefined,
       })}
       {description ? (
         <p id={descriptionId} className="text-sm text-muted-foreground">
@@ -67,7 +71,10 @@ type InputExtras = Omit<
   'name' | 'value' | 'defaultValue' | 'onChange' | 'onBlur' | 'id'
 >;
 
-export function TextField<TValues extends FieldValues, TName extends FieldPath<TValues>>({
+export function TextField<
+  TValues extends FieldValues,
+  TName extends FieldPath<TValues>,
+>({
   control,
   name,
   label,
@@ -77,14 +84,19 @@ export function TextField<TValues extends FieldValues, TName extends FieldPath<T
   const id = useId();
   const { field, fieldState } = useController({ control, name });
   return (
-    <FieldShell id={id} label={label} description={description} error={fieldState.error?.message}>
+    <FieldShell
+      id={id}
+      label={label}
+      description={description}
+      error={fieldState.error?.message}
+    >
       {aria => (
         <Input
           {...inputProps}
           {...aria}
           name={field.name}
           ref={field.ref}
-          value={(field.value) ?? ''}
+          value={field.value ?? ''}
           onChange={event => field.onChange(event.target.value)}
           onBlur={field.onBlur}
         />
@@ -93,25 +105,36 @@ export function TextField<TValues extends FieldValues, TName extends FieldPath<T
   );
 }
 
-export function TextareaField<TValues extends FieldValues, TName extends FieldPath<TValues>>({
+export function TextareaField<
+  TValues extends FieldValues,
+  TName extends FieldPath<TValues>,
+>({
   control,
   name,
   label,
   description,
   ...props
 }: BaseFieldProps<TValues, TName> &
-  Omit<ComponentProps<typeof Textarea>, 'name' | 'value' | 'onChange' | 'onBlur' | 'id'>) {
+  Omit<
+    ComponentProps<typeof Textarea>,
+    'name' | 'value' | 'onChange' | 'onBlur' | 'id'
+  >) {
   const id = useId();
   const { field, fieldState } = useController({ control, name });
   return (
-    <FieldShell id={id} label={label} description={description} error={fieldState.error?.message}>
+    <FieldShell
+      id={id}
+      label={label}
+      description={description}
+      error={fieldState.error?.message}
+    >
       {aria => (
         <Textarea
           {...props}
           {...aria}
           name={field.name}
           ref={field.ref}
-          value={(field.value) ?? ''}
+          value={field.value ?? ''}
           onChange={event => field.onChange(event.target.value)}
           onBlur={field.onBlur}
         />
@@ -121,7 +144,10 @@ export function TextareaField<TValues extends FieldValues, TName extends FieldPa
 }
 
 /** Número inteiro/decimal. O valor do formulário é `number` (vazio = undefined). */
-export function NumberField<TValues extends FieldValues, TName extends FieldPath<TValues>>({
+export function NumberField<
+  TValues extends FieldValues,
+  TName extends FieldPath<TValues>,
+>({
   control,
   name,
   label,
@@ -132,7 +158,12 @@ export function NumberField<TValues extends FieldValues, TName extends FieldPath
   const { field, fieldState } = useController({ control, name });
   const value = field.value as number | undefined;
   return (
-    <FieldShell id={id} label={label} description={description} error={fieldState.error?.message}>
+    <FieldShell
+      id={id}
+      label={label}
+      description={description}
+      error={fieldState.error?.message}
+    >
       {aria => (
         <Input
           inputMode="decimal"
@@ -143,7 +174,11 @@ export function NumberField<TValues extends FieldValues, TName extends FieldPath
           type="number"
           value={value === undefined || Number.isNaN(value) ? '' : value}
           onChange={event =>
-            field.onChange(event.target.value === '' ? undefined : event.target.valueAsNumber)
+            field.onChange(
+              event.target.value === ''
+                ? undefined
+                : event.target.valueAsNumber,
+            )
           }
           onBlur={field.onBlur}
         />
@@ -156,7 +191,10 @@ export function NumberField<TValues extends FieldValues, TName extends FieldPath
  * Dinheiro: o usuário digita "1.234,56" e o valor do formulário é em CENTAVOS
  * inteiros (1234 56 -> 123456), o mesmo formato do contrato (`*_cents`).
  */
-export function MoneyField<TValues extends FieldValues, TName extends FieldPath<TValues>>({
+export function MoneyField<
+  TValues extends FieldValues,
+  TName extends FieldPath<TValues>,
+>({
   control,
   name,
   label,
@@ -166,19 +204,28 @@ export function MoneyField<TValues extends FieldValues, TName extends FieldPath<
   const id = useId();
   const { field, fieldState } = useController({ control, name });
   const cents = field.value as number | undefined;
-  const [text, setText] = useState(cents === undefined ? '' : centsToInput(cents));
+  const [text, setText] = useState(
+    cents === undefined ? '' : centsToInput(cents),
+  );
 
   // valores externos do formulário (reset, setValue) atualizam o texto exibido
   const [syncedCents, setSyncedCents] = useState(cents);
   if (!Object.is(cents, syncedCents)) {
     setSyncedCents(cents);
     if (parseCents(text) !== (cents ?? null)) {
-      setText(cents === undefined || Number.isNaN(cents) ? '' : centsToInput(cents));
+      setText(
+        cents === undefined || Number.isNaN(cents) ? '' : centsToInput(cents),
+      );
     }
   }
 
   return (
-    <FieldShell id={id} label={label} description={description} error={fieldState.error?.message}>
+    <FieldShell
+      id={id}
+      label={label}
+      description={description}
+      error={fieldState.error?.message}
+    >
       {aria => (
         <div className="relative">
           <span
@@ -200,7 +247,11 @@ export function MoneyField<TValues extends FieldValues, TName extends FieldPath<
             onChange={event => {
               setText(event.target.value);
               // texto inválido vira NaN: o schema (int) rejeita e mostra o erro
-              field.onChange(event.target.value === '' ? undefined : (parseCents(event.target.value) ?? NaN));
+              field.onChange(
+                event.target.value === ''
+                  ? undefined
+                  : (parseCents(event.target.value) ?? NaN),
+              );
             }}
             onBlur={() => {
               const parsed = parseCents(text);
@@ -219,7 +270,10 @@ export interface SelectOption {
   label: string;
 }
 
-export function SelectField<TValues extends FieldValues, TName extends FieldPath<TValues>>({
+export function SelectField<
+  TValues extends FieldValues,
+  TName extends FieldPath<TValues>,
+>({
   control,
   name,
   label,
@@ -235,11 +289,16 @@ export function SelectField<TValues extends FieldValues, TName extends FieldPath
   const id = useId();
   const { field, fieldState } = useController({ control, name });
   return (
-    <FieldShell id={id} label={label} description={description} error={fieldState.error?.message}>
+    <FieldShell
+      id={id}
+      label={label}
+      description={description}
+      error={fieldState.error?.message}
+    >
       {aria => (
         <Select
           name={field.name}
-          value={(field.value) ?? ''}
+          value={field.value ?? ''}
           onValueChange={field.onChange}
           disabled={disabled}
         >

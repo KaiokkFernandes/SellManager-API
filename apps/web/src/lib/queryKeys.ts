@@ -6,6 +6,9 @@
  * Invalidar a chave raiz atualiza listas e detalhes de uma vez.
  */
 export const queryKeys = {
+  auth: {
+    profile: ['auth', 'profile'] as const,
+  },
   products: {
     all: ['products'] as const,
     list: (params: object) => ['products', 'list', params] as const,

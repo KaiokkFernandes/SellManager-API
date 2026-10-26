@@ -2,8 +2,10 @@ import type { ComponentProps } from 'react';
 import type { FieldValues, UseFormReturn } from 'react-hook-form';
 import { cn } from '@/lib/utils';
 
-interface FormProps<TIn extends FieldValues, TOut extends FieldValues | undefined>
-  extends Omit<ComponentProps<'form'>, 'onSubmit'> {
+interface FormProps<
+  TIn extends FieldValues,
+  TOut extends FieldValues | undefined,
+> extends Omit<ComponentProps<'form'>, 'onSubmit'> {
   form: UseFormReturn<TIn, unknown, TOut>;
   /** Recebe os valores JÁ validados e convertidos pelo schema. */
   onSubmit: (values: NonNullable<TOut>) => void | Promise<void>;
@@ -13,13 +15,10 @@ interface FormProps<TIn extends FieldValues, TOut extends FieldValues | undefine
  * <form> ligado ao react-hook-form: valida com o schema, mostra o erro geral
  * (da API) em um alerta e desliga a validação nativa do navegador.
  */
-export function Form<TIn extends FieldValues, TOut extends FieldValues | undefined>({
-  form,
-  onSubmit,
-  className,
-  children,
-  ...props
-}: FormProps<TIn, TOut>) {
+export function Form<
+  TIn extends FieldValues,
+  TOut extends FieldValues | undefined,
+>({ form, onSubmit, className, children, ...props }: FormProps<TIn, TOut>) {
   const serverError = form.formState.errors.root?.server?.message;
 
   return (
@@ -27,7 +26,9 @@ export function Form<TIn extends FieldValues, TOut extends FieldValues | undefin
       noValidate
       className={cn('flex flex-col gap-4', className)}
       onSubmit={event => {
-        void form.handleSubmit(values => onSubmit(values as NonNullable<TOut>))(event);
+        void form.handleSubmit(values => onSubmit(values as NonNullable<TOut>))(
+          event,
+        );
       }}
       {...props}
     >
