@@ -79,3 +79,13 @@ export const sessionSchema = z
 
 export type User = z.infer<typeof userSchema>;
 export type Session = z.infer<typeof sessionSchema>;
+
+/** Upload do avatar (multipart/form-data, campo `avatar`). */
+export const avatarUploadBodySchema = z
+  .object({
+    avatar: z.string().meta({
+      format: 'binary',
+      description: 'Imagem jpeg, png ou webp até 2 MB',
+    }),
+  })
+  .meta({ id: 'AvatarUploadBody' });
