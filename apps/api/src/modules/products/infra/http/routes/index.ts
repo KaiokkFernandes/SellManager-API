@@ -1,19 +1,17 @@
-import { RequestHandler, Router } from 'express';
+import { routes } from '@sellmanager/shared';
 import { Container } from '@shared/container';
-import { validate } from '@shared/http/middlewares/validate';
-import { idParamsSchema, paginationQuerySchema } from '@sellmanager/shared';
+import type { MountRoute } from '@shared/http/contract/mountRoute';
 import { CreateProductService } from '../../../services/CreateProductService';
 import { DeleteProductService } from '../../../services/DeleteProductService';
 import { ListProductsService } from '../../../services/ListProductsService';
 import { ShowProductService } from '../../../services/ShowProductService';
 import { UpdateProductService } from '../../../services/UpdateProductService';
 import { ProductsController } from '../controllers/ProductsController';
-import { productBodySchema } from '@sellmanager/shared';
 
-export function makeProductsRoutes(
+export function registerProductsRoutes(
+  mount: MountRoute,
   container: Container,
-  authenticated: RequestHandler,
-): Router {
+): void {
   const { products } = container.repositories;
 
   const controller = new ProductsController({
@@ -24,28 +22,9 @@ export function makeProductsRoutes(
     delete: new DeleteProductService(products),
   });
 
-  const router = Router();
-
-  router.get('/', validate({ query: paginationQuerySchema }), controller.index);
-  router.get('/:id', validate({ params: idParamsSchema }), controller.show);
-  router.post(
-    '/',
-    authenticated,
-    validate({ body: productBodySchema }),
-    controller.create,
-  );
-  router.put(
-    '/:id',
-    authenticated,
-    validate({ params: idParamsSchema, body: productBodySchema }),
-    controller.update,
-  );
-  router.delete(
-    '/:id',
-    authenticated,
-    validate({ params: idParamsSchema }),
-    controller.delete,
-  );
-
-  return router;
+  mount(routes.products.list, controller.list);
+  mount(routes.products.show, controller.show);
+  mount(routes.products.create, controller.create);
+  mount(routes.products.update, controller.update);
+  mount(routes.products.delete, controller.delete);
 }

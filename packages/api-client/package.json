@@ -1,0 +1,51 @@
+{
+  "name": "@sellmanager/api-client",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Client tipado da API do SellManager, gerado do openapi.json (openapi-typescript + openapi-fetch)",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "generate": "openapi-typescript ../../apps/api/openapi.json --output src/generated/openapi.ts",
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test:unit": "vitest run",
+    "test": "vitest run",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "prettier": "@sellmanager/config/prettier",
+  "dependencies": {
+    "openapi-fetch": "^0.17.0"
+  },
+  "devDependencies": {
+    "@sellmanager/config": "workspace:*",
+    "eslint": "^10.13.0",
+    "openapi-typescript": "^7.13.0",
+    "prettier": "^3.9.10",
+    "tsup": "^9.0.0",
+    "typescript": "6.0.3",
+    "vite": "^8",
+    "vitest": "^5.0.5"
+  }
+}

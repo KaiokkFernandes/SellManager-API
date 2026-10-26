@@ -38,7 +38,7 @@ export class CreateOrderService {
         );
         if (missing.length > 0) {
           throw new AppError('Products not found', 404, {
-            product_ids: missing,
+            details: { product_ids: missing },
           });
         }
 
@@ -52,7 +52,10 @@ export class CreateOrderService {
             requested: requested.get(product.id),
           }));
         if (insufficient.length > 0) {
-          throw new AppError('Insufficient stock', 409, insufficient);
+          throw new AppError('Insufficient stock', 409, {
+            code: 'INSUFFICIENT_STOCK',
+            details: insufficient,
+          });
         }
 
         // O preço vem do produto no banco, nunca do cliente.

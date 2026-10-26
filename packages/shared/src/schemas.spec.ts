@@ -53,7 +53,7 @@ describe('@sellmanager/shared', () => {
         {
           id: crypto.randomUUID(),
           name: 'Teclado',
-          price: 199.9,
+          price_cents: 19990,
           quantity: 1,
           created_at: now,
           updated_at: now,
@@ -63,5 +63,31 @@ describe('@sellmanager/shared', () => {
     };
 
     expect(paginatedSchema(productSchema).parse(page)).toEqual(page);
+  });
+});
+
+describe('contrato de rotas', () => {
+  it('tem operationId e path+método únicos', async () => {
+    const { allRoutes } = await import('./index');
+    const ids = allRoutes.map(route => route.operationId);
+    const keys = allRoutes.map(route => `${route.method} ${route.path}`);
+
+    expect(allRoutes).toHaveLength(22);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  it('deduz os erros automáticos de cada rota', async () => {
+    const { routes } = await import('./index');
+
+    expect(routes.products.show.errorStatuses).toEqual([400, 404, 500]);
+    expect(routes.orders.create.errorStatuses).toEqual([
+      400, 401, 404, 409, 413, 500,
+    ]);
+    expect(routes.sessions.create.errorStatuses).toEqual([
+      400, 401, 413, 429, 500,
+    ]);
+    expect(routes.users.updateAvatar.errorStatuses).toEqual([400, 401, 500]);
+    expect(routes.profile.show.errorStatuses).toEqual([401, 404, 500]);
   });
 });

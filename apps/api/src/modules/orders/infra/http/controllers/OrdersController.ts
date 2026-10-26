@@ -1,14 +1,10 @@
-import { Request, Response } from 'express';
-import { validatedQuery } from '@shared/http/middlewares/validate';
+import type { routes } from '@sellmanager/shared';
+import type { RouteHandler } from '@shared/http/contract/mountRoute';
 import { CreateOrderService } from '../../../services/CreateOrderService';
 import { ListOrdersService } from '../../../services/ListOrdersService';
 import { ShowOrderService } from '../../../services/ShowOrderService';
 import { UpdateOrderStatusService } from '../../../services/UpdateOrderStatusService';
-import {
-  CreateOrderBody,
-  ListOrdersQuery,
-  UpdateOrderStatusBody,
-} from '@sellmanager/shared';
+import { toOrderResponse } from '../OrderMapper';
 
 interface OrdersServices {
   list: ListOrdersService;
@@ -17,47 +13,38 @@ interface OrdersServices {
   updateStatus: UpdateOrderStatusService;
 }
 
+type Routes = typeof routes.orders;
+
 export class OrdersController {
   constructor(private readonly services: OrdersServices) {}
 
-  public index = async (
-    request: Request,
-    response: Response,
-  ): Promise<void> => {
-    const { customer_id, page, limit } =
-      validatedQuery<ListOrdersQuery>(request);
-    response.json(
-      await this.services.list.execute({ customer_id }, { page, limit }),
+  public list: RouteHandler<Routes['list']> = async ({ input, reply }) => {
+    const { customer_id, page, limit } = input.query;
+    const { data, meta } = await this.services.list.execute(
+      { customer_id },
+      { page, limit },
     );
+    reply(200, { data: data.map(toOrderResponse), meta });
   };
 
-  public show = async (
-    request: Request<{ id: string }>,
-    response: Response,
-  ): Promise<void> => {
-    response.json(await this.services.show.execute({ id: request.params.id }));
+  public show: RouteHandler<Routes['show']> = async ({ input, reply }) => {
+    const order = await this.services.show.execute({ id: input.params.id });
+    reply(200, toOrderResponse(order));
   };
 
-  public create = async (
-    request: Request,
-    response: Response,
-  ): Promise<void> => {
-    const order = await this.services.create.execute(
-      request.body as CreateOrderBody,
-    );
-    response.status(201).json(order);
+  public create: RouteHandler<Routes['create']> = async ({ input, reply }) => {
+    const order = await this.services.create.execute(input.body);
+    reply(201, toOrderResponse(order));
   };
 
-  public updateStatus = async (
-    request: Request<{ id: string }>,
-    response: Response,
-  ): Promise<void> => {
-    const { status } = request.body as UpdateOrderStatusBody;
-    response.json(
-      await this.services.updateStatus.execute({
-        id: request.params.id,
-        status,
-      }),
-    );
+  public updateStatus: RouteHandler<Routes['updateStatus']> = async ({
+    input,
+    reply,
+  }) => {
+    const order = await this.services.updateStatus.execute({
+      id: input.params.id,
+      status: input.body.status,
+    });
+    reply(200, toOrderResponse(order));
   };
 }

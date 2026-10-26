@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { isoDateSchema } from './common';
+import { examples, isoDateSchema } from './common';
 
 const email = z.string().trim().toLowerCase().pipe(z.email());
 
@@ -8,20 +8,36 @@ const newPassword = z.string().min(8).max(72);
 
 // ---- Entradas
 
-export const createUserBodySchema = z.object({
-  name: z.string().trim().min(1),
-  email,
-  password: newPassword,
-});
+export const createUserBodySchema = z
+  .object({
+    name: z.string().trim().min(1),
+    email,
+    password: newPassword,
+  })
+  .meta({
+    id: 'CreateUserBody',
+    example: {
+      name: 'Kaio',
+      email: 'kaio@example.com',
+      password: 'senha-segura-123',
+    },
+  });
 
-export const sessionBodySchema = z.object({
-  email,
-  password: z.string().min(1),
-});
+export const sessionBodySchema = z
+  .object({
+    email,
+    password: z.string().min(1),
+  })
+  .meta({
+    id: 'SessionBody',
+    example: { email: 'kaio@example.com', password: 'senha-segura-123' },
+  });
 
-export const forgotPasswordBodySchema = z.object({
-  email,
-});
+export const forgotPasswordBodySchema = z
+  .object({
+    email,
+  })
+  .meta({ id: 'ForgotPasswordBody', example: { email: 'kaio@example.com' } });
 
 export const resetPasswordBodySchema = z
   .object({
@@ -32,6 +48,14 @@ export const resetPasswordBodySchema = z
   .refine(data => data.password === data.password_confirmation, {
     message: 'Passwords do not match',
     path: ['password_confirmation'],
+  })
+  .meta({
+    id: 'ResetPasswordBody',
+    example: {
+      token: 'q2_j1awfJDzN3c0a9cXy0bVq2n1kWm8sTzR4u7e5LpQ',
+      password: 'nova-senha-123',
+      password_confirmation: 'nova-senha-123',
+    },
   });
 
 export const updateProfileBodySchema = z
@@ -48,7 +72,17 @@ export const updateProfileBodySchema = z
       message: 'Passwords do not match',
       path: ['password_confirmation'],
     },
-  );
+  )
+  .meta({
+    id: 'UpdateProfileBody',
+    example: {
+      name: 'Kaio F',
+      email: 'kaio@example.com',
+      old_password: 'senha-segura-123',
+      password: 'nova-senha-123',
+      password_confirmation: 'nova-senha-123',
+    },
+  });
 
 export type CreateUserBody = z.infer<typeof createUserBodySchema>;
 export type SessionBody = z.infer<typeof sessionBodySchema>;
@@ -68,14 +102,49 @@ export const userSchema = z
     created_at: isoDateSchema,
     updated_at: isoDateSchema,
   })
-  .meta({ id: 'User' });
+  .meta({
+    id: 'User',
+    example: {
+      id: examples.id,
+      name: 'Kaio',
+      email: 'kaio@example.com',
+      avatar: null,
+      avatar_url: null,
+      created_at: examples.date,
+      updated_at: examples.date,
+    },
+  });
 
 export const sessionSchema = z
   .object({
     user: userSchema,
     token: z.string(),
   })
-  .meta({ id: 'Session' });
+  .meta({
+    id: 'Session',
+    example: {
+      user: {
+        id: examples.id,
+        name: 'Kaio',
+        email: 'kaio@example.com',
+        avatar: null,
+        avatar_url: null,
+        created_at: examples.date,
+        updated_at: examples.date,
+      },
+      token: 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1YzMwMWZkNCJ9.assinatura',
+    },
+  });
 
 export type User = z.infer<typeof userSchema>;
 export type Session = z.infer<typeof sessionSchema>;
+
+/** Upload do avatar (multipart/form-data, campo `avatar`). */
+export const avatarUploadBodySchema = z
+  .object({
+    avatar: z.string().meta({
+      format: 'binary',
+      description: 'Imagem jpeg, png ou webp até 2 MB',
+    }),
+  })
+  .meta({ id: 'AvatarUploadBody' });

@@ -1,12 +1,13 @@
-import { Request, Response } from 'express';
-import { validatedQuery } from '@shared/http/middlewares/validate';
-import { PaginationQuery } from '@sellmanager/shared';
+import type { routes } from '@sellmanager/shared';
+import type { ProductBody } from '@sellmanager/shared';
+import type { RouteHandler } from '@shared/http/contract/mountRoute';
+import { fromCents } from '@shared/http/money';
 import { CreateProductService } from '../../../services/CreateProductService';
 import { DeleteProductService } from '../../../services/DeleteProductService';
 import { ListProductsService } from '../../../services/ListProductsService';
 import { ShowProductService } from '../../../services/ShowProductService';
 import { UpdateProductService } from '../../../services/UpdateProductService';
-import { ProductBody } from '@sellmanager/shared';
+import { toProductResponse } from '../ProductMapper';
 
 interface ProductsServices {
   list: ListProductsService;
@@ -16,53 +17,43 @@ interface ProductsServices {
   delete: DeleteProductService;
 }
 
+type Routes = typeof routes.products;
+
+// contrato em centavos -> domínio em decimal
+function toProductInput({ name, price_cents, quantity }: ProductBody) {
+  return { name, price: fromCents(price_cents), quantity };
+}
+
 export class ProductsController {
   constructor(private readonly services: ProductsServices) {}
 
-  public index = async (
-    request: Request,
-    response: Response,
-  ): Promise<void> => {
-    response.json(
-      await this.services.list.execute(
-        validatedQuery<PaginationQuery>(request),
-      ),
-    );
+  public list: RouteHandler<Routes['list']> = async ({ input, reply }) => {
+    const { data, meta } = await this.services.list.execute(input.query);
+    reply(200, { data: data.map(toProductResponse), meta });
   };
 
-  public show = async (
-    request: Request<{ id: string }>,
-    response: Response,
-  ): Promise<void> => {
-    response.json(await this.services.show.execute({ id: request.params.id }));
+  public show: RouteHandler<Routes['show']> = async ({ input, reply }) => {
+    const product = await this.services.show.execute({ id: input.params.id });
+    reply(200, toProductResponse(product));
   };
 
-  public create = async (
-    request: Request,
-    response: Response,
-  ): Promise<void> => {
+  public create: RouteHandler<Routes['create']> = async ({ input, reply }) => {
     const product = await this.services.create.execute(
-      request.body as ProductBody,
+      toProductInput(input.body),
     );
-    response.status(201).json(product);
+    reply(201, toProductResponse(product));
   };
 
-  public update = async (
-    request: Request<{ id: string }>,
-    response: Response,
-  ): Promise<void> => {
+  public update: RouteHandler<Routes['update']> = async ({ input, reply }) => {
     const product = await this.services.update.execute({
-      id: request.params.id,
-      ...(request.body as ProductBody),
+      id: input.params.id,
+      ...toProductInput(input.body),
     });
-    response.json(product);
+    reply(200, toProductResponse(product));
   };
 
-  public delete = async (
-    request: Request<{ id: string }>,
-    response: Response,
-  ): Promise<void> => {
-    await this.services.delete.execute({ id: request.params.id });
-    response.status(204).send();
+  public delete: RouteHandler<Routes['delete']> = async ({ input, reply }) => {
+    await this.services.delete.execute({ id: input.params.id });
+    reply(204);
   };
 }

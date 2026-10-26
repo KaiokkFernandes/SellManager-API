@@ -1,22 +1,16 @@
-import { RequestHandler, Router } from 'express';
+import { routes } from '@sellmanager/shared';
 import { Container } from '@shared/container';
-import { validate } from '@shared/http/middlewares/validate';
-import { idParamsSchema } from '@sellmanager/shared';
+import type { MountRoute } from '@shared/http/contract/mountRoute';
 import { CreateOrderService } from '../../../services/CreateOrderService';
 import { ListOrdersService } from '../../../services/ListOrdersService';
 import { ShowOrderService } from '../../../services/ShowOrderService';
 import { UpdateOrderStatusService } from '../../../services/UpdateOrderStatusService';
 import { OrdersController } from '../controllers/OrdersController';
-import {
-  createOrderBodySchema,
-  listOrdersQuerySchema,
-  updateOrderStatusBodySchema,
-} from '@sellmanager/shared';
 
-export function makeOrdersRoutes(
+export function registerOrdersRoutes(
+  mount: MountRoute,
   container: Container,
-  authenticated: RequestHandler,
-): Router {
+): void {
   const { orders, customers } = container.repositories;
   const { ordersUnitOfWork } = container;
 
@@ -27,21 +21,8 @@ export function makeOrdersRoutes(
     updateStatus: new UpdateOrderStatusService(ordersUnitOfWork),
   });
 
-  const router = Router();
-
-  router.use(authenticated);
-  router.get('/', validate({ query: listOrdersQuerySchema }), controller.index);
-  router.get('/:id', validate({ params: idParamsSchema }), controller.show);
-  router.post(
-    '/',
-    validate({ body: createOrderBodySchema }),
-    controller.create,
-  );
-  router.patch(
-    '/:id/status',
-    validate({ params: idParamsSchema, body: updateOrderStatusBodySchema }),
-    controller.updateStatus,
-  );
-
-  return router;
+  mount(routes.orders.list, controller.list);
+  mount(routes.orders.show, controller.show);
+  mount(routes.orders.create, controller.create);
+  mount(routes.orders.updateStatus, controller.updateStatus);
 }

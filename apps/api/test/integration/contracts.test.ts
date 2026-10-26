@@ -60,7 +60,7 @@ describe('Contratos de resposta (@sellmanager/shared)', () => {
     const product = await request(ctx.app)
       .post('/products')
       .set('Authorization', auth)
-      .send({ name: 'Teclado', price: 199.9, quantity: 10 })
+      .send({ name: 'Teclado', price_cents: 19990, quantity: 10 })
       .expect(201);
     expectContract(productSchema, product.body);
     expectContract(

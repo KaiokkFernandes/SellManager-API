@@ -24,7 +24,9 @@
     "test:watch": "vitest --project unit",
     "test:coverage": "vitest run --coverage",
     "test:unit": "vitest run --project unit",
-    "test:integration": "vitest run --project integration"
+    "test:integration": "vitest run --project integration",
+    "openapi:generate": "tsx scripts/generate-openapi.ts",
+    "openapi:check": "tsx scripts/generate-openapi.ts --check"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

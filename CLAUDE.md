@@ -39,9 +39,13 @@
 
 - Monorepo pnpm + Turborepo: `apps/api` (Express + TypeORM), `apps/web` (Vite +
   React), `packages/shared` (schemas zod e DTOs; só zod como dependência) e
-  `packages/config` (tsconfig, ESLint, Prettier).
-- Schemas de entrada e DTOs de resposta ficam em `@sellmanager/shared`; a api não
-  define schemas de validação localmente.
+  `packages/config` (tsconfig, ESLint, Prettier) e `packages/api-client` (client
+  gerado do openapi.json).
+- Contrato único: schemas e o registro de rotas (`defineRoute`) ficam em
+  `packages/shared`; a api monta rotas com `mount(routes.x.y, handler)` e responde
+  com `reply()` tipado. Nunca registrar rota/validação/doc à mão na api.
+- Mudou o contrato? Rodar `pnpm openapi:generate` e commitar `apps/api/openapi.json`.
+- Dinheiro em centavos inteiros (`*_cents`); erros `{ status, code, message, issues?, details? }`.
 - Cada módulo da api (`apps/api/src/modules/<m>`) tem `domain/` (interfaces puras),
   `services/` (casos de uso), `fakes/` (repositórios em memória) e `infra/{typeorm,http}`.
 - Implementações concretas só são instanciadas em `apps/api/src/shared/container`.

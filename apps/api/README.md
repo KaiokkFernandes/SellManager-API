@@ -27,8 +27,11 @@ single composition root.
   checks stock, copies the current price, computes the total in cents and decrements stock.
   Canceling an order restores the stock. Concurrent orders cannot oversell
 - **Pagination** on every list (`?page=&limit=`)
-- **Validation** of body, params and query with zod
-- **OpenAPI 3.1 docs** at `/docs`, generated from the same zod schemas
+- **One contract** in [`@sellmanager/shared`](../../packages/shared): routing, input validation,
+  response checks and the committed `openapi.json` all come from it
+- **OpenAPI 3.1 docs** at `/docs`, with examples, auth and error responses
+- **Money in integer cents** (`price_cents`, `total_cents`) and a standard error format with a
+  stable `code`
 - **Security:** helmet, CORS allow-list, rate limiting on auth routes, and structured logs
   (pino) that redact tokens and passwords
 
@@ -43,7 +46,7 @@ single composition root.
 | Validation | zod 4                                                      |
 | Auth       | jose (JWT), bcryptjs                                       |
 | Email      | nodemailer (SMTP or Ethereal) + Handlebars templates       |
-| Docs       | zod-to-openapi + swagger-ui-express                        |
+| Docs       | zod-to-openapi → `openapi.json` + swagger-ui-express       |
 | Logs       | pino, pino-http                                            |
 | Tests      | Vitest + supertest                                         |
 | Quality    | ESLint 10 (typescript-eslint, type-checked), Prettier      |
@@ -61,21 +64,34 @@ src/
 │       ├── fakes/          in-memory repositories for unit tests
 │       └── infra/
 │           ├── typeorm/    EntitySchema mappings and repository implementations
-│           └── http/       controllers, routes, OpenAPI docs
+│           └── http/       typed handlers (controllers), mappers, route registration
 └── shared/
     ├── container/          composition root: the only place that knows concrete classes
     ├── domain/             pagination types
     ├── errors/             AppError
-    ├── http/               app factory, server, middlewares, OpenAPI document
+    ├── http/               app factory, server, middlewares, contract/ (mountRoute, OpenAPI)
     ├── infra/typeorm/      DataSource and migrations
     └── providers/          Hash, Token, Mail, MailTemplate and Storage (interface + impl + fake)
 test/integration/           HTTP tests against a real PostgreSQL
+scripts/generate-openapi.ts writes openapi.json from the contract
 ```
 
-Request schemas and response DTOs live in [`@sellmanager/shared`](../../packages/shared)
-so the API and the front-end share one contract. The API validates input with them, builds
-the OpenAPI document from them, and has an integration test (`test/integration/contracts.test.ts`)
-that checks real responses against them.
+### The contract
+
+Every route is declared once, in `routes` from
+[`@sellmanager/shared`](../../packages/shared). Each declaration holds the method, path, auth,
+rate limit, input schemas, response schemas and domain errors. The API never repeats any of that:
+
+- **`mountRoute`** (`src/shared/http/contract/mountRoute.ts`) registers the Express route, the
+  rate limiter, auth and input validation directly from the declaration.
+- **Handlers** are `RouteHandler<typeof routes.products.show>`. Their `input` is already validated
+  and typed, and `reply(status, body)` only accepts the DTO that the contract declares for that
+  status. Renaming a field in the contract breaks this compilation.
+- **Response checks:** every response is compared against its schema. In tests a mismatch becomes
+  a 500 and the test fails. In development the mismatch is logged. Production skips the check.
+  Fields that the contract doesn't declare count as a mismatch, so a leaked password hash
+  would be caught.
+- **`openapi.json`** is generated from the contract and committed, and `/docs` serves it.
 
 Dependencies point inward: `infra → services → domain`. Services depend only on interfaces
 (`IUsersRepository`, `IHashProvider`, `IOrdersUnitOfWork`…). `makeContainer(dataSource)`
@@ -144,6 +160,8 @@ Run them inside `apps/api`, or from the root with `pnpm --filter api <script>`.
 | `pnpm migration:run` / `migration:revert`                        | Apply or revert migrations (dev)                       |
 | `pnpm migration:create src/shared/infra/typeorm/migrations/Name` | New empty migration (register it in `data-source.ts`)  |
 | `pnpm migration:run:prod`                                        | Apply migrations from the compiled `dist/`             |
+| `pnpm openapi:generate`                                          | Write `openapi.json` from the contract                 |
+| `pnpm openapi:check`                                             | Fail if `openapi.json` is out of date                  |
 
 ## API overview
 
@@ -195,13 +213,13 @@ Content-Type: application/json
   "id": "…",
   "customer_id": "6e2ba4c6-96f5-4d7f-9303-6f6b91a1a960",
   "status": "pending",
-  "total": 399.8,
+  "total_cents": 39980,
   "items": [
     {
       "id": "…",
       "order_id": "…",
       "product_id": "5c301fd4-…",
-      "price": 199.9,
+      "price_cents": 19990,
       "quantity": 2
     }
   ],
@@ -212,28 +230,41 @@ Content-Type: application/json
 
 The client never sends prices: they are copied from the product when the order is placed.
 
+**Money** is always an integer number of cents, in fields ending with `_cents`. For example,
+R$ 199,90 is `19990`. That includes `price_cents` in the product body. Divide by 100 only for display.
+
 ### Responses
 
 Lists return `{ "data": [...], "meta": { "page", "limit", "total", "total_pages" } }`.
 Errors always have the same shape:
+`{ status: 'error', code, message, issues?, details? }`.
 
 ```json
 {
   "status": "error",
+  "code": "VALIDATION_FAILED",
   "message": "Validation failed",
-  "details": [
+  "issues": [
     { "segment": "body", "path": "email", "message": "Invalid email address" }
   ]
 }
 ```
 
+- `code` is stable: clients branch on it, not on `message`. The codes are `VALIDATION_FAILED`,
+  `BAD_REQUEST`, `INVALID_UPLOAD`, `UNAUTHORIZED`, `NOT_FOUND`, `CONFLICT`,
+  `INSUFFICIENT_STOCK`, `RESOURCE_IN_USE`, `PAYLOAD_TOO_LARGE`, `RATE_LIMITED` and `INTERNAL_ERROR`.
+- `issues` appears only on `VALIDATION_FAILED`, with one entry per invalid field.
+- `details` carries domain data, for example `[{ product_id, available, requested }]` on `INSUFFICIENT_STOCK`.
+
 | Status | When                                                                                               |
 | ------ | -------------------------------------------------------------------------------------------------- |
 | 400    | Invalid input, malformed JSON, invalid upload, invalid/expired reset token                         |
+| 413    | JSON body over 100 KB                                                                              |
 | 401    | Missing/invalid token or wrong credentials                                                         |
 | 404    | Resource or route not found                                                                        |
 | 409    | Email/name already in use, insufficient stock, invalid status change, deleting a referenced record |
 | 429    | Rate limit exceeded                                                                                |
+| 500    | Unexpected error                                                                                   |
 
 ## Tests
 

@@ -2,9 +2,10 @@
 
 Front-end skeleton built with **Vite 8 + React 19 + TypeScript**. It has no screens yet.
 
-The placeholder page imports a type, a schema and a constant from
-[`@sellmanager/shared`](../../packages/shared) and renders them. This shows that the
-workspace integration works in the browser build.
+The placeholder page is a minimal example: a login form and a "list products" button that call
+the API through [`@sellmanager/api-client`](../../packages/api-client). The client is set up in
+`src/api.ts`, with the token kept in `localStorage`. The page proves the whole chain works:
+contract → `openapi.json` → typed client → web.
 
 ```bash
 cp .env.example .env   # VITE_API_URL=http://localhost:3333

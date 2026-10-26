@@ -37,9 +37,14 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+      # inclui o openapi:check (antes de qualquer regeneração)
       - run: pnpm lint
       - run: pnpm format:check
       - run: pnpm typecheck
       - run: pnpm build
+      # O build regenera o openapi.json a partir do contrato: se mudou, o
+      # arquivo commitado estava desatualizado.
+      - name: openapi.json em dia com o contrato
+        run: git diff --exit-code -- apps/api/openapi.json
       - run: pnpm test:unit
       - run: pnpm test:integration

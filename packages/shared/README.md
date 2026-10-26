@@ -1,6 +1,6 @@
 # @sellmanager/shared
 
-Contracts shared by the API and the front-end. The package depends only on **zod**, which is a
+The API contract, shared by the API and the front-end. The package depends only on **zod**, which is a
 peer dependency.
 
 | Module         | Exports                                                                                                                                      |
@@ -11,8 +11,20 @@ peer dependency.
 | `customers.ts` | `customerBodySchema`, `customerSchema`                                                                                                       |
 | `orders.ts`    | `ORDER_STATUSES`, `orderStatusSchema`, `createOrderBody`, `listOrdersQuery`, `updateOrderStatusBody`, `orderItemSchema`, `orderSchema`       |
 
+| `contract/` | `defineRoute()`, `routes` (every route of the API), `allRoutes`, `RouteInput`, `RouteResponseBody` |
+
 Every schema also exports its `z.infer` type (`Product`, `CreateOrderBody`, `OrderStatus`…).
-DTO dates are ISO strings, which is what the API sends in JSON.
+Conventions:
+
+- **Dates** are ISO strings, which is what the API sends in JSON.
+- **Ids** are UUIDs.
+- **Money** is an integer number of cents (`moneyCentsSchema`), in fields ending with `_cents`.
+- **Errors** follow `apiErrorSchema`, `{ status, code, message, issues?, details? }`, and
+  `API_ERROR_CODES` lists the stable codes.
+
+The route registry (`contract/routes.ts`) is the single source for the API's routing and
+validation, for `apps/api/openapi.json` and, through that file, for `@sellmanager/api-client`.
+The steps to add a route are in the [root README](../../README.md#how-to-add-or-change-a-route).
 
 ## Build
 

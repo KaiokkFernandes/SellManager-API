@@ -1,8 +1,14 @@
 import { NextFunction, Request, Response } from 'express';
 import { MulterError } from 'multer';
 import { QueryFailedError } from 'typeorm';
+import { apiErrorSchema, type ApiError } from '@sellmanager/shared';
 import AppError from '@shared/errors/AppError';
 import { logger } from '@shared/logger';
+import {
+  checkResponse,
+  ContractViolationError,
+  responseValidationMode,
+} from '../contract/responseValidation';
 
 interface HttpError extends Error {
   status?: number;
@@ -17,6 +23,18 @@ export function notFoundHandler(
   next(new AppError(`Route ${request.method} ${request.path} not found`, 404));
 }
 
+function sendError(response: Response, status: number, body: ApiError): void {
+  // o próprio erro também segue o contrato (validado fora de produção)
+  checkResponse(
+    apiErrorSchema,
+    body,
+    { operationId: 'error', status },
+    responseValidationMode === 'off' ? 'off' : 'warn',
+  );
+  response.status(status).json(body);
+}
+
+/** Converte qualquer erro no formato padrão { status, code, message, issues?, details? }. */
 export function errorHandler(
   error: HttpError,
   request: Request,
@@ -24,18 +42,23 @@ export function errorHandler(
   _next: NextFunction,
 ): void {
   if (error instanceof AppError) {
-    response.status(error.statusCode).json({
+    sendError(response, error.statusCode, {
       status: 'error',
+      code: error.code,
       message: error.message,
+      ...(error.issues && { issues: error.issues }),
       ...(error.details !== undefined && { details: error.details }),
     });
     return;
   }
 
   if (error instanceof MulterError) {
-    response
-      .status(400)
-      .json({ status: 'error', message: error.message, code: error.code });
+    sendError(response, 400, {
+      status: 'error',
+      code: 'INVALID_UPLOAD',
+      message: error.message,
+      details: { reason: error.code },
+    });
     return;
   }
 
@@ -47,26 +70,41 @@ export function errorHandler(
       String((error.driverError as { code?: string }).code),
     )
   ) {
-    response.status(409).json({
+    sendError(response, 409, {
       status: 'error',
+      code: 'RESOURCE_IN_USE',
       message: 'Resource is referenced by other records',
     });
     return;
   }
 
-  // Erros do body-parser (JSON malformado, payload grande demais etc.)
-  if (
-    error.type === 'entity.parse.failed' ||
-    error.type === 'entity.too.large'
-  ) {
-    response
-      .status(error.status ?? 400)
-      .json({ status: 'error', message: error.message });
+  // Erros do body-parser (JSON malformado, payload grande demais)
+  if (error.type === 'entity.parse.failed') {
+    sendError(response, 400, {
+      status: 'error',
+      code: 'BAD_REQUEST',
+      message: error.message,
+    });
+    return;
+  }
+  if (error.type === 'entity.too.large') {
+    sendError(response, 413, {
+      status: 'error',
+      code: 'PAYLOAD_TOO_LARGE',
+      message: error.message,
+    });
     return;
   }
 
   (request.log ?? logger).error({ err: error }, 'Unhandled error');
-  response
-    .status(500)
-    .json({ status: 'error', message: 'Internal server error' });
+  sendError(response, 500, {
+    status: 'error',
+    code: 'INTERNAL_ERROR',
+    message: 'Internal server error',
+    // em teste, a divergência de contrato aparece no corpo para facilitar o diagnóstico
+    ...(error instanceof ContractViolationError &&
+      responseValidationMode === 'strict' && {
+        details: { contract_violation: error.message },
+      }),
+  });
 }
