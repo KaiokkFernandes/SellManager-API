@@ -293,6 +293,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@sellmanager/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
       '@sellmanager/shared':
         specifier: workspace:*
         version: link:../../packages/shared
