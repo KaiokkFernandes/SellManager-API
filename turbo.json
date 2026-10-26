@@ -27,6 +27,11 @@
       ],
       "outputs": ["openapi.json"]
     },
+    "openapi:check": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.spec.ts", "!test/**"],
+      "outputs": []
+    },
     "generate": {
       "dependsOn": ["^build"],
       "outputs": ["src/generated/**"]

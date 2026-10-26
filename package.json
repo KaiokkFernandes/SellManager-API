@@ -13,12 +13,14 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
-    "lint": "turbo run lint",
+    "lint": "turbo run openapi:check && turbo run lint",
     "test": "turbo run test:unit test:integration",
     "test:unit": "turbo run test:unit",
     "test:integration": "turbo run test:integration",
     "format": "prettier --write . && turbo run format",
-    "format:check": "prettier --check . && turbo run format:check"
+    "format:check": "prettier --check . && turbo run format:check",
+    "openapi:generate": "turbo run openapi:generate",
+    "openapi:check": "turbo run openapi:check"
   },
   "prettier": "@sellmanager/config/prettier",
   "devDependencies": {
