@@ -5,8 +5,25 @@ import { z } from 'zod';
  * (como o zod-to-openapi da API) usam o id como nome do componente.
  */
 
-/** Datas trafegam como string ISO 8601 no JSON. */
+/** Datas trafegam como string ISO 8601 (UTC) no JSON. */
 export const isoDateSchema = z.iso.datetime();
+
+/**
+ * Padrão de dinheiro da API: **centavos como inteiro**, em campos com sufixo
+ * `_cents` (R$ 199,90 -> 19990). Inteiros não têm erro de ponto flutuante e o
+ * sufixo deixa a unidade explícita. Formate só na exibição (valor / 100).
+ */
+export const moneyCentsSchema = z
+  .number()
+  .int()
+  .nonnegative()
+  .meta({ description: 'Valor em centavos (inteiro). R$ 199,90 = 19990' });
+
+const EXAMPLE_ID = '5c301fd4-233e-4eac-bb22-994b162e70d2';
+const EXAMPLE_DATE = '2026-10-24T20:00:00.000Z';
+
+/** Valores usados nos exemplos do OpenAPI. */
+export const examples = { id: EXAMPLE_ID, date: EXAMPLE_DATE } as const;
 
 export const idParamsSchema = z.object({
   id: z.uuid(),
@@ -74,7 +91,9 @@ export const apiErrorSchema = z
       status: 'error',
       code: 'VALIDATION_FAILED',
       message: 'Validation failed',
-      issues: [{ segment: 'body', path: 'email', message: 'Invalid email address' }],
+      issues: [
+        { segment: 'body', path: 'email', message: 'Invalid email address' },
+      ],
     },
   });
 

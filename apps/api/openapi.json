@@ -68,7 +68,16 @@
           "avatar_url",
           "created_at",
           "updated_at"
-        ]
+        ],
+        "example": {
+          "id": "5c301fd4-233e-4eac-bb22-994b162e70d2",
+          "name": "Kaio",
+          "email": "kaio@example.com",
+          "avatar": null,
+          "avatar_url": null,
+          "created_at": "2026-10-24T20:00:00.000Z",
+          "updated_at": "2026-10-24T20:00:00.000Z"
+        }
       },
       "ApiError": {
         "type": "object",
@@ -148,6 +157,33 @@
           "message"
         ]
       },
+      "CreateUserBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 72
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "password"
+        ],
+        "example": {
+          "name": "Kaio",
+          "email": "kaio@example.com",
+          "password": "senha-segura-123"
+        }
+      },
       "AvatarUploadBody": {
         "type": "object",
         "properties": {
@@ -174,7 +210,39 @@
         "required": [
           "user",
           "token"
-        ]
+        ],
+        "example": {
+          "user": {
+            "id": "5c301fd4-233e-4eac-bb22-994b162e70d2",
+            "name": "Kaio",
+            "email": "kaio@example.com",
+            "avatar": null,
+            "avatar_url": null,
+            "created_at": "2026-10-24T20:00:00.000Z",
+            "updated_at": "2026-10-24T20:00:00.000Z"
+          },
+          "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1YzMwMWZkNCJ9.assinatura"
+        }
+      },
+      "SessionBody": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "example": {
+          "email": "kaio@example.com",
+          "password": "senha-segura-123"
+        }
       },
       "Product": {
         "type": "object",
@@ -186,8 +254,10 @@
           "name": {
             "type": "string"
           },
-          "price": {
-            "type": "number"
+          "price_cents": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Valor em centavos (inteiro). R$ 199,90 = 19990"
           },
           "quantity": {
             "type": "integer"
@@ -204,11 +274,48 @@
         "required": [
           "id",
           "name",
-          "price",
+          "price_cents",
           "quantity",
           "created_at",
           "updated_at"
-        ]
+        ],
+        "example": {
+          "id": "5c301fd4-233e-4eac-bb22-994b162e70d2",
+          "name": "Teclado mecânico",
+          "price_cents": 19990,
+          "quantity": 10,
+          "created_at": "2026-10-24T20:00:00.000Z",
+          "updated_at": "2026-10-24T20:00:00.000Z"
+        }
+      },
+      "ProductBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "price_cents": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9999999999,
+            "description": "Valor em centavos (inteiro). R$ 199,90 = 19990"
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "name",
+          "price_cents",
+          "quantity"
+        ],
+        "example": {
+          "name": "Teclado mecânico",
+          "price_cents": 19990,
+          "quantity": 10
+        }
       },
       "Customer": {
         "type": "object",
@@ -239,7 +346,34 @@
           "email",
           "created_at",
           "updated_at"
-        ]
+        ],
+        "example": {
+          "id": "5c301fd4-233e-4eac-bb22-994b162e70d2",
+          "name": "Ana Souza",
+          "email": "ana@example.com",
+          "created_at": "2026-10-24T20:00:00.000Z",
+          "updated_at": "2026-10-24T20:00:00.000Z"
+        }
+      },
+      "CustomerBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "email"
+        ],
+        "example": {
+          "name": "Ana Souza",
+          "email": "ana@example.com"
+        }
       },
       "Order": {
         "type": "object",
@@ -260,8 +394,10 @@
               "canceled"
             ]
           },
-          "total": {
-            "type": "number"
+          "total_cents": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Valor em centavos (inteiro). R$ 199,90 = 19990"
           },
           "items": {
             "type": "array",
@@ -282,11 +418,28 @@
           "id",
           "customer_id",
           "status",
-          "total",
+          "total_cents",
           "items",
           "created_at",
           "updated_at"
-        ]
+        ],
+        "example": {
+          "id": "5c301fd4-233e-4eac-bb22-994b162e70d2",
+          "customer_id": "6e2ba4c6-96f5-4d7f-9303-6f6b91a1a960",
+          "status": "pending",
+          "total_cents": 39980,
+          "items": [
+            {
+              "id": "a1b2c3d4-0000-4000-8000-000000000001",
+              "order_id": "5c301fd4-233e-4eac-bb22-994b162e70d2",
+              "product_id": "8d83dcee-0204-4a7e-8488-ea60dc369ca4",
+              "price_cents": 19990,
+              "quantity": 2
+            }
+          ],
+          "created_at": "2026-10-24T20:00:00.000Z",
+          "updated_at": "2026-10-24T20:00:00.000Z"
+        }
       },
       "OrderItem": {
         "type": "object",
@@ -303,9 +456,10 @@
             "type": "string",
             "format": "uuid"
           },
-          "price": {
-            "type": "number",
-            "description": "Preço unitário no momento da compra"
+          "price_cents": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Preço unitário em centavos no momento da compra"
           },
           "quantity": {
             "type": "integer"
@@ -315,9 +469,53 @@
           "id",
           "order_id",
           "product_id",
-          "price",
+          "price_cents",
           "quantity"
         ]
+      },
+      "CreateOrderBody": {
+        "type": "object",
+        "properties": {
+          "customer_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "products": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "quantity": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                }
+              },
+              "required": [
+                "id",
+                "quantity"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "customer_id",
+          "products"
+        ],
+        "example": {
+          "customer_id": "6e2ba4c6-96f5-4d7f-9303-6f6b91a1a960",
+          "products": [
+            {
+              "id": "8d83dcee-0204-4a7e-8488-ea60dc369ca4",
+              "quantity": 2
+            }
+          ]
+        }
       }
     },
     "parameters": {}
@@ -336,26 +534,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "email": {
-                    "type": "string"
-                  },
-                  "password": {
-                    "type": "string",
-                    "minLength": 8,
-                    "maxLength": 72
-                  }
-                },
-                "required": [
-                  "name",
-                  "email",
-                  "password"
-                ]
+                "$ref": "#/components/schemas/CreateUserBody"
               }
             }
           }
@@ -615,20 +794,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "email": {
-                    "type": "string"
-                  },
-                  "password": {
-                    "type": "string",
-                    "minLength": 1
-                  }
-                },
-                "required": [
-                  "email",
-                  "password"
-                ]
+                "$ref": "#/components/schemas/SessionBody"
               }
             }
           }
@@ -1146,26 +1312,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "price": {
-                    "type": "number",
-                    "minimum": 0
-                  },
-                  "quantity": {
-                    "type": "integer",
-                    "minimum": 0
-                  }
-                },
-                "required": [
-                  "name",
-                  "price",
-                  "quantity"
-                ]
+                "$ref": "#/components/schemas/ProductBody"
               }
             }
           }
@@ -1323,26 +1470,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "price": {
-                    "type": "number",
-                    "minimum": 0
-                  },
-                  "quantity": {
-                    "type": "integer",
-                    "minimum": 0
-                  }
-                },
-                "required": [
-                  "name",
-                  "price",
-                  "quantity"
-                ]
+                "$ref": "#/components/schemas/ProductBody"
               }
             }
           }
@@ -1629,20 +1757,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "email": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "name",
-                  "email"
-                ]
+                "$ref": "#/components/schemas/CustomerBody"
               }
             }
           }
@@ -1814,20 +1929,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "email": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "name",
-                  "email"
-                ]
+                "$ref": "#/components/schemas/CustomerBody"
               }
             }
           }
@@ -2124,39 +2226,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "customer_id": {
-                    "type": "string",
-                    "format": "uuid"
-                  },
-                  "products": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "quantity": {
-                          "type": "integer",
-                          "exclusiveMinimum": 0
-                        }
-                      },
-                      "required": [
-                        "id",
-                        "quantity"
-                      ]
-                    },
-                    "minItems": 1,
-                    "maxItems": 100
-                  }
-                },
-                "required": [
-                  "customer_id",
-                  "products"
-                ]
+                "$ref": "#/components/schemas/CreateOrderBody"
               }
             }
           }

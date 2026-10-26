@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { isoDateSchema } from './common';
+import { examples, isoDateSchema } from './common';
 
 const email = z.string().trim().toLowerCase().pipe(z.email());
 
@@ -8,16 +8,30 @@ const newPassword = z.string().min(8).max(72);
 
 // ---- Entradas
 
-export const createUserBodySchema = z.object({
-  name: z.string().trim().min(1),
-  email,
-  password: newPassword,
-});
+export const createUserBodySchema = z
+  .object({
+    name: z.string().trim().min(1),
+    email,
+    password: newPassword,
+  })
+  .meta({
+    id: 'CreateUserBody',
+    example: {
+      name: 'Kaio',
+      email: 'kaio@example.com',
+      password: 'senha-segura-123',
+    },
+  });
 
-export const sessionBodySchema = z.object({
-  email,
-  password: z.string().min(1),
-});
+export const sessionBodySchema = z
+  .object({
+    email,
+    password: z.string().min(1),
+  })
+  .meta({
+    id: 'SessionBody',
+    example: { email: 'kaio@example.com', password: 'senha-segura-123' },
+  });
 
 export const forgotPasswordBodySchema = z.object({
   email,
@@ -68,14 +82,39 @@ export const userSchema = z
     created_at: isoDateSchema,
     updated_at: isoDateSchema,
   })
-  .meta({ id: 'User' });
+  .meta({
+    id: 'User',
+    example: {
+      id: examples.id,
+      name: 'Kaio',
+      email: 'kaio@example.com',
+      avatar: null,
+      avatar_url: null,
+      created_at: examples.date,
+      updated_at: examples.date,
+    },
+  });
 
 export const sessionSchema = z
   .object({
     user: userSchema,
     token: z.string(),
   })
-  .meta({ id: 'Session' });
+  .meta({
+    id: 'Session',
+    example: {
+      user: {
+        id: examples.id,
+        name: 'Kaio',
+        email: 'kaio@example.com',
+        avatar: null,
+        avatar_url: null,
+        created_at: examples.date,
+        updated_at: examples.date,
+      },
+      token: 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1YzMwMWZkNCJ9.assinatura',
+    },
+  });
 
 export type User = z.infer<typeof userSchema>;
 export type Session = z.infer<typeof sessionSchema>;

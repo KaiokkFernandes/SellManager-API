@@ -1,4 +1,5 @@
 import type { Order as OrderResponse } from '@sellmanager/shared';
+import { toCents } from '@shared/http/money';
 import { Order } from '../../domain/entities/Order';
 
 export function toOrderResponse(order: Order): OrderResponse {
@@ -6,12 +7,12 @@ export function toOrderResponse(order: Order): OrderResponse {
     id: order.id,
     customer_id: order.customer_id,
     status: order.status,
-    total: order.total,
+    total_cents: toCents(order.total),
     items: order.items.map(item => ({
       id: item.id,
       order_id: item.order_id,
       product_id: item.product_id,
-      price: item.price,
+      price_cents: toCents(item.price),
       quantity: item.quantity,
     })),
     created_at: order.created_at.toISOString(),

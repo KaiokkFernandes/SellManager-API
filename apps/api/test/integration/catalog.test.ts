@@ -22,7 +22,7 @@ describe('Produtos e clientes', () => {
   afterAll(closeDatabase);
 
   describe('/products', () => {
-    const keyboard = { name: 'Teclado', price: 199.9, quantity: 10 };
+    const keyboard = { name: 'Teclado', price_cents: 19990, quantity: 10 };
 
     it('leitura é pública, escrita exige autenticação', async () => {
       await request(ctx.app).get('/products').expect(200);
@@ -38,12 +38,12 @@ describe('Produtos e clientes', () => {
       const id = created.body.id as string;
 
       const shown = await request(ctx.app).get(`/products/${id}`).expect(200);
-      expect(shown.body.price).toBe(199.9);
+      expect(shown.body.price_cents).toBe(19990);
 
       await request(ctx.app)
         .put(`/products/${id}`)
         .set('Authorization', auth)
-        .send({ ...keyboard, price: 150 })
+        .send({ ...keyboard, price_cents: 15000 })
         .expect(200);
 
       await request(ctx.app)
@@ -57,7 +57,7 @@ describe('Produtos e clientes', () => {
       await request(ctx.app)
         .post('/products')
         .set('Authorization', auth)
-        .send({ name: 'X', price: -1, quantity: 1.5 })
+        .send({ name: 'X', price_cents: 1.5, quantity: -1 })
         .expect(400);
 
       await request(ctx.app)

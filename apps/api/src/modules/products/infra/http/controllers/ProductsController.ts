@@ -1,5 +1,7 @@
 import type { routes } from '@sellmanager/shared';
+import type { ProductBody } from '@sellmanager/shared';
 import type { RouteHandler } from '@shared/http/contract/mountRoute';
+import { fromCents } from '@shared/http/money';
 import { CreateProductService } from '../../../services/CreateProductService';
 import { DeleteProductService } from '../../../services/DeleteProductService';
 import { ListProductsService } from '../../../services/ListProductsService';
@@ -17,6 +19,11 @@ interface ProductsServices {
 
 type Routes = typeof routes.products;
 
+// contrato em centavos -> domínio em decimal
+function toProductInput({ name, price_cents, quantity }: ProductBody) {
+  return { name, price: fromCents(price_cents), quantity };
+}
+
 export class ProductsController {
   constructor(private readonly services: ProductsServices) {}
 
@@ -31,14 +38,16 @@ export class ProductsController {
   };
 
   public create: RouteHandler<Routes['create']> = async ({ input, reply }) => {
-    const product = await this.services.create.execute(input.body);
+    const product = await this.services.create.execute(
+      toProductInput(input.body),
+    );
     reply(201, toProductResponse(product));
   };
 
   public update: RouteHandler<Routes['update']> = async ({ input, reply }) => {
     const product = await this.services.update.execute({
       id: input.params.id,
-      ...input.body,
+      ...toProductInput(input.body),
     });
     reply(200, toProductResponse(product));
   };

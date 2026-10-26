@@ -18,12 +18,16 @@ describe('/orders', () => {
   let auth: string;
   let customerId: string;
 
-  const createProduct = async (name: string, price: number, quantity: number) =>
+  const createProduct = async (
+    name: string,
+    price_cents: number,
+    quantity: number,
+  ) =>
     (
       await request(ctx.app)
         .post('/products')
         .set('Authorization', auth)
-        .send({ name, price, quantity })
+        .send({ name, price_cents, quantity })
         .expect(201)
     ).body as Product;
 
@@ -56,8 +60,8 @@ describe('/orders', () => {
   afterAll(closeDatabase);
 
   it('cria o pedido com o preço do produto, total correto e baixa de estoque', async () => {
-    const cable = await createProduct('Cabo', 0.1, 50);
-    const mouse = await createProduct('Mouse', 0.2, 5);
+    const cable = await createProduct('Cabo', 10, 50);
+    const mouse = await createProduct('Mouse', 20, 5);
 
     const response = await order([
       { id: cable.id, quantity: 3 },
@@ -66,7 +70,7 @@ describe('/orders', () => {
 
     expect(response.body).toMatchObject({
       status: 'pending',
-      total: 0.5,
+      total_cents: 50,
       customer_id: customerId,
     });
     expect(await stockOf(cable)).toBe(47);
@@ -80,8 +84,8 @@ describe('/orders', () => {
   });
 
   it('estoque insuficiente responde 409 e não altera nada', async () => {
-    const cable = await createProduct('Cabo', 1, 10);
-    const mouse = await createProduct('Mouse', 1, 1);
+    const cable = await createProduct('Cabo', 100, 10);
+    const mouse = await createProduct('Mouse', 100, 1);
 
     const response = await order([
       { id: cable.id, quantity: 1 },
@@ -102,7 +106,7 @@ describe('/orders', () => {
   });
 
   it('pedidos concorrentes não vendem mais do que o estoque', async () => {
-    const monitor = await createProduct('Monitor', 899.99, 3);
+    const monitor = await createProduct('Monitor', 89999, 3);
 
     const responses = await Promise.all(
       Array.from({ length: 8 }, () => order([{ id: monitor.id, quantity: 1 }])),
@@ -115,7 +119,7 @@ describe('/orders', () => {
   });
 
   it('cancelar devolve o estoque e pedidos finalizados não mudam mais', async () => {
-    const cable = await createProduct('Cabo', 1, 10);
+    const cable = await createProduct('Cabo', 100, 10);
     const created = await order([{ id: cable.id, quantity: 4 }]).expect(201);
     const statusUrl = `/orders/${created.body.id as string}/status`;
 
@@ -155,7 +159,7 @@ describe('/orders', () => {
   });
 
   it('não permite apagar produto ou cliente que tem pedidos', async () => {
-    const cable = await createProduct('Cabo', 1, 10);
+    const cable = await createProduct('Cabo', 100, 10);
     await order([{ id: cable.id, quantity: 1 }]).expect(201);
 
     const response = await request(ctx.app)
@@ -170,7 +174,7 @@ describe('/orders', () => {
   });
 
   it('filtra a listagem por cliente', async () => {
-    const cable = await createProduct('Cabo', 1, 10);
+    const cable = await createProduct('Cabo', 100, 10);
     await order([{ id: cable.id, quantity: 1 }]).expect(201);
 
     const other = '00000000-0000-4000-8000-000000000000';
