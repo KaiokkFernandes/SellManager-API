@@ -9,3 +9,8 @@ allowBuilds:
 overrides:
   # picomatch vulnerável trazido pelo tsc-alias (ferramenta de build)
   tsc-alias>picomatch: ^2.3.2
+
+peerDependencyRules:
+  allowedVersions:
+    # o openapi-typescript 7 declara typescript ^5, mas funciona com o 6 (testado)
+    openapi-typescript>typescript: '6'

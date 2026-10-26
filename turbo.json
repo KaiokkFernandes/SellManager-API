@@ -8,20 +8,44 @@
   ],
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "generate"],
       "inputs": ["$TURBO_DEFAULT$", "!**/*.spec.ts", "!test/**", "!**/*.md"],
       "outputs": ["dist/**"]
     },
-    "typecheck": {
+    "@sellmanager/api#build": {
+      "dependsOn": ["^build", "openapi:generate"],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.spec.ts", "!test/**", "!**/*.md"],
+      "outputs": ["dist/**"]
+    },
+    "openapi:generate": {
       "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/*.spec.ts",
+        "!test/**",
+        "!openapi.json"
+      ],
+      "outputs": ["openapi.json"]
+    },
+    "generate": {
+      "dependsOn": ["^build"],
+      "outputs": ["src/generated/**"]
+    },
+    "@sellmanager/api-client#generate": {
+      "dependsOn": ["@sellmanager/api#openapi:generate"],
+      "inputs": ["$TURBO_ROOT$/apps/api/openapi.json", "package.json"],
+      "outputs": ["src/generated/**"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build", "generate"],
       "outputs": []
     },
     "lint": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "generate"],
       "outputs": []
     },
     "test:unit": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "generate"],
       "outputs": []
     },
     "test:integration": {
