@@ -33,9 +33,11 @@ export const sessionBodySchema = z
     example: { email: 'kaio@example.com', password: 'senha-segura-123' },
   });
 
-export const forgotPasswordBodySchema = z.object({
-  email,
-});
+export const forgotPasswordBodySchema = z
+  .object({
+    email,
+  })
+  .meta({ id: 'ForgotPasswordBody', example: { email: 'kaio@example.com' } });
 
 export const resetPasswordBodySchema = z
   .object({
@@ -46,6 +48,14 @@ export const resetPasswordBodySchema = z
   .refine(data => data.password === data.password_confirmation, {
     message: 'Passwords do not match',
     path: ['password_confirmation'],
+  })
+  .meta({
+    id: 'ResetPasswordBody',
+    example: {
+      token: 'q2_j1awfJDzN3c0a9cXy0bVq2n1kWm8sTzR4u7e5LpQ',
+      password: 'nova-senha-123',
+      password_confirmation: 'nova-senha-123',
+    },
   });
 
 export const updateProfileBodySchema = z
@@ -62,7 +72,17 @@ export const updateProfileBodySchema = z
       message: 'Passwords do not match',
       path: ['password_confirmation'],
     },
-  );
+  )
+  .meta({
+    id: 'UpdateProfileBody',
+    example: {
+      name: 'Kaio F',
+      email: 'kaio@example.com',
+      old_password: 'senha-segura-123',
+      password: 'nova-senha-123',
+      password_confirmation: 'nova-senha-123',
+    },
+  });
 
 export type CreateUserBody = z.infer<typeof createUserBodySchema>;
 export type SessionBody = z.infer<typeof sessionBodySchema>;

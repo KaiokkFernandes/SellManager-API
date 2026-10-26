@@ -244,6 +244,82 @@
           "password": "senha-segura-123"
         }
       },
+      "UpdateProfileBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "email": {
+            "type": "string"
+          },
+          "old_password": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 72
+          },
+          "password_confirmation": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "email"
+        ],
+        "example": {
+          "name": "Kaio F",
+          "email": "kaio@example.com",
+          "old_password": "senha-segura-123",
+          "password": "nova-senha-123",
+          "password_confirmation": "nova-senha-123"
+        }
+      },
+      "ForgotPasswordBody": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "example": {
+          "email": "kaio@example.com"
+        }
+      },
+      "ResetPasswordBody": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 128
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 72
+          },
+          "password_confirmation": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "password",
+          "password_confirmation"
+        ],
+        "example": {
+          "token": "q2_j1awfJDzN3c0a9cXy0bVq2n1kWm8sTzR4u7e5LpQ",
+          "password": "nova-senha-123",
+          "password_confirmation": "nova-senha-123"
+        }
+      },
       "Product": {
         "type": "object",
         "properties": {
@@ -515,6 +591,24 @@
               "quantity": 2
             }
           ]
+        }
+      },
+      "UpdateOrderStatusBody": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "canceled"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "example": {
+          "status": "completed"
         }
       }
     },
@@ -934,31 +1028,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "email": {
-                    "type": "string"
-                  },
-                  "old_password": {
-                    "type": "string"
-                  },
-                  "password": {
-                    "type": "string",
-                    "minLength": 8,
-                    "maxLength": 72
-                  },
-                  "password_confirmation": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "name",
-                  "email"
-                ]
+                "$ref": "#/components/schemas/UpdateProfileBody"
               }
             }
           }
@@ -1051,15 +1121,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "email": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "email"
-                ]
+                "$ref": "#/components/schemas/ForgotPasswordBody"
               }
             }
           }
@@ -1125,27 +1187,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "token": {
-                    "type": "string",
-                    "minLength": 32,
-                    "maxLength": 128
-                  },
-                  "password": {
-                    "type": "string",
-                    "minLength": 8,
-                    "maxLength": 72
-                  },
-                  "password_confirmation": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "token",
-                  "password",
-                  "password_confirmation"
-                ]
+                "$ref": "#/components/schemas/ResetPasswordBody"
               }
             }
           }
@@ -2411,19 +2453,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "status": {
-                    "type": "string",
-                    "enum": [
-                      "completed",
-                      "canceled"
-                    ]
-                  }
-                },
-                "required": [
-                  "status"
-                ]
+                "$ref": "#/components/schemas/UpdateOrderStatusBody"
               }
             }
           }

@@ -39,9 +39,11 @@ export const listOrdersQuerySchema = paginationQuerySchema.extend({
   customer_id: z.uuid().optional(),
 });
 
-export const updateOrderStatusBodySchema = z.object({
-  status: orderStatusSchema.exclude(['pending']),
-});
+export const updateOrderStatusBodySchema = z
+  .object({
+    status: orderStatusSchema.exclude(['pending']),
+  })
+  .meta({ id: 'UpdateOrderStatusBody', example: { status: 'completed' } });
 
 export type CreateOrderBody = z.infer<typeof createOrderBodySchema>;
 export type ListOrdersQuery = z.infer<typeof listOrdersQuerySchema>;
