@@ -1,5 +1,9 @@
 export { createApiClient, unwrap } from './client';
-export type { ApiClientOptions, SellManagerClient } from './client';
+export type {
+  ApiClientOptions,
+  SellManagerClient,
+  UploadOptions,
+} from './client';
 export { ApiClientError, isApiError } from './errors';
 export type { ApiError, ApiErrorCode, ValidationIssue } from './errors';
 export type { components, operations, paths } from './generated/openapi';

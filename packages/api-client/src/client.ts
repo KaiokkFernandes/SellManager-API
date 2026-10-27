@@ -15,6 +15,14 @@ export interface ApiClientOptions {
   onUnauthorized?: (response: Response) => void;
   /** fetch alternativo (testes, SSR). */
   fetch?: typeof globalThis.fetch;
+  /** XMLHttpRequest alternativo (testes). Usado só nos uploads com progresso. */
+  XMLHttpRequest?: typeof globalThis.XMLHttpRequest;
+}
+
+export interface UploadOptions {
+  /** Fração enviada, de 0 a 1. */
+  onProgress?: (fraction: number) => void;
+  signal?: AbortSignal;
 }
 
 export type SellManagerClient = Client<paths> & {
@@ -23,6 +31,15 @@ export type SellManagerClient = Client<paths> & {
     file: Blob,
     filename?: string,
   ): Promise<components['schemas']['User']>;
+  /**
+   * PATCH /products/{id}/image com multipart/form-data e progresso de envio
+   * (via XMLHttpRequest: fetch não informa progresso de upload).
+   */
+  uploadProductImage(
+    id: string,
+    file: Blob,
+    options?: UploadOptions & { filename?: string },
+  ): Promise<components['schemas']['Product']>;
 };
 
 export function createApiClient({
@@ -30,6 +47,7 @@ export function createApiClient({
   getToken,
   onUnauthorized,
   fetch,
+  XMLHttpRequest: Xhr,
 }: ApiClientOptions): SellManagerClient {
   const client = createClient<paths>({ baseUrl, ...(fetch && { fetch }) });
 
@@ -62,6 +80,87 @@ export function createApiClient({
         }),
       );
     },
+
+    uploadProductImage(
+      id: string,
+      file: Blob,
+      {
+        filename = 'image',
+        ...options
+      }: UploadOptions & { filename?: string } = {},
+    ) {
+      const form = new FormData();
+      form.append('image', file, filename);
+      return sendMultipart<components['schemas']['Product']>({
+        Xhr: Xhr ?? globalThis.XMLHttpRequest,
+        url: `${baseUrl}/products/${encodeURIComponent(id)}/image`,
+        method: 'PATCH',
+        body: form,
+        token: getToken?.(),
+        onUnauthorized,
+        ...options,
+      });
+    },
+  });
+}
+
+interface MultipartRequest extends UploadOptions {
+  Xhr: typeof globalThis.XMLHttpRequest;
+  url: string;
+  method: string;
+  body: FormData;
+  token: string | null | undefined;
+  onUnauthorized?: (response: Response) => void;
+}
+
+function sendMultipart<T>({
+  Xhr,
+  url,
+  method,
+  body,
+  token,
+  onUnauthorized,
+  onProgress,
+  signal,
+}: MultipartRequest): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const xhr = new Xhr();
+    xhr.open(method, url);
+    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+    xhr.upload.addEventListener('progress', event => {
+      if (event.lengthComputable) onProgress?.(event.loaded / event.total);
+    });
+    xhr.addEventListener('load', () => {
+      let parsed: unknown;
+      try {
+        parsed = xhr.responseText ? JSON.parse(xhr.responseText) : undefined;
+      } catch {
+        parsed = undefined;
+      }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress?.(1);
+        resolve(parsed as T);
+        return;
+      }
+      if (xhr.status === 401 && token) {
+        onUnauthorized?.(new Response(null, { status: 401 }));
+      }
+      reject(new ApiClientError(xhr.status, parsed));
+    });
+    const fail = (cause: string) => () =>
+      reject(Object.assign(new ApiClientError(0, undefined), { cause }));
+    xhr.addEventListener('error', fail('network'));
+    xhr.addEventListener('abort', fail('aborted'));
+
+    if (signal) {
+      if (signal.aborted) {
+        fail('aborted')();
+        return;
+      }
+      signal.addEventListener('abort', () => xhr.abort(), { once: true });
+    }
+    xhr.send(body);
   });
 }
 

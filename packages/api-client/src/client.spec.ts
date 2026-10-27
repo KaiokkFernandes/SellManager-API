@@ -167,3 +167,102 @@ describe('createApiClient', () => {
     expect((form.get('avatar') as File).name).toBe('a.png');
   });
 });
+
+/** XMLHttpRequest mínimo para testar o upload com progresso. */
+function fakeXhr(status: number, body: unknown) {
+  const sent: {
+    method: string;
+    url: string;
+    headers: Record<string, string>;
+    body: unknown;
+  }[] = [];
+  class FakeXhr extends EventTarget {
+    status = 0;
+    responseText = '';
+    upload = new EventTarget();
+    private request = {
+      method: '',
+      url: '',
+      headers: {} as Record<string, string>,
+    };
+    open(method: string, url: string) {
+      this.request = { method, url, headers: {} };
+    }
+    setRequestHeader(name: string, value: string) {
+      this.request.headers[name] = value;
+    }
+    abort() {
+      this.dispatchEvent(new Event('abort'));
+    }
+    send(payload: unknown) {
+      sent.push({ ...this.request, body: payload });
+      const progress = (loaded: number) =>
+        Object.assign(new Event('progress'), {
+          lengthComputable: true,
+          loaded,
+          total: 10,
+        });
+      this.upload.dispatchEvent(progress(5));
+      this.status = status;
+      this.responseText = JSON.stringify(body);
+      this.dispatchEvent(new Event('load'));
+    }
+  }
+  return { Xhr: FakeXhr as unknown as typeof XMLHttpRequest, sent };
+}
+
+describe('uploadProductImage', () => {
+  it('envia multipart com token e informa o progresso', async () => {
+    const { Xhr, sent } = fakeXhr(200, {
+      ...product,
+      image_url: 'http://api.test/files/x.png',
+    });
+    const client = createApiClient({
+      baseUrl: 'http://api.test',
+      getToken: () => 'abc',
+      XMLHttpRequest: Xhr,
+    });
+    const progress: number[] = [];
+
+    const updated = await client.uploadProductImage(
+      product.id,
+      new Blob(['png']),
+      {
+        filename: 'foto.png',
+        onProgress: fraction => progress.push(fraction),
+      },
+    );
+
+    expect(updated.image_url).toBe('http://api.test/files/x.png');
+    expect(sent[0]).toMatchObject({
+      method: 'PATCH',
+      url: `http://api.test/products/${product.id}/image`,
+      headers: { Authorization: 'Bearer abc' },
+    });
+    expect((sent[0]?.body as FormData).get('image')).toBeInstanceOf(Blob);
+    expect(progress).toEqual([0.5, 1]);
+  });
+
+  it('erro da API vira ApiClientError e 401 chama onUnauthorized', async () => {
+    const { Xhr } = fakeXhr(401, {
+      status: 'error',
+      code: 'UNAUTHORIZED',
+      message: 'Invalid JWT token',
+    });
+    const onUnauthorized = vi.fn();
+    const client = createApiClient({
+      baseUrl: 'http://api.test',
+      getToken: () => 'velho',
+      onUnauthorized,
+      XMLHttpRequest: Xhr,
+    });
+
+    await expect(
+      client.uploadProductImage(product.id, new Blob(['x'])),
+    ).rejects.toMatchObject({
+      status: 401,
+      code: 'UNAUTHORIZED',
+    });
+    expect(onUnauthorized).toHaveBeenCalledOnce();
+  });
+});
