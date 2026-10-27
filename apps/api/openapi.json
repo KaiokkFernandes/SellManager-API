@@ -97,6 +97,7 @@
               "UNAUTHORIZED",
               "NOT_FOUND",
               "CONFLICT",
+              "ALREADY_EXISTS",
               "INSUFFICIENT_STOCK",
               "RESOURCE_IN_USE",
               "PAYLOAD_TOO_LARGE",

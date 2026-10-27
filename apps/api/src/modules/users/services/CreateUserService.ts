@@ -19,7 +19,7 @@ export class CreateUserService {
     const emailExists = await this.usersRepository.findByEmail(email);
 
     if (emailExists) {
-      throw new AppError('Email address already used.', 409);
+      throw AppError.alreadyExists('email', 'Email already in use');
     }
 
     return this.usersRepository.create({

@@ -65,6 +65,7 @@ export const API_ERROR_CODES = [
   'UNAUTHORIZED',
   'NOT_FOUND',
   'CONFLICT',
+  'ALREADY_EXISTS',
   'INSUFFICIENT_STOCK',
   'RESOURCE_IN_USE',
   'PAYLOAD_TOO_LARGE',
@@ -80,7 +81,7 @@ export const apiErrorSchema = z
     status: z.literal('error'),
     code: apiErrorCodeSchema,
     message: z.string(),
-    /** Presente em VALIDATION_FAILED: um item por campo inválido. */
+    /** Em VALIDATION_FAILED e ALREADY_EXISTS: um item por campo com problema. */
     issues: z.array(validationIssueSchema).optional(),
     /** Dados extras do erro de domínio (ex.: estoque disponível). */
     details: z.unknown().optional(),

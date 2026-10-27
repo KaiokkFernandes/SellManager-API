@@ -14,6 +14,7 @@ const MESSAGES: Record<
   UNAUTHORIZED: 'Sessão inválida ou expirada. Entre novamente.',
   NOT_FOUND: 'O item não foi encontrado.',
   CONFLICT: 'Essa operação conflita com o estado atual dos dados.',
+  ALREADY_EXISTS: 'Já existe um registro com esses dados.',
   INSUFFICIENT_STOCK: 'Estoque insuficiente para concluir o pedido.',
   RESOURCE_IN_USE: 'Este item está em uso e não pode ser removido.',
   PAYLOAD_TOO_LARGE: 'Os dados enviados são grandes demais.',

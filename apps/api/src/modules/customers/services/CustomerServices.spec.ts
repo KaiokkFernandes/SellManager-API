@@ -29,6 +29,8 @@ describe('Customer services', () => {
       new CreateCustomerService(repository).execute(ana),
     ).rejects.toMatchObject({
       statusCode: 409,
+      code: 'ALREADY_EXISTS',
+      issues: [{ segment: 'body', path: 'email' }],
     });
   });
 

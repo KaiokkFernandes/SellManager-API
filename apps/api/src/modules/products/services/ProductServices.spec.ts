@@ -32,6 +32,8 @@ describe('Product services', () => {
       new CreateProductService(repository).execute(keyboard),
     ).rejects.toMatchObject({
       statusCode: 409,
+      code: 'ALREADY_EXISTS',
+      issues: [{ segment: 'body', path: 'name' }],
     });
   });
 

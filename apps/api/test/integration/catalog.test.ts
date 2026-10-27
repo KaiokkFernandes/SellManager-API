@@ -65,11 +65,35 @@ describe('Produtos e clientes', () => {
         .set('Authorization', auth)
         .send(keyboard)
         .expect(201);
-      await request(ctx.app)
+      const duplicate = await request(ctx.app)
         .post('/products')
         .set('Authorization', auth)
         .send(keyboard)
         .expect(409);
+      expect(duplicate.body).toMatchObject({
+        code: 'ALREADY_EXISTS',
+        issues: [{ segment: 'body', path: 'name' }],
+      });
+    });
+
+    it('cadastros simultâneos do mesmo nome: um 201, o resto 409 (nunca 500)', async () => {
+      const responses = await Promise.all(
+        Array.from({ length: 6 }, () =>
+          request(ctx.app)
+            .post('/products')
+            .set('Authorization', auth)
+            .send(keyboard),
+        ),
+      );
+
+      const statuses = responses.map(response => response.status).sort();
+      expect(statuses).toEqual([201, 409, 409, 409, 409, 409]);
+      for (const response of responses.filter(r => r.status === 409)) {
+        expect(response.body).toMatchObject({
+          code: 'ALREADY_EXISTS',
+          issues: [{ segment: 'body', path: 'name' }],
+        });
+      }
     });
 
     it('pagina a listagem', async () => {
@@ -140,11 +164,15 @@ describe('Produtos e clientes', () => {
         .set('Authorization', auth)
         .send({ name: 'Ana', email: 'ana@test.com' })
         .expect(201);
-      await request(ctx.app)
+      const response = await request(ctx.app)
         .post('/customers')
         .set('Authorization', auth)
-        .send({ name: 'Bia', email: 'ana@test.com' })
+        .send({ name: 'Bia', email: 'ANA@test.com ' })
         .expect(409);
+      expect(response.body).toMatchObject({
+        code: 'ALREADY_EXISTS',
+        issues: [{ segment: 'body', path: 'email' }],
+      });
     });
   });
 });
