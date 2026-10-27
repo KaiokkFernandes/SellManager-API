@@ -61,6 +61,7 @@ export class CreateOrderService {
         // O preço vem do produto no banco, nunca do cliente.
         const items = found.map(product => ({
           product_id: product.id,
+          product: { id: product.id, name: product.name },
           price: product.price,
           quantity: requested.get(product.id) ?? 0,
         }));
@@ -72,6 +73,11 @@ export class CreateOrderService {
 
         return orders.create({
           customer_id,
+          customer: {
+            id: customer.id,
+            name: customer.name,
+            email: customer.email,
+          },
           status: 'pending',
           total: calculateOrderTotal(items),
           items,

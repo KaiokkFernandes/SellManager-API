@@ -142,9 +142,17 @@ describe('Product services', () => {
     for (const customer_id of ['c1', 'c2']) {
       await orders.create({
         customer_id,
+        customer: { id: customer_id, name: 'Ana', email: 'ana@test.com' },
         status: 'pending',
         total: 199.9,
-        items: [{ product_id: created.id, price: 199.9, quantity: 1 }],
+        items: [
+          {
+            product_id: created.id,
+            product: { id: created.id, name: created.name },
+            price: 199.9,
+            quantity: 1,
+          },
+        ],
       });
     }
 

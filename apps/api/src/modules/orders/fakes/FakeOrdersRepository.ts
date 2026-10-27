@@ -15,7 +15,14 @@ export class FakeOrdersRepository implements IOrdersRepository {
   public readonly orders: Order[] = [];
 
   private clone(order: Order): Order {
-    return { ...order, items: order.items.map(item => ({ ...item })) };
+    return {
+      ...order,
+      customer: { ...order.customer },
+      items: order.items.map(item => ({
+        ...item,
+        product: { ...item.product },
+      })),
+    };
   }
 
   public findAll(
@@ -27,8 +34,12 @@ export class FakeOrdersRepository implements IOrdersRepository {
         this.orders
           .filter(
             order =>
-              !filter.customer_id || order.customer_id === filter.customer_id,
+              (!filter.customer_id ||
+                order.customer_id === filter.customer_id) &&
+              (!filter.from || order.created_at >= filter.from) &&
+              (!filter.to || order.created_at < filter.to),
           )
+          .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
           .map(order => this.clone(order)),
         pagination,
       ),

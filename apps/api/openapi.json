@@ -463,6 +463,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "customer": {
+            "$ref": "#/components/schemas/OrderCustomer"
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -494,6 +497,7 @@
         "required": [
           "id",
           "customer_id",
+          "customer",
           "status",
           "total_cents",
           "items",
@@ -503,6 +507,11 @@
         "example": {
           "id": "5c301fd4-233e-4eac-bb22-994b162e70d2",
           "customer_id": "6e2ba4c6-96f5-4d7f-9303-6f6b91a1a960",
+          "customer": {
+            "id": "6e2ba4c6-96f5-4d7f-9303-6f6b91a1a960",
+            "name": "Ana Souza",
+            "email": "ana@example.com"
+          },
           "status": "pending",
           "total_cents": 39980,
           "items": [
@@ -510,6 +519,10 @@
               "id": "a1b2c3d4-0000-4000-8000-000000000001",
               "order_id": "5c301fd4-233e-4eac-bb22-994b162e70d2",
               "product_id": "8d83dcee-0204-4a7e-8488-ea60dc369ca4",
+              "product": {
+                "id": "8d83dcee-0204-4a7e-8488-ea60dc369ca4",
+                "name": "Teclado mecânico"
+              },
               "price_cents": 19990,
               "quantity": 2
             }
@@ -517,6 +530,27 @@
           "created_at": "2026-10-24T20:00:00.000Z",
           "updated_at": "2026-10-24T20:00:00.000Z"
         }
+      },
+      "OrderCustomer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email"
+        ]
       },
       "OrderItem": {
         "type": "object",
@@ -533,6 +567,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "product": {
+            "$ref": "#/components/schemas/OrderProduct"
+          },
           "price_cents": {
             "type": "integer",
             "minimum": 0,
@@ -546,9 +583,27 @@
           "id",
           "order_id",
           "product_id",
+          "product",
           "price_cents",
           "quantity"
         ]
+      },
+      "OrderProduct": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "description": "Nome atual do produto (o preço do item é o da compra)"
       },
       "CreateOrderBody": {
         "type": "object",
@@ -2214,7 +2269,7 @@
     "/orders": {
       "get": {
         "operationId": "listOrders",
-        "summary": "Lista pedidos (mais recentes primeiro)",
+        "summary": "Lista pedidos (mais recentes primeiro), por cliente e período",
         "tags": [
           "Pedidos"
         ],
@@ -2252,6 +2307,28 @@
             },
             "required": false,
             "name": "customer_id",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Criados a partir deste instante, inclusivo (ISO 8601, ex.: 2026-10-01T00:00:00-03:00)"
+            },
+            "required": false,
+            "description": "Criados a partir deste instante, inclusivo (ISO 8601, ex.: 2026-10-01T00:00:00-03:00)",
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Criados antes deste instante, exclusivo (ISO 8601)"
+            },
+            "required": false,
+            "description": "Criados antes deste instante, exclusivo (ISO 8601)",
+            "name": "to",
             "in": "query"
           }
         ],

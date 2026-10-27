@@ -88,9 +88,17 @@ describe('Customer services', () => {
     const orders = new FakeOrdersRepository();
     await orders.create({
       customer_id: customer.id,
+      customer,
       status: 'pending',
       total: 10,
-      items: [{ product_id: 'p1', price: 10, quantity: 1 }],
+      items: [
+        {
+          product_id: 'p1',
+          product: { id: 'p1', name: 'Cabo' },
+          price: 10,
+          quantity: 1,
+        },
+      ],
     });
 
     await expect(

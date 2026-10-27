@@ -260,7 +260,7 @@ export const routes = {
       method: 'get',
       path: '/orders',
       operationId: 'listOrders',
-      summary: 'Lista pedidos (mais recentes primeiro)',
+      summary: 'Lista pedidos (mais recentes primeiro), por cliente e período',
       tags: ['Pedidos'],
       auth: true,
       request: { query: listOrdersQuerySchema },

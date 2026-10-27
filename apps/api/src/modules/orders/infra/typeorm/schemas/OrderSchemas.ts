@@ -2,8 +2,11 @@ import { EntitySchema, ValueTransformer } from 'typeorm';
 import { Order, OrderItem } from '../../../domain/entities/Order';
 
 // Linhas das tabelas; os itens são carregados à parte pelo repositório.
-export type OrderRow = Omit<Order, 'items'>;
-export type OrderItemRow = OrderItem & { created_at: Date; updated_at: Date };
+export type OrderRow = Omit<Order, 'items' | 'customer'>;
+export type OrderItemRow = Omit<OrderItem, 'product'> & {
+  created_at: Date;
+  updated_at: Date;
+};
 
 // o driver pg devolve decimal como string
 const decimal: ValueTransformer = {

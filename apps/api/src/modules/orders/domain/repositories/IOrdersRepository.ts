@@ -1,15 +1,26 @@
-import { Order, OrderItem, OrderStatus } from '../entities/Order';
+import {
+  Order,
+  OrderCustomer,
+  OrderItem,
+  OrderStatus,
+} from '../entities/Order';
 import { PageResult, PaginationParams } from '@shared/domain/pagination';
 
 export interface ICreateOrderDTO {
   customer_id: string;
+  /** Resumos já carregados pelo service: devolvidos no pedido criado. */
+  customer: OrderCustomer;
   status: OrderStatus;
   total: number;
-  items: Pick<OrderItem, 'product_id' | 'price' | 'quantity'>[];
+  items: Pick<OrderItem, 'product_id' | 'product' | 'price' | 'quantity'>[];
 }
 
 export interface IFindOrdersFilter {
   customer_id?: string;
+  /** Criados a partir deste instante (inclusivo). */
+  from?: Date;
+  /** Criados antes deste instante (exclusivo). */
+  to?: Date;
 }
 
 export interface IOrdersRepository {
