@@ -81,9 +81,7 @@ describe('login', () => {
 
     await fillAndSubmitLogin('nao-e-email', 'x');
 
-    expect(
-      await screen.findByText(/email/i, { selector: 'p' }),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('E-mail inválido')).toBeInTheDocument();
   });
 
   it('exibe os erros de campo devolvidos pela API', async () => {

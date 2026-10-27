@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup, configure } from '@testing-library/react';
 import { afterAll, afterEach, beforeAll } from 'vitest';
+import '@/lib/zodLocale';
 import { tokenStorage } from '@/lib/tokenStorage';
 import { server } from './server';
 
