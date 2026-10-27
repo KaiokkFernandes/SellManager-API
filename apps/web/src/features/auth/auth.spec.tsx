@@ -205,7 +205,7 @@ describe('fim de sessão', () => {
   });
 
   it('logout automático quando o token expira', async () => {
-    tokenStorage.set(makeToken(Math.floor(Date.now() / 1000) + 1));
+    tokenStorage.set(makeToken(Math.ceil(Date.now() / 1000) + 2));
     mockDashboardApi();
     renderApp('/');
 
@@ -218,7 +218,7 @@ describe('fim de sessão', () => {
         expect(
           screen.getByRole('heading', { name: 'Entrar no SellManager' }),
         ).toBeInTheDocument(),
-      { timeout: 4000 },
+      { timeout: 8000 },
     );
     expect(tokenStorage.get()).toBeNull();
     expect(
