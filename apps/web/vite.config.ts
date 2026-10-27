@@ -16,7 +16,8 @@ function contentSecurityPolicy(apiUrl: string): Plugin {
     "default-src 'self'",
     "script-src 'self'",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob:",
+    // imagens de produto vêm de /files na origem da API
+    `img-src 'self' data: blob: ${apiOrigin}`.trim(),
     "font-src 'self'",
     `connect-src 'self' ${apiOrigin}`.trim(),
     "object-src 'none'",

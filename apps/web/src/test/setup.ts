@@ -19,6 +19,23 @@ if (!window.matchMedia) {
     }) as unknown as MediaQueryList;
 }
 
+// APIs de navegador que o jsdom não tem (Radix Popover, cmdk, preview de imagem)
+/* eslint-disable @typescript-eslint/unbound-method -- só checa se o método existe */
+class ResizeObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+globalThis.ResizeObserver ??=
+  ResizeObserverStub as unknown as typeof ResizeObserver;
+Element.prototype.scrollIntoView ??= () => undefined;
+Element.prototype.hasPointerCapture ??= () => false;
+Element.prototype.releasePointerCapture ??= () => undefined;
+let objectUrls = 0;
+URL.createObjectURL ??= () => `blob:preview-${(objectUrls += 1)}`;
+URL.revokeObjectURL ??= () => undefined;
+/* eslint-enable @typescript-eslint/unbound-method */
+
 beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
 afterEach(() => {
   cleanup();
