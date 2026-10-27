@@ -1,5 +1,6 @@
 import type { IOrdersRepository } from '@modules/orders/domain/repositories/IOrdersRepository';
 import AppError from '@shared/errors/AppError';
+import { IStorageProvider } from '@shared/providers/StorageProvider/IStorageProvider';
 import { IProductsRepository } from '../domain/repositories/IProductsRepository';
 
 export class DeleteProductService {
@@ -9,6 +10,7 @@ export class DeleteProductService {
       IOrdersRepository,
       'countByProduct'
     >,
+    private readonly storageProvider: IStorageProvider,
   ) {}
 
   public async execute({ id }: { id: string }): Promise<void> {
@@ -29,5 +31,6 @@ export class DeleteProductService {
     }
 
     await this.productsRepository.remove(product);
+    if (product.image) await this.storageProvider.deleteFile(product.image);
   }
 }

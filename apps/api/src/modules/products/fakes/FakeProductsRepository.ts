@@ -58,6 +58,7 @@ export class FakeProductsRepository implements IProductsRepository {
       id: randomUUID(),
       created_at: now,
       updated_at: now,
+      image: null,
       ...data,
     };
     this.products.push(product);

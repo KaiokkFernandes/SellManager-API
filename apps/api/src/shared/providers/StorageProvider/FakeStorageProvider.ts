@@ -8,6 +8,13 @@ export class FakeStorageProvider implements IStorageProvider {
     return Promise.resolve(file);
   }
 
+  public readonly discarded = new Set<string>();
+
+  public discardFile(file: string): Promise<void> {
+    this.discarded.add(file);
+    return Promise.resolve();
+  }
+
   public deleteFile(file: string): Promise<void> {
     this.files.delete(file);
     return Promise.resolve();

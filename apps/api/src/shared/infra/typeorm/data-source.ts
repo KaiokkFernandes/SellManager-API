@@ -13,6 +13,7 @@ import { CreateInitialSchema1761350400000 } from './migrations/1761350400000-Cre
 import { HashUserTokens1761350500000 } from './migrations/1761350500000-HashUserTokens';
 import { CreateOrders1761350600000 } from './migrations/1761350600000-CreateOrders';
 import { ProductNameCaseInsensitive1761350700000 } from './migrations/1761350700000-ProductNameCaseInsensitive';
+import { AddProductImage1761350800000 } from './migrations/1761350800000-AddProductImage';
 
 // Entidades e migrations são listadas explicitamente (sem glob) para funcionar
 // igual em dev (tsx), no build (dist/) e nos testes.
@@ -36,6 +37,7 @@ export const AppDataSource = new DataSource({
     HashUserTokens1761350500000,
     CreateOrders1761350600000,
     ProductNameCaseInsensitive1761350700000,
+    AddProductImage1761350800000,
   ],
   synchronize: false,
   logging: env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],

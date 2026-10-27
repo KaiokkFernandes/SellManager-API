@@ -17,6 +17,7 @@ import {
 import {
   listProductsQuerySchema,
   productBodySchema,
+  productImageUploadBodySchema,
   productSchema,
 } from '../products';
 import {
@@ -194,6 +195,32 @@ export const routes = {
       request: { params: idParamsSchema },
       responses: { 204: null },
       errors: [404, 409],
+    }),
+    updateImage: defineRoute({
+      method: 'patch',
+      path: '/products/{id}/image',
+      operationId: 'updateProductImage',
+      summary: 'Envia ou substitui a imagem (jpeg, png ou webp, até 2 MB)',
+      tags: ['Produtos'],
+      auth: true,
+      request: {
+        params: idParamsSchema,
+        body: productImageUploadBodySchema,
+        bodyType: 'multipart',
+      },
+      responses: { 200: productSchema },
+      errors: [404],
+    }),
+    deleteImage: defineRoute({
+      method: 'delete',
+      path: '/products/{id}/image',
+      operationId: 'deleteProductImage',
+      summary: 'Remove a imagem do produto',
+      tags: ['Produtos'],
+      auth: true,
+      request: { params: idParamsSchema },
+      responses: { 200: productSchema },
+      errors: [404],
     }),
   },
 

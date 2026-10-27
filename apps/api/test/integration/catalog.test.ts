@@ -1,3 +1,4 @@
+import { IMAGE_UPLOAD } from '@sellmanager/shared';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
@@ -195,6 +196,97 @@ describe('Produtos e clientes', () => {
         segment: 'query',
         path: 'sort',
       });
+    });
+  });
+
+  describe('/products/{id}/image', () => {
+    const png = { filename: 'foto.png', contentType: 'image/png' };
+
+    async function createProduct() {
+      const created = await request(ctx.app)
+        .post('/products')
+        .set('Authorization', auth)
+        .send({ name: 'Teclado', price_cents: 100, quantity: 1 })
+        .expect(201);
+      expect(created.body.image_url).toBeNull();
+      return created.body.id as string;
+    }
+
+    it('envia, substitui e remove a imagem; o arquivo é servido em /files', async () => {
+      const id = await createProduct();
+
+      const first = await request(ctx.app)
+        .patch(`/products/${id}/image`)
+        .set('Authorization', auth)
+        .attach('image', Buffer.from('png-1'), png)
+        .expect(200);
+      const firstUrl = first.body.image_url as string;
+      expect(firstUrl).toMatch(/\/files\/[a-f0-9]{32}\.png$/);
+      const firstPath = new URL(firstUrl).pathname;
+      await request(ctx.app).get(firstPath).expect(200);
+
+      const second = await request(ctx.app)
+        .patch(`/products/${id}/image`)
+        .set('Authorization', auth)
+        .attach('image', Buffer.from('webp-2'), {
+          filename: 'foto.webp',
+          contentType: 'image/webp',
+        })
+        .expect(200);
+      expect(second.body.image_url).not.toBe(firstUrl);
+      // a imagem anterior foi apagada
+      await request(ctx.app).get(firstPath).expect(404);
+
+      const shown = await request(ctx.app).get(`/products/${id}`).expect(200);
+      expect(shown.body.image_url).toBe(second.body.image_url);
+
+      const removed = await request(ctx.app)
+        .delete(`/products/${id}/image`)
+        .set('Authorization', auth)
+        .expect(200);
+      expect(removed.body.image_url).toBeNull();
+    });
+
+    it('rejeita tipo inválido, arquivo grande demais e envio sem arquivo', async () => {
+      const id = await createProduct();
+
+      const wrongType = await request(ctx.app)
+        .patch(`/products/${id}/image`)
+        .set('Authorization', auth)
+        .attach('image', Buffer.from('%PDF'), {
+          filename: 'doc.pdf',
+          contentType: 'application/pdf',
+        })
+        .expect(400);
+      expect(wrongType.body.code).toBe('INVALID_UPLOAD');
+
+      const tooLarge = await request(ctx.app)
+        .patch(`/products/${id}/image`)
+        .set('Authorization', auth)
+        .attach('image', Buffer.alloc(IMAGE_UPLOAD.maxBytes + 1), png)
+        .expect(400);
+      expect(tooLarge.body).toMatchObject({
+        code: 'INVALID_UPLOAD',
+        details: { reason: 'LIMIT_FILE_SIZE' },
+      });
+
+      await request(ctx.app)
+        .patch(`/products/${id}/image`)
+        .set('Authorization', auth)
+        .expect(400);
+    });
+
+    it('exige autenticação e responde 404 para produto inexistente', async () => {
+      const missing = '00000000-0000-4000-8000-000000000000';
+      await request(ctx.app)
+        .patch(`/products/${missing}/image`)
+        .attach('image', Buffer.from('x'), png)
+        .expect(401);
+      await request(ctx.app)
+        .patch(`/products/${missing}/image`)
+        .set('Authorization', auth)
+        .attach('image', Buffer.from('x'), png)
+        .expect(404);
     });
   });
 

@@ -16,7 +16,7 @@ describe('OpenAPI gerado do contrato', () => {
   it('documenta todas as operações com operationId único', () => {
     const ids = operations.map(operation => operation.operationId);
 
-    expect(operations).toHaveLength(22);
+    expect(operations).toHaveLength(24);
     expect(new Set(ids).size).toBe(ids.length);
   });
 

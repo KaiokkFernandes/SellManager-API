@@ -19,6 +19,7 @@ export const ProductSchema = new EntitySchema<Product>({
       },
     },
     quantity: { type: 'int' },
+    image: { type: 'varchar', nullable: true },
     created_at: { type: 'timestamptz', createDate: true },
     updated_at: { type: 'timestamptz', updateDate: true },
   },

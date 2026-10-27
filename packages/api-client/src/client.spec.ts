@@ -6,6 +6,7 @@ const product = {
   name: 'Teclado',
   price_cents: 19990,
   quantity: 10,
+  image_url: null,
   created_at: '2026-10-24T20:00:00.000Z',
   updated_at: '2026-10-24T20:00:00.000Z',
 } satisfies Product;

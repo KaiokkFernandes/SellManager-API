@@ -63,7 +63,9 @@ export class ProductsRepository implements IProductsRepository {
   }
 
   public create(data: ICreateProductDTO): Promise<Product> {
-    return this.ormRepository.save(this.ormRepository.create(data));
+    return this.ormRepository.save(
+      this.ormRepository.create({ ...data, image: null }),
+    );
   }
 
   public save(product: Product): Promise<Product> {

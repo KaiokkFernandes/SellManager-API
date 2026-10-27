@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { FakeOrdersRepository } from '@modules/orders/fakes/FakeOrdersRepository';
+import { FakeStorageProvider } from '@shared/providers/StorageProvider/FakeStorageProvider';
 import { FakeProductsRepository } from '../fakes/FakeProductsRepository';
+import { UpdateProductImageService } from './UpdateProductImageService';
 import { CreateProductService } from './CreateProductService';
 import { DeleteProductService } from './DeleteProductService';
 import { ListProductsService } from './ListProductsService';
@@ -9,9 +11,11 @@ import { UpdateProductService } from './UpdateProductService';
 
 describe('Product services', () => {
   let repository: FakeProductsRepository;
+  let storage: FakeStorageProvider;
 
   beforeEach(() => {
     repository = new FakeProductsRepository();
+    storage = new FakeStorageProvider();
   });
 
   const keyboard = { name: 'Teclado', price: 199.9, quantity: 10 };
@@ -124,11 +128,16 @@ describe('Product services', () => {
     await new DeleteProductService(
       repository,
       new FakeOrdersRepository(),
+      storage,
     ).execute({ id: created.id });
 
     expect(repository.products).toHaveLength(0);
     await expect(
-      new DeleteProductService(repository, new FakeOrdersRepository()).execute({
+      new DeleteProductService(
+        repository,
+        new FakeOrdersRepository(),
+        storage,
+      ).execute({
         id: created.id,
       }),
     ).rejects.toMatchObject({ statusCode: 404 });
@@ -157,12 +166,66 @@ describe('Product services', () => {
     }
 
     await expect(
-      new DeleteProductService(repository, orders).execute({ id: created.id }),
+      new DeleteProductService(repository, orders, storage).execute({
+        id: created.id,
+      }),
     ).rejects.toMatchObject({
       statusCode: 409,
       code: 'RESOURCE_IN_USE',
       details: { orders_count: 2 },
     });
     expect(repository.products).toHaveLength(1);
+  });
+
+  describe('imagem', () => {
+    it('envia, substitui (apagando a anterior) e remove', async () => {
+      const created = await new CreateProductService(repository).execute(
+        keyboard,
+      );
+      const service = new UpdateProductImageService(repository, storage);
+
+      await service.execute({ id: created.id, imageFileName: 'a.png' });
+      const replaced = await service.execute({
+        id: created.id,
+        imageFileName: 'b.webp',
+      });
+      expect(replaced.image).toBe('b.webp');
+      expect([...storage.files]).toEqual(['b.webp']);
+
+      const removed = await service.execute({
+        id: created.id,
+        imageFileName: null,
+      });
+      expect(removed.image).toBeNull();
+      expect(storage.files.size).toBe(0);
+    });
+
+    it('produto inexistente: 404 e descarta o upload temporário', async () => {
+      await expect(
+        new UpdateProductImageService(repository, storage).execute({
+          id: 'nao-existe',
+          imageFileName: 'a.png',
+        }),
+      ).rejects.toMatchObject({ statusCode: 404 });
+      expect([...storage.discarded]).toEqual(['a.png']);
+    });
+
+    it('excluir o produto apaga a imagem', async () => {
+      const created = await new CreateProductService(repository).execute(
+        keyboard,
+      );
+      await new UpdateProductImageService(repository, storage).execute({
+        id: created.id,
+        imageFileName: 'a.png',
+      });
+
+      await new DeleteProductService(
+        repository,
+        new FakeOrdersRepository(),
+        storage,
+      ).execute({ id: created.id });
+
+      expect(storage.files.size).toBe(0);
+    });
   });
 });
