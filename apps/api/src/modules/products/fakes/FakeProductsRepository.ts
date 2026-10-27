@@ -28,7 +28,9 @@ export class FakeProductsRepository implements IProductsRepository {
   }
 
   public findByName(name: string): Promise<Product | null> {
-    const product = this.products.find(item => item.name === name);
+    const product = this.products.find(
+      item => item.name.toLowerCase() === name.toLowerCase(),
+    );
     return Promise.resolve(product ? { ...product } : null);
   }
 

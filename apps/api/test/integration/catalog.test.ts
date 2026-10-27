@@ -7,6 +7,7 @@ import {
   resetDatabase,
   TestContext,
 } from './helpers';
+import { AppDataSource } from '@shared/infra/typeorm/data-source';
 
 describe('Produtos e clientes', () => {
   let ctx: TestContext;
@@ -74,6 +75,37 @@ describe('Produtos e clientes', () => {
         code: 'ALREADY_EXISTS',
         issues: [{ segment: 'body', path: 'name' }],
       });
+    });
+
+    it('nome duplicado não diferencia maiúsculas, mas renomear o próprio produto pode', async () => {
+      const created = await request(ctx.app)
+        .post('/products')
+        .set('Authorization', auth)
+        .send(keyboard)
+        .expect(201);
+      await request(ctx.app)
+        .post('/products')
+        .set('Authorization', auth)
+        .send({ ...keyboard, name: 'TECLADO' })
+        .expect(409);
+      await request(ctx.app)
+        .put(`/products/${created.body.id as string}`)
+        .set('Authorization', auth)
+        .send({ ...keyboard, name: 'TECLADO' })
+        .expect(200);
+    });
+
+    it('o banco também barra duplicados por maiúsculas (índice em lower(name))', async () => {
+      await request(ctx.app)
+        .post('/products')
+        .set('Authorization', auth)
+        .send(keyboard)
+        .expect(201);
+      await expect(
+        AppDataSource.query(
+          "INSERT INTO products (name, price, quantity) VALUES ('teclado', 1, 1)",
+        ),
+      ).rejects.toMatchObject({ driverError: { code: '23505' } });
     });
 
     it('cadastros simultâneos do mesmo nome: um 201, o resto 409 (nunca 500)', async () => {

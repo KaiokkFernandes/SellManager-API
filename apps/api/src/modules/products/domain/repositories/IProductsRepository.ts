@@ -10,6 +10,7 @@ export interface ICreateProductDTO {
 export interface IProductsRepository {
   findAll(pagination: PaginationParams): Promise<PageResult<Product>>;
   findById(id: string): Promise<Product | null>;
+  /** Busca pelo nome sem diferenciar maiúsculas. */
   findByName(name: string): Promise<Product | null>;
   /** Busca e trava os produtos até o fim da unidade de trabalho atual. */
   findByIdsForUpdate(ids: string[]): Promise<Product[]>;

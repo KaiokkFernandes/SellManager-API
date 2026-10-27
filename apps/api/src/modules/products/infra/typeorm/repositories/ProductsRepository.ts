@@ -33,8 +33,12 @@ export class ProductsRepository implements IProductsRepository {
     return this.ormRepository.findOneBy({ id });
   }
 
+  /** Sem diferenciar maiúsculas (o índice único é em lower(name)). */
   public findByName(name: string): Promise<Product | null> {
-    return this.ormRepository.findOneBy({ name });
+    return this.ormRepository
+      .createQueryBuilder('product')
+      .where('lower(product.name) = lower(:name)', { name })
+      .getOne();
   }
 
   public findByIdsForUpdate(ids: string[]): Promise<Product[]> {

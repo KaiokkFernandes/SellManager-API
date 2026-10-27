@@ -37,6 +37,17 @@ describe('Product services', () => {
     });
   });
 
+  it('nome duplicado não diferencia maiúsculas', async () => {
+    await new CreateProductService(repository).execute(keyboard);
+
+    await expect(
+      new CreateProductService(repository).execute({
+        ...keyboard,
+        name: keyboard.name.toUpperCase(),
+      }),
+    ).rejects.toMatchObject({ statusCode: 409, code: 'ALREADY_EXISTS' });
+  });
+
   it('mostra um produto e responde 404 quando não existe', async () => {
     const created = await new CreateProductService(repository).execute(
       keyboard,

@@ -6,7 +6,8 @@ export const ProductSchema = new EntitySchema<Product>({
   tableName: 'products',
   columns: {
     id: { type: 'uuid', primary: true, generated: 'uuid' },
-    name: { type: 'varchar', unique: true },
+    // único sem diferenciar maiúsculas: índice em lower(name) (migration)
+    name: { type: 'varchar' },
     price: {
       type: 'decimal',
       precision: 10,
