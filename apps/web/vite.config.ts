@@ -70,6 +70,8 @@ export default defineConfig(({ mode }) => {
         globals: false,
         setupFiles: ['./src/test/setup.ts'],
         css: false,
+        // userEvent no jsdom fica lento quando o turbo roda tudo em paralelo
+        testTimeout: 15_000,
         env: { VITE_API_URL: 'http://api.test' },
       },
     }),
