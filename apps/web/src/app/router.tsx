@@ -18,7 +18,13 @@ import {
 } from '@/features/customers';
 import { DashboardPage } from '@/features/dashboard';
 import { LoginPage, type AuthContextValue } from '@/features/auth';
-import { OrdersPage } from '@/features/orders';
+import {
+  NewOrderPage,
+  newOrderSearchSchema,
+  OrderDetailPage,
+  OrdersListPage,
+  ordersSearchSchema,
+} from '@/features/orders';
 import {
   EditProductPage,
   NewProductPage,
@@ -136,20 +142,19 @@ const ordersRoute = createRoute({
 const ordersListRoute = createRoute({
   getParentRoute: () => ordersRoute,
   path: '/',
-  component: OrdersPage,
+  validateSearch: ordersSearchSchema,
+  component: OrdersListPage,
 });
 const newOrderRoute = createRoute({
   getParentRoute: () => ordersRoute,
   path: '/new',
-  validateSearch: z.object({
-    customer_id: z.uuid().optional().catch(undefined),
-  }),
-  component: OrdersPage,
+  validateSearch: newOrderSearchSchema,
+  component: NewOrderPage,
 });
 const orderDetailRoute = createRoute({
   getParentRoute: () => ordersRoute,
   path: '/$orderId',
-  component: OrdersPage,
+  component: OrderDetailPage,
 });
 
 const routeTree = rootRoute.addChildren([
