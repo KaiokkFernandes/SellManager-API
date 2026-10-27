@@ -68,6 +68,8 @@ export default defineConfig(({ mode }) => {
     defineVitestConfig({
       test: {
         environment: 'jsdom',
+        // e2e (Playwright) roda à parte: pnpm --filter web e2e
+        include: ['src/**/*.spec.{ts,tsx}'],
         globals: false,
         setupFiles: ['./src/test/setup.ts'],
         css: false,
