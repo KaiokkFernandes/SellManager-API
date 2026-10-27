@@ -4,19 +4,29 @@ import {
   PaginationParams,
   slicePage,
 } from '@shared/domain/pagination';
+import { matchesSearch, sortInMemory } from '@shared/domain/listing';
 import { Customer } from '../domain/entities/Customer';
 import {
   ICreateCustomerDTO,
   ICustomersRepository,
+  IFindCustomersFilter,
 } from '../domain/repositories/ICustomersRepository';
 
 export class FakeCustomersRepository implements ICustomersRepository {
   public readonly customers: Customer[] = [];
 
-  public findAll(pagination: PaginationParams): Promise<PageResult<Customer>> {
+  public findAll(
+    { search, sort = 'name', order }: IFindCustomersFilter,
+    pagination: PaginationParams,
+  ): Promise<PageResult<Customer>> {
+    const found = this.customers.filter(customer =>
+      matchesSearch(search, customer.name, customer.email),
+    );
     return Promise.resolve(
       slicePage(
-        this.customers.map(customer => ({ ...customer })),
+        sortInMemory(found, customer => customer[sort], order).map(
+          customer => ({ ...customer }),
+        ),
         pagination,
       ),
     );

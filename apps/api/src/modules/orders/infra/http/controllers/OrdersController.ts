@@ -19,9 +19,13 @@ export class OrdersController {
   constructor(private readonly services: OrdersServices) {}
 
   public list: RouteHandler<Routes['list']> = async ({ input, reply }) => {
-    const { customer_id, page, limit } = input.query;
+    const { customer_id, from, to, page, limit } = input.query;
     const { data, meta } = await this.services.list.execute(
-      { customer_id },
+      {
+        customer_id,
+        from: from ? new Date(from) : undefined,
+        to: to ? new Date(to) : undefined,
+      },
       { page, limit },
     );
     reply(200, { data: data.map(toOrderResponse), meta });

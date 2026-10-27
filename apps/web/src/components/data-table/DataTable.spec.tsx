@@ -93,4 +93,71 @@ describe('DataTable', () => {
     );
     expect(onRetry).toHaveBeenCalledOnce();
   });
+
+  it('ordena pelo cabeçalho com aria-sort e alterna a direção', async () => {
+    const onSortChange = vi.fn();
+    const sortable: Column<Row>[] = [{ ...columns[0], sortKey: 'name' }];
+    const { rerender } = render(
+      <DataTable
+        {...base}
+        columns={sortable}
+        data={[]}
+        sort={{ sort: 'name', order: 'asc' }}
+        onSortChange={onSortChange}
+      />,
+    );
+
+    expect(screen.getByRole('columnheader', { name: /Nome/ })).toHaveAttribute(
+      'aria-sort',
+      'ascending',
+    );
+    await userEvent.click(screen.getByRole('button', { name: /Nome/ }));
+    expect(onSortChange).toHaveBeenLastCalledWith({
+      sort: 'name',
+      order: 'desc',
+    });
+
+    rerender(
+      <DataTable
+        {...base}
+        columns={sortable}
+        data={[]}
+        sort={{ sort: 'created_at', order: 'desc' }}
+        onSortChange={onSortChange}
+      />,
+    );
+    expect(
+      screen.getByRole('columnheader', { name: /Nome/ }),
+    ).not.toHaveAttribute('aria-sort');
+    await userEvent.click(screen.getByRole('button', { name: /Nome/ }));
+    expect(onSortChange).toHaveBeenLastCalledWith({
+      sort: 'name',
+      order: 'asc',
+    });
+  });
+
+  it('renderiza cards para o mobile e a chamada para ação no vazio', () => {
+    const { rerender } = render(
+      <DataTable
+        {...base}
+        data={[{ id: '1', name: 'Cabo' }]}
+        renderCard={row => <p>Card {row.name}</p>}
+      />,
+    );
+    expect(
+      screen.getByRole('list', { name: 'Lista de teste' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Card Cabo')).toBeInTheDocument();
+
+    rerender(
+      <DataTable
+        {...base}
+        data={[]}
+        emptyAction={<button type="button">Cadastrar o primeiro</button>}
+      />,
+    );
+    expect(
+      screen.getByRole('button', { name: 'Cadastrar o primeiro' }),
+    ).toBeInTheDocument();
+  });
 });

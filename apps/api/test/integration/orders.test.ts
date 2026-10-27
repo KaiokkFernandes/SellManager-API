@@ -7,6 +7,7 @@ import {
   resetDatabase,
   TestContext,
 } from './helpers';
+import { AppDataSource } from '@shared/infra/typeorm/data-source';
 
 interface Product {
   id: string;
@@ -72,7 +73,17 @@ describe('/orders', () => {
       status: 'pending',
       total_cents: 50,
       customer_id: customerId,
+      customer: { id: customerId, name: 'Ana', email: 'ana@test.com' },
     });
+    expect(response.body.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          product: { id: cable.id, name: 'Cabo' },
+          price_cents: 10,
+          quantity: 3,
+        }),
+      ]),
+    );
     expect(await stockOf(cable)).toBe(47);
     expect(await stockOf(mouse)).toBe(4);
 
@@ -166,11 +177,20 @@ describe('/orders', () => {
       .delete(`/products/${cable.id}`)
       .set('Authorization', auth)
       .expect(409);
-    expect(response.body.code).toBe('RESOURCE_IN_USE');
-    await request(ctx.app)
+    expect(response.body).toMatchObject({
+      code: 'RESOURCE_IN_USE',
+      message: 'Product is in orders and cannot be deleted',
+      details: { orders_count: 1 },
+    });
+    const customer = await request(ctx.app)
       .delete(`/customers/${customerId}`)
       .set('Authorization', auth)
       .expect(409);
+    expect(customer.body).toMatchObject({
+      code: 'RESOURCE_IN_USE',
+      message: 'Customer has orders and cannot be deleted',
+      details: { orders_count: 1 },
+    });
   });
 
   it('filtra a listagem por cliente', async () => {
@@ -189,5 +209,71 @@ describe('/orders', () => {
 
     expect(filtered.body.meta.total).toBe(0);
     expect(all.body.meta.total).toBe(1);
+  });
+
+  it('o item guarda o preço da compra mesmo se o produto mudar de preço', async () => {
+    const cable = await createProduct('Cabo', 1000, 10);
+    const created = await order([{ id: cable.id, quantity: 2 }]).expect(201);
+
+    await request(ctx.app)
+      .put(`/products/${cable.id}`)
+      .set('Authorization', auth)
+      .send({ name: 'Cabo trançado', price_cents: 5000, quantity: 8 })
+      .expect(200);
+
+    const shown = await request(ctx.app)
+      .get(`/orders/${created.body.id as string}`)
+      .set('Authorization', auth)
+      .expect(200);
+    expect(shown.body.total_cents).toBe(2000);
+    expect(shown.body.items[0]).toMatchObject({
+      price_cents: 1000,
+      product: { name: 'Cabo trançado' },
+    });
+  });
+
+  it('filtra por período [from, to) e valida o intervalo', async () => {
+    const cable = await createProduct('Cabo', 100, 10);
+    const ids: string[] = [];
+    for (const day of [
+      '2026-09-30T23:30:00Z',
+      '2026-10-01T12:00:00Z',
+      '2026-10-31T23:59:59Z',
+    ]) {
+      const created = await order([{ id: cable.id, quantity: 1 }]).expect(201);
+      ids.push(created.body.id as string);
+      await AppDataSource.query(
+        'UPDATE orders SET created_at = $1 WHERE id = $2',
+        [day, created.body.id],
+      );
+    }
+
+    const october = await request(ctx.app)
+      .get('/orders')
+      .query({ from: '2026-10-01T00:00:00Z', to: '2026-11-01T00:00:00Z' })
+      .set('Authorization', auth)
+      .expect(200);
+    expect(october.body.data.map((item: { id: string }) => item.id)).toEqual([
+      ids[2],
+      ids[1],
+    ]);
+
+    // o offset do fuso é respeitado: 30/09 23:30Z é 30/09 20:30 em -03:00
+    const fromLocal = await request(ctx.app)
+      .get('/orders')
+      .query({ from: '2026-09-30T20:00:00-03:00' })
+      .set('Authorization', auth)
+      .expect(200);
+    expect(fromLocal.body.meta.total).toBe(3);
+
+    const inverted = await request(ctx.app)
+      .get('/orders')
+      .query({ from: '2026-11-01T00:00:00Z', to: '2026-10-01T00:00:00Z' })
+      .set('Authorization', auth)
+      .expect(400);
+    expect(inverted.body.issues[0]).toMatchObject({
+      segment: 'query',
+      path: 'to',
+    });
   });
 });

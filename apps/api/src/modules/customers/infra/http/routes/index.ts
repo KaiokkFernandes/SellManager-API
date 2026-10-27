@@ -12,14 +12,14 @@ export function registerCustomersRoutes(
   mount: MountRoute,
   container: Container,
 ): void {
-  const { customers } = container.repositories;
+  const { customers, orders } = container.repositories;
 
   const controller = new CustomersController({
     list: new ListCustomersService(customers),
     show: new ShowCustomerService(customers),
     create: new CreateCustomerService(customers),
     update: new UpdateCustomerService(customers),
-    delete: new DeleteCustomerService(customers),
+    delete: new DeleteCustomerService(customers, orders),
   });
 
   mount(routes.customers.list, controller.list);

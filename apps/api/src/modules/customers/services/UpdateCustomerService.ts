@@ -22,7 +22,7 @@ export class UpdateCustomerService {
     const customerWithEmail = await this.customersRepository.findByEmail(email);
 
     if (customerWithEmail && customerWithEmail.id !== id) {
-      throw new AppError('Email already in use', 409);
+      throw AppError.alreadyExists('email', 'Email already in use');
     }
 
     customer.name = name;

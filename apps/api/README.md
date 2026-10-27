@@ -108,8 +108,21 @@ From the repository root (see the [root README](../../README.md#getting-started)
 cp apps/api/.env.example apps/api/.env      # then set JWT_SECRET
 docker compose up -d postgres mailpit
 pnpm --filter api migration:run
+pnpm --filter api seed                      # optional: dev data (see below)
 pnpm dev                                    # api + web; or: pnpm --filter api dev
 ```
+
+### Development seed
+
+`pnpm --filter api seed` fills the **development** database so pagination, search and filters
+can be tried for real: an admin user (`admin@sellmanager.dev` / `admin12345`), 30 customers,
+50 products (some with low or zero stock) and 18 orders spread over the last 60 days, some
+completed or canceled.
+
+- It goes through the services, so stock, prices and totals follow the same rules as the API.
+- It is idempotent: it only removes what it created itself (customers `@seed.sellmanager.dev`,
+  their orders, and the seed products that are not in other orders), then creates them again.
+- It refuses to run with `NODE_ENV=production`.
 
 | URL                        | What                                           |
 | -------------------------- | ---------------------------------------------- |
@@ -160,6 +173,7 @@ Run them inside `apps/api`, or from the root with `pnpm --filter api <script>`.
 | `pnpm migration:run` / `migration:revert`                        | Apply or revert migrations (dev)                       |
 | `pnpm migration:create src/shared/infra/typeorm/migrations/Name` | New empty migration (register it in `data-source.ts`)  |
 | `pnpm migration:run:prod`                                        | Apply migrations from the compiled `dist/`             |
+| `pnpm seed`                                                      | Development data (idempotent, never in production)     |
 | `pnpm openapi:generate`                                          | Write `openapi.json` from the contract                 |
 | `pnpm openapi:check`                                             | Fail if `openapi.json` is out of date                  |
 
@@ -168,32 +182,59 @@ Run them inside `apps/api`, or from the root with `pnpm --filter api <script>`.
 All bodies are JSON. Full schemas and examples are at **`/docs`**. 🔒 means the route requires
 `Authorization: Bearer <token>`.
 
-| Method | Path                 | Auth | Description                                           |
-| ------ | -------------------- | :--: | ----------------------------------------------------- |
-| POST   | `/users`             |      | Sign up                                               |
-| GET    | `/users`             |  🔒  | List users (paginated)                                |
-| PATCH  | `/users/avatar`      |  🔒  | Upload avatar (`multipart/form-data`, field `avatar`) |
-| POST   | `/sessions`          |      | Log in, returns `{ user, token }`                     |
-| GET    | `/profile`           |  🔒  | Current user's profile                                |
-| PUT    | `/profile`           |  🔒  | Update profile / change password                      |
-| POST   | `/password/forgot`   |      | Send recovery email (always `204`)                    |
-| POST   | `/password/reset`    |      | Reset password with the emailed token                 |
-| GET    | `/products`          |      | List products (paginated)                             |
-| GET    | `/products/:id`      |      | Get a product                                         |
-| POST   | `/products`          |  🔒  | Create a product                                      |
-| PUT    | `/products/:id`      |  🔒  | Update a product                                      |
-| DELETE | `/products/:id`      |  🔒  | Delete a product (`409` if it has orders)             |
-| GET    | `/customers`         |  🔒  | List customers (paginated)                            |
-| GET    | `/customers/:id`     |  🔒  | Get a customer                                        |
-| POST   | `/customers`         |  🔒  | Create a customer                                     |
-| PUT    | `/customers/:id`     |  🔒  | Update a customer                                     |
-| DELETE | `/customers/:id`     |  🔒  | Delete a customer (`409` if they have orders)         |
-| GET    | `/orders`            |  🔒  | List orders (paginated, `?customer_id=`)              |
-| GET    | `/orders/:id`        |  🔒  | Get an order with its items                           |
-| POST   | `/orders`            |  🔒  | Create an order                                       |
-| PATCH  | `/orders/:id/status` |  🔒  | Change status: `pending → completed \| canceled`      |
+| Method | Path                  | Auth | Description                                           |
+| ------ | --------------------- | :--: | ----------------------------------------------------- |
+| POST   | `/users`              |      | Sign up                                               |
+| GET    | `/users`              |  🔒  | List users (paginated)                                |
+| PATCH  | `/users/avatar`       |  🔒  | Upload avatar (`multipart/form-data`, field `avatar`) |
+| POST   | `/sessions`           |      | Log in, returns `{ user, token }`                     |
+| GET    | `/profile`            |  🔒  | Current user's profile                                |
+| PUT    | `/profile`            |  🔒  | Update profile / change password                      |
+| POST   | `/password/forgot`    |      | Send recovery email (always `204`)                    |
+| POST   | `/password/reset`     |      | Reset password with the emailed token                 |
+| GET    | `/products`           |      | List products (`?q=&sort=&order=`, paginated)         |
+| GET    | `/products/:id`       |      | Get a product                                         |
+| POST   | `/products`           |  🔒  | Create a product                                      |
+| PUT    | `/products/:id`       |  🔒  | Update a product                                      |
+| DELETE | `/products/:id`       |  🔒  | Delete a product (`409` if it is in orders)           |
+| PATCH  | `/products/:id/image` |  🔒  | Upload/replace the image (`multipart`, field `image`) |
+| DELETE | `/products/:id/image` |  🔒  | Remove the image                                      |
+| GET    | `/customers`          |  🔒  | List customers (`?q=&sort=&order=`, paginated)        |
+| GET    | `/customers/:id`      |  🔒  | Get a customer                                        |
+| POST   | `/customers`          |  🔒  | Create a customer                                     |
+| PUT    | `/customers/:id`      |  🔒  | Update a customer                                     |
+| DELETE | `/customers/:id`      |  🔒  | Delete a customer (`409` if they have orders)         |
+| GET    | `/orders`             |  🔒  | List orders (`?customer_id=&from=&to=`, paginated)    |
+| GET    | `/orders/:id`         |  🔒  | Get an order with its items                           |
+| POST   | `/orders`             |  🔒  | Create an order                                       |
+| PATCH  | `/orders/:id/status`  |  🔒  | Change status: `pending → completed \| canceled`      |
 
 `/sessions`, `/password/*` and `POST /users` are rate limited to 20 requests per 15 minutes per IP.
+
+**Listing options**
+
+- `q`: partial, case-insensitive search (customers: name or e-mail; products: name). `%` and
+  `_` are literal characters, not wildcards.
+- `sort` + `order` (`asc` | `desc`): customers by `name`, `email` or `created_at`; products by
+  `name`, `price`, `quantity` or `created_at`. Default: `name` ascending.
+- Orders: `customer_id`, `from` (inclusive) and `to` (exclusive), as ISO 8601 instants with a
+  time zone offset, e.g. `from=2026-10-01T00:00:00-03:00`. The client decides where the day
+  starts. `to` must be after `from` (`400` otherwise). Newest orders come first.
+
+**Images**: jpeg, png or webp up to 2 MB, for avatars and products. The limits live in
+`IMAGE_UPLOAD` in `@sellmanager/shared`, and the front-end validates with the same values.
+Replacing an image deletes the previous file, and so does deleting the product. Files are
+served from `/files/<name>`, and responses carry the full URL in `avatar_url` / `image_url`.
+
+**Business rules**
+
+- Product names are unique without regard to case ("Cabo" and "cabo" clash). Customer e-mails
+  are stored trimmed and in lower case.
+- Customers with orders, and products that appear in orders, cannot be deleted (`409
+RESOURCE_IN_USE` with `details.orders_count`). Orders are sales history.
+- The price of an order item is the product's price at the moment of purchase. Changing the
+  product later does not change past orders. The item also carries `product: { id, name }`,
+  with the current name.
 
 ### Example: placing an order
 
@@ -212,6 +253,11 @@ Content-Type: application/json
 {
   "id": "…",
   "customer_id": "6e2ba4c6-96f5-4d7f-9303-6f6b91a1a960",
+  "customer": {
+    "id": "6e2ba4c6-…",
+    "name": "Ana Souza",
+    "email": "ana@example.com"
+  },
   "status": "pending",
   "total_cents": 39980,
   "items": [
@@ -219,6 +265,7 @@ Content-Type: application/json
       "id": "…",
       "order_id": "…",
       "product_id": "5c301fd4-…",
+      "product": { "id": "5c301fd4-…", "name": "Teclado mecânico" },
       "price_cents": 19990,
       "quantity": 2
     }
@@ -251,10 +298,21 @@ Errors always have the same shape:
 ```
 
 - `code` is stable: clients branch on it, not on `message`. The codes are `VALIDATION_FAILED`,
-  `BAD_REQUEST`, `INVALID_UPLOAD`, `UNAUTHORIZED`, `NOT_FOUND`, `CONFLICT`,
+  `BAD_REQUEST`, `INVALID_UPLOAD`, `UNAUTHORIZED`, `NOT_FOUND`, `CONFLICT`, `ALREADY_EXISTS`,
   `INSUFFICIENT_STOCK`, `RESOURCE_IN_USE`, `PAYLOAD_TOO_LARGE`, `RATE_LIMITED` and `INTERNAL_ERROR`.
-- `issues` appears only on `VALIDATION_FAILED`, with one entry per invalid field.
-- `details` carries domain data, for example `[{ product_id, available, requested }]` on `INSUFFICIENT_STOCK`.
+- `issues` appears on `VALIDATION_FAILED` (one entry per invalid field) and on `ALREADY_EXISTS`
+  (the unique field in conflict, e.g. `{ segment: 'body', path: 'email' }`), so a form can mark
+  the field.
+- `details` carries domain data: `[{ product_id, available, requested }]` on `INSUFFICIENT_STOCK`,
+  `{ product_ids }` on a `NOT_FOUND` for missing products, `{ orders_count }` on `RESOURCE_IN_USE`.
+
+| Case                                      | Status / `code`                                                              |
+| ----------------------------------------- | ---------------------------------------------------------------------------- |
+| Duplicate customer e-mail or product name | `409 ALREADY_EXISTS` + `issues` with the field (also on concurrent requests) |
+| Delete a customer/product that has orders | `409 RESOURCE_IN_USE` + `details.orders_count`                               |
+| Order with more than the stock            | `409 INSUFFICIENT_STOCK` + `details` per product; nothing is changed         |
+| Order with a missing customer / product   | `404 NOT_FOUND` (+ `details.product_ids`)                                    |
+| Status change from a finished order       | `409 CONFLICT`                                                               |
 
 | Status | When                                                                                               |
 | ------ | -------------------------------------------------------------------------------------------------- |

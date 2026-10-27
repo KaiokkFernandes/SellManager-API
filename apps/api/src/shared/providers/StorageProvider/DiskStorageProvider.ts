@@ -17,6 +17,10 @@ export class DiskStorageProvider implements IStorageProvider {
     return file;
   }
 
+  public async discardFile(file: string): Promise<void> {
+    await fs.promises.rm(path.resolve(this.tmpFolder, file), { force: true });
+  }
+
   public async deleteFile(file: string): Promise<void> {
     await fs.promises.rm(path.resolve(this.uploadsFolder, file), {
       force: true,

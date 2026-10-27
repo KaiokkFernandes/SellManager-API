@@ -16,7 +16,8 @@ function contentSecurityPolicy(apiUrl: string): Plugin {
     "default-src 'self'",
     "script-src 'self'",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob:",
+    // imagens de produto vêm de /files na origem da API
+    `img-src 'self' data: blob: ${apiOrigin}`.trim(),
     "font-src 'self'",
     `connect-src 'self' ${apiOrigin}`.trim(),
     "object-src 'none'",
@@ -67,9 +68,13 @@ export default defineConfig(({ mode }) => {
     defineVitestConfig({
       test: {
         environment: 'jsdom',
+        // e2e (Playwright) roda à parte: pnpm --filter web e2e
+        include: ['src/**/*.spec.{ts,tsx}'],
         globals: false,
         setupFiles: ['./src/test/setup.ts'],
         css: false,
+        // userEvent no jsdom fica lento quando o turbo roda tudo em paralelo
+        testTimeout: 15_000,
         env: { VITE_API_URL: 'http://api.test' },
       },
     }),

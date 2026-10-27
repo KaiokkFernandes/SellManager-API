@@ -18,6 +18,7 @@
     "migration:revert": "pnpm typeorm migration:revert -d src/shared/infra/typeorm/data-source.ts",
     "migration:create": "pnpm typeorm migration:create",
     "migration:run:prod": "typeorm migration:run -d dist/shared/infra/typeorm/data-source.js",
+    "seed": "tsx scripts/seed.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",

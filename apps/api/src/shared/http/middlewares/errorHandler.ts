@@ -34,6 +34,19 @@ function sendError(response: Response, status: number, body: ApiError): void {
   response.status(status).json(body);
 }
 
+function pgCode(error: { driverError: unknown }): string {
+  return String((error.driverError as { code?: unknown }).code);
+}
+
+/** Coluna do índice único violado, lida do detalhe do Postgres: `Key (email)=(...)` ou `Key (lower(name)::text)=(...)`. */
+function uniqueViolationField(error: {
+  driverError: unknown;
+}): string | undefined {
+  const detail = (error.driverError as { detail?: unknown }).detail;
+  if (typeof detail !== 'string') return undefined;
+  return /^Key \((?:lower\()?"?(\w+)"?/.exec(detail)?.[1];
+}
+
 /** Converte qualquer erro no formato padrão { status, code, message, issues?, details? }. */
 export function errorHandler(
   error: HttpError,
@@ -62,13 +75,24 @@ export function errorHandler(
     return;
   }
 
+  // 23505 unique_violation: corrida entre a checagem do service e o INSERT
+  if (error instanceof QueryFailedError && pgCode(error) === '23505') {
+    const field = uniqueViolationField(error);
+    const message = 'Resource already exists';
+    sendError(response, 409, {
+      status: 'error',
+      code: 'ALREADY_EXISTS',
+      message,
+      ...(field && { issues: [{ segment: 'body', path: field, message }] }),
+    });
+    return;
+  }
+
   // 23503 foreign_key_violation / 23001 restrict_violation:
   // ex.: apagar cliente ou produto que tem pedidos
   if (
     error instanceof QueryFailedError &&
-    ['23503', '23001'].includes(
-      String((error.driverError as { code?: string }).code),
-    )
+    ['23503', '23001'].includes(pgCode(error))
   ) {
     sendError(response, 409, {
       status: 'error',

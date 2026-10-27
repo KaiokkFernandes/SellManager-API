@@ -35,9 +35,23 @@ export const createOrderBodySchema = z
     },
   });
 
-export const listOrdersQuerySchema = paginationQuerySchema.extend({
-  customer_id: z.uuid().optional(),
-});
+const instantSchema = z.iso.datetime({ offset: true });
+
+export const listOrdersQuerySchema = paginationQuerySchema
+  .extend({
+    customer_id: z.uuid().optional(),
+    from: instantSchema.optional().meta({
+      description:
+        'Criados a partir deste instante, inclusivo (ISO 8601, ex.: 2026-10-01T00:00:00-03:00)',
+    }),
+    to: instantSchema.optional().meta({
+      description: 'Criados antes deste instante, exclusivo (ISO 8601)',
+    }),
+  })
+  .refine(({ from, to }) => !from || !to || new Date(from) < new Date(to), {
+    path: ['to'],
+    message: '`to` must be after `from`',
+  });
 
 export const updateOrderStatusBodySchema = z
   .object({
@@ -51,11 +65,23 @@ export type UpdateOrderStatusBody = z.infer<typeof updateOrderStatusBodySchema>;
 
 // ---- Respostas
 
+export const orderCustomerSchema = z
+  .object({ id: z.uuid(), name: z.string(), email: z.email() })
+  .meta({ id: 'OrderCustomer' });
+
+export const orderProductSchema = z
+  .object({ id: z.uuid(), name: z.string() })
+  .meta({
+    id: 'OrderProduct',
+    description: 'Nome atual do produto (o preço do item é o da compra)',
+  });
+
 export const orderItemSchema = z
   .object({
     id: z.uuid(),
     order_id: z.uuid(),
     product_id: z.uuid(),
+    product: orderProductSchema,
     price_cents: moneyCentsSchema.describe(
       'Preço unitário em centavos no momento da compra',
     ),
@@ -67,6 +93,7 @@ export const orderSchema = z
   .object({
     id: z.uuid(),
     customer_id: z.uuid(),
+    customer: orderCustomerSchema,
     status: orderStatusSchema,
     total_cents: moneyCentsSchema,
     items: z.array(orderItemSchema),
@@ -78,6 +105,11 @@ export const orderSchema = z
     example: {
       id: examples.id,
       customer_id: '6e2ba4c6-96f5-4d7f-9303-6f6b91a1a960',
+      customer: {
+        id: '6e2ba4c6-96f5-4d7f-9303-6f6b91a1a960',
+        name: 'Ana Souza',
+        email: 'ana@example.com',
+      },
       status: 'pending',
       total_cents: 39980,
       items: [
@@ -85,6 +117,10 @@ export const orderSchema = z
           id: 'a1b2c3d4-0000-4000-8000-000000000001',
           order_id: examples.id,
           product_id: '8d83dcee-0204-4a7e-8488-ea60dc369ca4',
+          product: {
+            id: '8d83dcee-0204-4a7e-8488-ea60dc369ca4',
+            name: 'Teclado mecânico',
+          },
           price_cents: 19990,
           quantity: 2,
         },
@@ -94,5 +130,7 @@ export const orderSchema = z
     },
   });
 
+export type OrderCustomer = z.infer<typeof orderCustomerSchema>;
+export type OrderProduct = z.infer<typeof orderProductSchema>;
 export type OrderItem = z.infer<typeof orderItemSchema>;
 export type Order = z.infer<typeof orderSchema>;

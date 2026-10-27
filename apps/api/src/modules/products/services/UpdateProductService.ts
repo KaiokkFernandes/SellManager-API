@@ -27,7 +27,10 @@ export class UpdateProductService {
     const productWithName = await this.productsRepository.findByName(name);
 
     if (productWithName && productWithName.id !== id) {
-      throw new AppError('There is already one product with this name', 409);
+      throw AppError.alreadyExists(
+        'name',
+        'There is already one product with this name',
+      );
     }
 
     product.name = name;

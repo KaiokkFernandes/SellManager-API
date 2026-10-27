@@ -7,8 +7,10 @@ import {
 import { Product } from '../../../domain/entities/Product';
 import {
   ICreateProductDTO,
+  IFindProductsFilter,
   IProductsRepository,
 } from '../../../domain/repositories/IProductsRepository';
+import { containsPattern } from '@shared/infra/typeorm/like';
 import { ProductSchema } from '../schemas/ProductSchema';
 
 export class ProductsRepository implements IProductsRepository {
@@ -20,12 +22,22 @@ export class ProductsRepository implements IProductsRepository {
   }
 
   public async findAll(
+    { search, sort = 'name', order = 'asc' }: IFindProductsFilter,
     pagination: PaginationParams,
   ): Promise<PageResult<Product>> {
-    const [items, total] = await this.ormRepository.findAndCount({
-      order: { name: 'ASC', id: 'ASC' },
-      ...toSkipTake(pagination),
-    });
+    const query = this.ormRepository.createQueryBuilder('product');
+    if (search) {
+      query.where('product.name ILIKE :pattern', {
+        pattern: containsPattern(search),
+      });
+    }
+    const { skip, take } = toSkipTake(pagination);
+    const [items, total] = await query
+      .orderBy(`product.${sort}`, order === 'asc' ? 'ASC' : 'DESC')
+      .addOrderBy('product.id', 'ASC')
+      .skip(skip)
+      .take(take)
+      .getManyAndCount();
     return { items, total };
   }
 
@@ -33,8 +45,12 @@ export class ProductsRepository implements IProductsRepository {
     return this.ormRepository.findOneBy({ id });
   }
 
+  /** Sem diferenciar maiúsculas (o índice único é em lower(name)). */
   public findByName(name: string): Promise<Product | null> {
-    return this.ormRepository.findOneBy({ name });
+    return this.ormRepository
+      .createQueryBuilder('product')
+      .where('lower(product.name) = lower(:name)', { name })
+      .getOne();
   }
 
   public findByIdsForUpdate(ids: string[]): Promise<Product[]> {
@@ -47,7 +63,9 @@ export class ProductsRepository implements IProductsRepository {
   }
 
   public create(data: ICreateProductDTO): Promise<Product> {
-    return this.ormRepository.save(this.ormRepository.create(data));
+    return this.ormRepository.save(
+      this.ormRepository.create({ ...data, image: null }),
+    );
   }
 
   public save(product: Product): Promise<Product> {

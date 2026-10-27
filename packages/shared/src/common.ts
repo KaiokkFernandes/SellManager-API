@@ -34,6 +34,16 @@ export const paginationQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(100).default(20),
 });
 
+export const SORT_ORDERS = ['asc', 'desc'] as const;
+export type SortOrder = (typeof SORT_ORDERS)[number];
+export const sortOrderSchema = z
+  .enum(SORT_ORDERS)
+  .default('asc')
+  .meta({ description: 'Direção da ordenação' });
+
+/** Termo de busca livre (parcial, sem diferenciar maiúsculas). */
+export const searchSchema = z.string().trim().max(100).optional();
+
 export const paginationMetaSchema = z.object({
   page: z.number().int(),
   limit: z.number().int(),
@@ -65,6 +75,7 @@ export const API_ERROR_CODES = [
   'UNAUTHORIZED',
   'NOT_FOUND',
   'CONFLICT',
+  'ALREADY_EXISTS',
   'INSUFFICIENT_STOCK',
   'RESOURCE_IN_USE',
   'PAYLOAD_TOO_LARGE',
@@ -80,7 +91,7 @@ export const apiErrorSchema = z
     status: z.literal('error'),
     code: apiErrorCodeSchema,
     message: z.string(),
-    /** Presente em VALIDATION_FAILED: um item por campo inválido. */
+    /** Em VALIDATION_FAILED e ALREADY_EXISTS: um item por campo com problema. */
     issues: z.array(validationIssueSchema).optional(),
     /** Dados extras do erro de domínio (ex.: estoque disponível). */
     details: z.unknown().optional(),

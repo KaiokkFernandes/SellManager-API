@@ -3,14 +3,23 @@ import {
   paginatedSchema,
   paginationQuerySchema,
 } from '../common';
-import { customerBodySchema, customerSchema } from '../customers';
+import {
+  customerBodySchema,
+  customerSchema,
+  listCustomersQuerySchema,
+} from '../customers';
 import {
   createOrderBodySchema,
   listOrdersQuerySchema,
   orderSchema,
   updateOrderStatusBodySchema,
 } from '../orders';
-import { productBodySchema, productSchema } from '../products';
+import {
+  listProductsQuerySchema,
+  productBodySchema,
+  productImageUploadBodySchema,
+  productSchema,
+} from '../products';
 import {
   avatarUploadBodySchema,
   createUserBodySchema,
@@ -136,10 +145,10 @@ export const routes = {
       method: 'get',
       path: '/products',
       operationId: 'listProducts',
-      summary: 'Lista produtos (público)',
+      summary: 'Lista produtos (público), com busca e ordenação',
       tags: ['Produtos'],
       auth: false,
-      request: { query: paginationQuerySchema },
+      request: { query: listProductsQuerySchema },
       responses: { 200: paginatedSchema(productSchema) },
     }),
     show: defineRoute({
@@ -187,6 +196,32 @@ export const routes = {
       responses: { 204: null },
       errors: [404, 409],
     }),
+    updateImage: defineRoute({
+      method: 'patch',
+      path: '/products/{id}/image',
+      operationId: 'updateProductImage',
+      summary: 'Envia ou substitui a imagem (jpeg, png ou webp, até 2 MB)',
+      tags: ['Produtos'],
+      auth: true,
+      request: {
+        params: idParamsSchema,
+        body: productImageUploadBodySchema,
+        bodyType: 'multipart',
+      },
+      responses: { 200: productSchema },
+      errors: [404],
+    }),
+    deleteImage: defineRoute({
+      method: 'delete',
+      path: '/products/{id}/image',
+      operationId: 'deleteProductImage',
+      summary: 'Remove a imagem do produto',
+      tags: ['Produtos'],
+      auth: true,
+      request: { params: idParamsSchema },
+      responses: { 200: productSchema },
+      errors: [404],
+    }),
   },
 
   customers: {
@@ -194,10 +229,10 @@ export const routes = {
       method: 'get',
       path: '/customers',
       operationId: 'listCustomers',
-      summary: 'Lista clientes',
+      summary: 'Lista clientes, com busca e ordenação',
       tags: ['Clientes'],
       auth: true,
-      request: { query: paginationQuerySchema },
+      request: { query: listCustomersQuerySchema },
       responses: { 200: paginatedSchema(customerSchema) },
     }),
     show: defineRoute({
@@ -252,7 +287,7 @@ export const routes = {
       method: 'get',
       path: '/orders',
       operationId: 'listOrders',
-      summary: 'Lista pedidos (mais recentes primeiro)',
+      summary: 'Lista pedidos (mais recentes primeiro), por cliente e período',
       tags: ['Pedidos'],
       auth: true,
       request: { query: listOrdersQuerySchema },

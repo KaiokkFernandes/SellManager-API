@@ -8,7 +8,9 @@ import { Customer } from '../../../domain/entities/Customer';
 import {
   ICreateCustomerDTO,
   ICustomersRepository,
+  IFindCustomersFilter,
 } from '../../../domain/repositories/ICustomersRepository';
+import { containsPattern } from '@shared/infra/typeorm/like';
 import { CustomerSchema } from '../schemas/CustomerSchema';
 
 export class CustomersRepository implements ICustomersRepository {
@@ -19,12 +21,23 @@ export class CustomersRepository implements ICustomersRepository {
   }
 
   public async findAll(
+    { search, sort = 'name', order = 'asc' }: IFindCustomersFilter,
     pagination: PaginationParams,
   ): Promise<PageResult<Customer>> {
-    const [items, total] = await this.ormRepository.findAndCount({
-      order: { name: 'ASC', id: 'ASC' },
-      ...toSkipTake(pagination),
-    });
+    const query = this.ormRepository.createQueryBuilder('customer');
+    if (search) {
+      query.where(
+        '(customer.name ILIKE :pattern OR customer.email ILIKE :pattern)',
+        { pattern: containsPattern(search) },
+      );
+    }
+    const { skip, take } = toSkipTake(pagination);
+    const [items, total] = await query
+      .orderBy(`customer.${sort}`, order === 'asc' ? 'ASC' : 'DESC')
+      .addOrderBy('customer.id', 'ASC')
+      .skip(skip)
+      .take(take)
+      .getManyAndCount();
     return { items, total };
   }
 

@@ -27,7 +27,7 @@ interface BaseFieldProps<
   description?: string;
 }
 
-interface ShellProps {
+export interface FieldShellProps {
   id: string;
   label: string;
   description?: string;
@@ -40,7 +40,13 @@ interface ShellProps {
 }
 
 /** Label + controle + descrição + mensagem de erro, com os vínculos de a11y. */
-function FieldShell({ id, label, description, error, children }: ShellProps) {
+export function FieldShell({
+  id,
+  label,
+  description,
+  error,
+  children,
+}: FieldShellProps) {
   const descriptionId = description ? `${id}-description` : undefined;
   const errorId = error ? `${id}-error` : undefined;
   return (

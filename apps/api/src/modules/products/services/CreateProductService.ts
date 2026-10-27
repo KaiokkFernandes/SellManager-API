@@ -14,7 +14,10 @@ export class CreateProductService {
     quantity,
   }: ICreateProductDTO): Promise<Product> {
     if (await this.productsRepository.findByName(name)) {
-      throw new AppError('There is already one product with this name', 409);
+      throw AppError.alreadyExists(
+        'name',
+        'There is already one product with this name',
+      );
     }
 
     return this.productsRepository.create({ name, price, quantity });

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { imageFileSchema } from './uploads';
 import { examples, isoDateSchema } from './common';
 
 const email = z.string().trim().toLowerCase().pipe(z.email());
@@ -141,10 +142,5 @@ export type Session = z.infer<typeof sessionSchema>;
 
 /** Upload do avatar (multipart/form-data, campo `avatar`). */
 export const avatarUploadBodySchema = z
-  .object({
-    avatar: z.string().meta({
-      format: 'binary',
-      description: 'Imagem jpeg, png ou webp até 2 MB',
-    }),
-  })
+  .object({ avatar: imageFileSchema() })
   .meta({ id: 'AvatarUploadBody' });

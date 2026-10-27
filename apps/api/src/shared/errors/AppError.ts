@@ -36,6 +36,14 @@ class AppError extends Error {
     this.issues = options.issues;
     this.details = options.details;
   }
+
+  /** 409 ALREADY_EXISTS apontando o campo único em conflito (ex.: e-mail). */
+  static alreadyExists(field: string, message: string): AppError {
+    return new AppError(message, 409, {
+      code: 'ALREADY_EXISTS',
+      issues: [{ segment: 'body', path: field, message }],
+    });
+  }
 }
 
 export default AppError;

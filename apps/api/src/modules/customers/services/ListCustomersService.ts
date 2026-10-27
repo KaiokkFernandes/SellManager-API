@@ -5,16 +5,20 @@ import {
   PaginationParams,
 } from '@shared/domain/pagination';
 import { Customer } from '../domain/entities/Customer';
-import { ICustomersRepository } from '../domain/repositories/ICustomersRepository';
+import {
+  ICustomersRepository,
+  IFindCustomersFilter,
+} from '../domain/repositories/ICustomersRepository';
 
 export class ListCustomersService {
   constructor(private readonly customersRepository: ICustomersRepository) {}
 
   public async execute(
+    filter: IFindCustomersFilter = {},
     pagination: PaginationParams = DEFAULT_PAGINATION,
   ): Promise<Paginated<Customer>> {
     return paginate(
-      await this.customersRepository.findAll(pagination),
+      await this.customersRepository.findAll(filter, pagination),
       pagination,
     );
   }
