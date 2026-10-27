@@ -41,8 +41,23 @@ export function getFieldErrors(error: unknown): Record<string, string> {
   return Object.fromEntries(
     error.issues
       .filter(issue => issue.segment === 'body')
-      .map(issue => [issue.path, issue.message]),
+      .map(issue => [
+        issue.path,
+        // campo único em conflito (e-mail, nome): texto em pt-BR, decidido pelo code
+        error.code === 'ALREADY_EXISTS'
+          ? 'Já está em uso por outro cadastro.'
+          : issue.message,
+      ]),
   );
+}
+
+/** `orders_count` do erro RESOURCE_IN_USE (exclusão barrada por pedidos). */
+export function getInUseOrdersCount(error: unknown): number | undefined {
+  if (!(error instanceof ApiClientError) || error.code !== 'RESOURCE_IN_USE')
+    return undefined;
+  const count = (error.details as { orders_count?: unknown } | undefined)
+    ?.orders_count;
+  return typeof count === 'number' ? count : undefined;
 }
 
 /** True se o erro é um ApiClientError com esse `code`. */

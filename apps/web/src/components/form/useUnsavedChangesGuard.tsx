@@ -1,18 +1,22 @@
 import { useBlocker } from '@tanstack/react-router';
+import { useRef } from 'react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 
 /**
  * Pede confirmação ao sair (navegação do app ou fechar/recarregar a aba)
- * enquanto `when` for true. Use `when={form.formState.isDirty && !saved}`.
+ * enquanto `isDirty`. Renderize `dialog` e chame `allowNavigation()` logo antes
+ * de navegar após salvar com sucesso.
  */
-export function UnsavedChangesGuard({ when }: { when: boolean }) {
+export function useUnsavedChangesGuard(isDirty: boolean) {
+  const allowed = useRef(false);
+  const shouldBlock = () => isDirty && !allowed.current;
   const blocker = useBlocker({
-    shouldBlockFn: () => when,
-    enableBeforeUnload: () => when,
+    shouldBlockFn: shouldBlock,
+    enableBeforeUnload: shouldBlock,
     withResolver: true,
   });
 
-  return (
+  const dialog = (
     <ConfirmDialog
       open={blocker.status === 'blocked'}
       onOpenChange={open => {
@@ -25,4 +29,11 @@ export function UnsavedChangesGuard({ when }: { when: boolean }) {
       onConfirm={() => blocker.proceed?.()}
     />
   );
+
+  return {
+    dialog,
+    allowNavigation: () => {
+      allowed.current = true;
+    },
+  };
 }

@@ -9,5 +9,5 @@ export {
   TextField,
 } from './fields';
 export type { FieldShellProps, SelectOption } from './fields';
-export { UnsavedChangesGuard } from './UnsavedChangesGuard';
+export { useUnsavedChangesGuard } from './useUnsavedChangesGuard';
 export { useZodForm } from './useZodForm';

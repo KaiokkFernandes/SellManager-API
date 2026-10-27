@@ -9,7 +9,13 @@ import {
 import { z } from 'zod';
 import { NotFoundPage } from '@/components/feedback/NotFoundPage';
 import { RouteError } from '@/components/feedback/RouteError';
-import { CustomersPage } from '@/features/customers';
+import {
+  CustomerDetailPage,
+  CustomersListPage,
+  customersSearchSchema,
+  EditCustomerPage,
+  NewCustomerPage,
+} from '@/features/customers';
 import { DashboardPage } from '@/features/dashboard';
 import { LoginPage, type AuthContextValue } from '@/features/auth';
 import { OrdersPage } from '@/features/orders';
@@ -60,19 +66,68 @@ const dashboardRoute = createRoute({
   path: '/',
   component: DashboardPage,
 });
+// ---- Clientes
 const customersRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/customers',
-  component: CustomersPage,
+  component: Outlet,
 });
+const customersListRoute = createRoute({
+  getParentRoute: () => customersRoute,
+  path: '/',
+  validateSearch: customersSearchSchema,
+  component: CustomersListPage,
+});
+const newCustomerRoute = createRoute({
+  getParentRoute: () => customersRoute,
+  path: '/new',
+  component: NewCustomerPage,
+});
+const customerRoute = createRoute({
+  getParentRoute: () => customersRoute,
+  path: '/$customerId',
+  component: Outlet,
+});
+const customerDetailRoute = createRoute({
+  getParentRoute: () => customerRoute,
+  path: '/',
+  component: CustomerDetailPage,
+});
+const editCustomerRoute = createRoute({
+  getParentRoute: () => customerRoute,
+  path: '/edit',
+  component: EditCustomerPage,
+});
+
+// ---- Produtos
 const productsRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/products',
   component: ProductsPage,
 });
+
+// ---- Pedidos
 const ordersRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/orders',
+  component: Outlet,
+});
+const ordersListRoute = createRoute({
+  getParentRoute: () => ordersRoute,
+  path: '/',
+  component: OrdersPage,
+});
+const newOrderRoute = createRoute({
+  getParentRoute: () => ordersRoute,
+  path: '/new',
+  validateSearch: z.object({
+    customer_id: z.uuid().optional().catch(undefined),
+  }),
+  component: OrdersPage,
+});
+const orderDetailRoute = createRoute({
+  getParentRoute: () => ordersRoute,
+  path: '/$orderId',
   component: OrdersPage,
 });
 
@@ -80,9 +135,13 @@ const routeTree = rootRoute.addChildren([
   loginRoute,
   authenticatedRoute.addChildren([
     dashboardRoute,
-    customersRoute,
+    customersRoute.addChildren([
+      customersListRoute,
+      newCustomerRoute,
+      customerRoute.addChildren([customerDetailRoute, editCustomerRoute]),
+    ]),
     productsRoute,
-    ordersRoute,
+    ordersRoute.addChildren([ordersListRoute, newOrderRoute, orderDetailRoute]),
   ]),
 ]);
 
