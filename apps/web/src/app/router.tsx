@@ -19,7 +19,12 @@ import {
 import { DashboardPage } from '@/features/dashboard';
 import { LoginPage, type AuthContextValue } from '@/features/auth';
 import { OrdersPage } from '@/features/orders';
-import { ProductsPage } from '@/features/products';
+import {
+  EditProductPage,
+  NewProductPage,
+  ProductsListPage,
+  productsSearchSchema,
+} from '@/features/products';
 import { safeRedirect } from '@/lib/safeRedirect';
 import { AuthenticatedLayout } from './AuthenticatedLayout';
 
@@ -103,7 +108,23 @@ const editCustomerRoute = createRoute({
 const productsRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/products',
-  component: ProductsPage,
+  component: Outlet,
+});
+const productsListRoute = createRoute({
+  getParentRoute: () => productsRoute,
+  path: '/',
+  validateSearch: productsSearchSchema,
+  component: ProductsListPage,
+});
+const newProductRoute = createRoute({
+  getParentRoute: () => productsRoute,
+  path: '/new',
+  component: NewProductPage,
+});
+const editProductRoute = createRoute({
+  getParentRoute: () => productsRoute,
+  path: '/$productId/edit',
+  component: EditProductPage,
 });
 
 // ---- Pedidos
@@ -140,7 +161,11 @@ const routeTree = rootRoute.addChildren([
       newCustomerRoute,
       customerRoute.addChildren([customerDetailRoute, editCustomerRoute]),
     ]),
-    productsRoute,
+    productsRoute.addChildren([
+      productsListRoute,
+      newProductRoute,
+      editProductRoute,
+    ]),
     ordersRoute.addChildren([ordersListRoute, newOrderRoute, orderDetailRoute]),
   ]),
 ]);
