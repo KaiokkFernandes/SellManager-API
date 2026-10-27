@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { examples, isoDateSchema } from './common';
+import {
+  examples,
+  isoDateSchema,
+  paginationQuerySchema,
+  searchSchema,
+  sortOrderSchema,
+} from './common';
 
 export const customerBodySchema = z
   .object({
@@ -12,6 +18,16 @@ export const customerBodySchema = z
   });
 
 export type CustomerBody = z.infer<typeof customerBodySchema>;
+
+export const CUSTOMER_SORTS = ['name', 'email', 'created_at'] as const;
+export type CustomerSort = (typeof CUSTOMER_SORTS)[number];
+
+export const listCustomersQuerySchema = paginationQuerySchema.extend({
+  q: searchSchema.meta({ description: 'Busca por nome ou e-mail' }),
+  sort: z.enum(CUSTOMER_SORTS).default('name'),
+  order: sortOrderSchema,
+});
+export type ListCustomersQuery = z.infer<typeof listCustomersQuerySchema>;
 
 export const customerSchema = z
   .object({

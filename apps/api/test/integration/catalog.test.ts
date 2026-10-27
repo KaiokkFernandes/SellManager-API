@@ -151,6 +151,51 @@ describe('Produtos e clientes', () => {
         total_pages: 2,
       });
     });
+    it('busca por nome (parcial, sem maiúsculas, curingas escapados) e ordena', async () => {
+      const items = [
+        { name: 'Cabo USB', price_cents: 1500, quantity: 3 },
+        { name: 'Mouse sem fio', price_cents: 9900, quantity: 1 },
+        { name: 'cabo HDMI', price_cents: 3000, quantity: 8 },
+        { name: 'Desconto 100%', price_cents: 100, quantity: 1 },
+      ];
+      for (const item of items) {
+        await request(ctx.app)
+          .post('/products')
+          .set('Authorization', auth)
+          .send(item)
+          .expect(201);
+      }
+      const names = (body: { data: { name: string }[] }) =>
+        body.data.map(product => product.name);
+
+      const found = await request(ctx.app).get('/products?q=CABO').expect(200);
+      expect(names(found.body)).toEqual(['Cabo USB', 'cabo HDMI'].sort());
+      expect(found.body.meta.total).toBe(2);
+
+      const byPrice = await request(ctx.app)
+        .get('/products?q=cabo&sort=price&order=desc')
+        .expect(200);
+      expect(names(byPrice.body)).toEqual(['cabo HDMI', 'Cabo USB']);
+
+      // % digitado pelo usuário é literal, não curinga
+      const literal = await request(ctx.app).get('/products?q=%25').expect(200);
+      expect(names(literal.body)).toEqual(['Desconto 100%']);
+
+      // q vazio = sem filtro
+      const all = await request(ctx.app)
+        .get('/products?q=&sort=quantity&order=desc')
+        .expect(200);
+      expect(all.body.meta.total).toBe(4);
+      expect(names(all.body)[0]).toBe('cabo HDMI');
+
+      const invalid = await request(ctx.app)
+        .get('/products?sort=senha')
+        .expect(400);
+      expect(invalid.body.issues[0]).toMatchObject({
+        segment: 'query',
+        path: 'sort',
+      });
+    });
   });
 
   describe('/customers', () => {
@@ -188,6 +233,29 @@ describe('Produtos e clientes', () => {
         .get(`/customers/${id}`)
         .set('Authorization', auth)
         .expect(404);
+    });
+
+    it('busca por nome ou e-mail e ordena por e-mail', async () => {
+      for (const customer of [
+        { name: 'Ana Souza', email: 'ana@empresa.com' },
+        { name: 'Bruno Lima', email: 'bruno@souza.dev' },
+        { name: 'Carla Dias', email: 'carla@test.com' },
+      ]) {
+        await request(ctx.app)
+          .post('/customers')
+          .set('Authorization', auth)
+          .send(customer)
+          .expect(201);
+      }
+
+      const found = await request(ctx.app)
+        .get('/customers?q=souza&sort=email&order=desc')
+        .set('Authorization', auth)
+        .expect(200);
+
+      expect(
+        found.body.data.map((customer: { email: string }) => customer.email),
+      ).toEqual(['bruno@souza.dev', 'ana@empresa.com']);
     });
 
     it('rejeita e-mail de outro cliente', async () => {

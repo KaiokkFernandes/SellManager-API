@@ -1243,7 +1243,7 @@
     "/products": {
       "get": {
         "operationId": "listProducts",
-        "summary": "Lista produtos (público)",
+        "summary": "Lista produtos (público), com busca e ordenação",
         "tags": [
           "Produtos"
         ],
@@ -1268,6 +1268,47 @@
             },
             "required": false,
             "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "description": "Busca por nome"
+            },
+            "required": false,
+            "description": "Busca por nome",
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "name",
+                "price",
+                "quantity",
+                "created_at"
+              ],
+              "default": "name"
+            },
+            "required": false,
+            "name": "sort",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "asc",
+              "description": "Direção da ordenação"
+            },
+            "required": false,
+            "description": "Direção da ordenação",
+            "name": "order",
             "in": "query"
           }
         ],
@@ -1674,7 +1715,7 @@
     "/customers": {
       "get": {
         "operationId": "listCustomers",
-        "summary": "Lista clientes",
+        "summary": "Lista clientes, com busca e ordenação",
         "tags": [
           "Clientes"
         ],
@@ -1703,6 +1744,46 @@
             },
             "required": false,
             "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "description": "Busca por nome ou e-mail"
+            },
+            "required": false,
+            "description": "Busca por nome ou e-mail",
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "name",
+                "email",
+                "created_at"
+              ],
+              "default": "name"
+            },
+            "required": false,
+            "name": "sort",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "asc",
+              "description": "Direção da ordenação"
+            },
+            "required": false,
+            "description": "Direção da ordenação",
+            "name": "order",
             "in": "query"
           }
         ],

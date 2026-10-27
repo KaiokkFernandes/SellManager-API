@@ -1,5 +1,12 @@
 import { z } from 'zod';
-import { examples, isoDateSchema, moneyCentsSchema } from './common';
+import {
+  examples,
+  isoDateSchema,
+  moneyCentsSchema,
+  paginationQuerySchema,
+  searchSchema,
+  sortOrderSchema,
+} from './common';
 
 export const productBodySchema = z
   .object({
@@ -14,6 +21,21 @@ export const productBodySchema = z
   });
 
 export type ProductBody = z.infer<typeof productBodySchema>;
+
+export const PRODUCT_SORTS = [
+  'name',
+  'price',
+  'quantity',
+  'created_at',
+] as const;
+export type ProductSort = (typeof PRODUCT_SORTS)[number];
+
+export const listProductsQuerySchema = paginationQuerySchema.extend({
+  q: searchSchema.meta({ description: 'Busca por nome' }),
+  sort: z.enum(PRODUCT_SORTS).default('name'),
+  order: sortOrderSchema,
+});
+export type ListProductsQuery = z.infer<typeof listProductsQuerySchema>;
 
 export const productSchema = z
   .object({

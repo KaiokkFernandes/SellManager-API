@@ -34,6 +34,16 @@ export const paginationQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(100).default(20),
 });
 
+export const SORT_ORDERS = ['asc', 'desc'] as const;
+export type SortOrder = (typeof SORT_ORDERS)[number];
+export const sortOrderSchema = z
+  .enum(SORT_ORDERS)
+  .default('asc')
+  .meta({ description: 'Direção da ordenação' });
+
+/** Termo de busca livre (parcial, sem diferenciar maiúsculas). */
+export const searchSchema = z.string().trim().max(100).optional();
+
 export const paginationMetaSchema = z.object({
   page: z.number().int(),
   limit: z.number().int(),

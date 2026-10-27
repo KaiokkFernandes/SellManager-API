@@ -26,6 +26,29 @@ describe('Product services', () => {
     expect(products).toEqual([expect.objectContaining(keyboard)]);
   });
 
+  it('lista com busca e ordenação', async () => {
+    for (const [name, price] of [
+      ['Cabo', 10],
+      ['Mouse', 50],
+      ['cabo longo', 30],
+    ] as const) {
+      await new CreateProductService(repository).execute({
+        name,
+        price,
+        quantity: 1,
+      });
+    }
+
+    const { data, meta } = await new ListProductsService(repository).execute({
+      search: 'CABO',
+      sort: 'price',
+      order: 'desc',
+    });
+
+    expect(data.map(product => product.name)).toEqual(['cabo longo', 'Cabo']);
+    expect(meta.total).toBe(2);
+  });
+
   it('não permite dois produtos com o mesmo nome', async () => {
     await new CreateProductService(repository).execute(keyboard);
 

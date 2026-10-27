@@ -4,19 +4,29 @@ import {
   PaginationParams,
   slicePage,
 } from '@shared/domain/pagination';
+import { matchesSearch, sortInMemory } from '@shared/domain/listing';
 import { Product } from '../domain/entities/Product';
 import {
   ICreateProductDTO,
+  IFindProductsFilter,
   IProductsRepository,
 } from '../domain/repositories/IProductsRepository';
 
 export class FakeProductsRepository implements IProductsRepository {
   public readonly products: Product[] = [];
 
-  public findAll(pagination: PaginationParams): Promise<PageResult<Product>> {
+  public findAll(
+    { search, sort = 'name', order }: IFindProductsFilter,
+    pagination: PaginationParams,
+  ): Promise<PageResult<Product>> {
+    const found = this.products.filter(product =>
+      matchesSearch(search, product.name),
+    );
     return Promise.resolve(
       slicePage(
-        this.products.map(product => ({ ...product })),
+        sortInMemory(found, product => product[sort], order).map(product => ({
+          ...product,
+        })),
         pagination,
       ),
     );
