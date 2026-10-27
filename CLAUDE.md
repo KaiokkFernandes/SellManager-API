@@ -23,10 +23,10 @@
 - Testes: unitários para os services (repositórios fake) e de integração das
   rotas principais (supertest).
 - ESLint + Prettier, `.env.example`, documentação OpenAPI em `/docs`.
-- O front-end (apps/web) tem só a fundação (login, layout, componentes base); Clientes,
-  Produtos e Pedidos são placeholders. Não criar telas de CRUD sem pedido explícito.
-  Convenções em `apps/web/README.md`; formulários sempre com schemas de `packages/shared`,
-  e todo acesso ao token só via `apps/web/src/lib/tokenStorage.ts`.
+- Front-end (apps/web): login, dashboard, clientes, produtos e pedidos. Siga as convenções de
+  `apps/web/README.md`: formulários sempre com schemas de `packages/shared`, estado de lista
+  na URL (`listSearchSchema`), features não se importam entre si, e todo acesso ao token só
+  via `apps/web/src/lib/tokenStorage.ts`.
 
 ## Comandos (rodar na raiz do monorepo)
 
@@ -34,6 +34,8 @@
 - `pnpm dev` (shared em watch + api + web), `pnpm build`, `pnpm typecheck`,
   `pnpm lint`, `pnpm format:check` (todos via Turborepo)
 - `pnpm test:unit` (sem banco) e `pnpm test:integration` (postgres-test, porta 5434)
+- Dados de dev: `pnpm --filter api seed` (admin@sellmanager.dev / admin12345)
+- E2E: `pnpm --filter web e2e` (Playwright contra a API real; gera `apps/web/docs/screenshots`)
 - Um app só: `pnpm --filter api <script>` / `pnpm --filter web <script>`
 - Migrations: `pnpm --filter api migration:run` / `migration:revert`; novas migrations
   precisam ser registradas em `apps/api/src/shared/infra/typeorm/data-source.ts`

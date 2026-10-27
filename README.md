@@ -27,7 +27,7 @@ both the API and the front-end import.
 | Package                   | What it is                                                                                   | Docs                                                           |
 | ------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
 | `@sellmanager/api`        | Users, products, customers and orders; JWT auth, OpenAPI at `/docs`                          | [apps/api/README.md](apps/api/README.md)                       |
-| `@sellmanager/web`        | Front-end foundation (login, layout, typed router, shared components)                        | [apps/web/README.md](apps/web/README.md)                       |
+| `@sellmanager/web`        | Front-end: login, dashboard, customers, products (with images) and orders                    | [apps/web/README.md](apps/web/README.md)                       |
 | `@sellmanager/shared`     | The contract: request schemas, response DTOs, error format and the registry of every route   | [packages/shared/README.md](packages/shared/README.md)         |
 | `@sellmanager/api-client` | `openapi-fetch` client typed from `apps/api/openapi.json`: JWT, 401 callback, errors, upload | [packages/api-client/README.md](packages/api-client/README.md) |
 | `@sellmanager/config`     | `tsconfig.*.json`, `createConfig()` for ESLint, Prettier config                              | —                                                              |
@@ -94,6 +94,7 @@ node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 
 docker compose up -d postgres mailpit
 pnpm --filter api migration:run
+pnpm --filter api seed   # optional: admin@sellmanager.dev / admin12345 + sample data
 pnpm dev
 ```
 
@@ -117,6 +118,8 @@ pnpm --filter api dev            # only the API
 pnpm --filter web dev            # only the front-end
 pnpm --filter api migration:run  # also migration:revert, migration:create
 pnpm --filter api test:integration
+pnpm --filter api seed           # development data (idempotent)
+pnpm --filter web e2e            # Playwright against the real API (needs the seed)
 pnpm --filter shared build
 ```
 
