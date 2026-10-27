@@ -34,7 +34,7 @@ const envSchema = z
     JWT_SECRET: z
       .string()
       .min(32, 'JWT_SECRET precisa ter ao menos 32 caracteres'),
-    JWT_EXPIRES_IN: z.string().default('1d'),
+    JWT_EXPIRES_IN: z.string().default('2h'),
     BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(10).max(15).default(12),
 
     // Origens permitidas no CORS, separadas por vírgula ('*' libera todas)

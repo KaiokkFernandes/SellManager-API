@@ -1,6 +1,9 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { App } from './App';
+import { App } from '@/app/App';
+import { Providers } from '@/app/Providers';
+import { createQueryClient } from '@/app/queryClient';
+import './index.css';
 
 const root = document.getElementById('root');
 
@@ -10,6 +13,8 @@ if (!root) {
 
 createRoot(root).render(
   <StrictMode>
-    <App />
+    <Providers queryClient={createQueryClient()}>
+      <App />
+    </Providers>
   </StrictMode>,
 );
