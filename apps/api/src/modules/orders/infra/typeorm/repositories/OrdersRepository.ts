@@ -75,6 +75,19 @@ export class OrdersRepository implements IOrdersRepository {
     return row ? ((await this.withItems([row]))[0] ?? null) : null;
   }
 
+  public countByCustomer(customerId: string): Promise<number> {
+    return this.orders.countBy({ customer_id: customerId });
+  }
+
+  public async countByProduct(productId: string): Promise<number> {
+    const rows = await this.items
+      .createQueryBuilder('item')
+      .select('COUNT(DISTINCT item.order_id)', 'count')
+      .where('item.product_id = :productId', { productId })
+      .getRawOne<{ count: string }>();
+    return Number(rows?.count ?? 0);
+  }
+
   public async create({ items, ...data }: ICreateOrderDTO): Promise<Order> {
     const order = await this.orders.save(this.orders.create(data));
 

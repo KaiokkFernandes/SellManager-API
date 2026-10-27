@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { FakeOrdersRepository } from '@modules/orders/fakes/FakeOrdersRepository';
 import { FakeProductsRepository } from '../fakes/FakeProductsRepository';
 import { CreateProductService } from './CreateProductService';
 import { DeleteProductService } from './DeleteProductService';
@@ -97,11 +98,40 @@ describe('Product services', () => {
       keyboard,
     );
 
-    await new DeleteProductService(repository).execute({ id: created.id });
+    await new DeleteProductService(
+      repository,
+      new FakeOrdersRepository(),
+    ).execute({ id: created.id });
 
     expect(repository.products).toHaveLength(0);
     await expect(
-      new DeleteProductService(repository).execute({ id: created.id }),
+      new DeleteProductService(repository, new FakeOrdersRepository()).execute({
+        id: created.id,
+      }),
     ).rejects.toMatchObject({ statusCode: 404 });
+  });
+
+  it('não exclui produto que está em pedidos', async () => {
+    const created = await new CreateProductService(repository).execute(
+      keyboard,
+    );
+    const orders = new FakeOrdersRepository();
+    for (const customer_id of ['c1', 'c2']) {
+      await orders.create({
+        customer_id,
+        status: 'pending',
+        total: 199.9,
+        items: [{ product_id: created.id, price: 199.9, quantity: 1 }],
+      });
+    }
+
+    await expect(
+      new DeleteProductService(repository, orders).execute({ id: created.id }),
+    ).rejects.toMatchObject({
+      statusCode: 409,
+      code: 'RESOURCE_IN_USE',
+      details: { orders_count: 2 },
+    });
+    expect(repository.products).toHaveLength(1);
   });
 });

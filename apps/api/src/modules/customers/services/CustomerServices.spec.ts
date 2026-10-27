@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { FakeOrdersRepository } from '@modules/orders/fakes/FakeOrdersRepository';
 import { FakeCustomersRepository } from '../fakes/FakeCustomersRepository';
 import { CreateCustomerService } from './CreateCustomerService';
 import { DeleteCustomerService } from './DeleteCustomerService';
@@ -74,8 +75,33 @@ describe('Customer services', () => {
   it('remove um cliente', async () => {
     const customer = await new CreateCustomerService(repository).execute(ana);
 
-    await new DeleteCustomerService(repository).execute({ id: customer.id });
+    await new DeleteCustomerService(
+      repository,
+      new FakeOrdersRepository(),
+    ).execute({ id: customer.id });
 
     expect(repository.customers).toHaveLength(0);
+  });
+
+  it('não exclui cliente com pedidos e informa quantos são', async () => {
+    const customer = await new CreateCustomerService(repository).execute(ana);
+    const orders = new FakeOrdersRepository();
+    await orders.create({
+      customer_id: customer.id,
+      status: 'pending',
+      total: 10,
+      items: [{ product_id: 'p1', price: 10, quantity: 1 }],
+    });
+
+    await expect(
+      new DeleteCustomerService(repository, orders).execute({
+        id: customer.id,
+      }),
+    ).rejects.toMatchObject({
+      statusCode: 409,
+      code: 'RESOURCE_IN_USE',
+      details: { orders_count: 1 },
+    });
+    expect(repository.customers).toHaveLength(1);
   });
 });

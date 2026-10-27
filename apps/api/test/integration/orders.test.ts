@@ -166,11 +166,20 @@ describe('/orders', () => {
       .delete(`/products/${cable.id}`)
       .set('Authorization', auth)
       .expect(409);
-    expect(response.body.code).toBe('RESOURCE_IN_USE');
-    await request(ctx.app)
+    expect(response.body).toMatchObject({
+      code: 'RESOURCE_IN_USE',
+      message: 'Product is in orders and cannot be deleted',
+      details: { orders_count: 1 },
+    });
+    const customer = await request(ctx.app)
       .delete(`/customers/${customerId}`)
       .set('Authorization', auth)
       .expect(409);
+    expect(customer.body).toMatchObject({
+      code: 'RESOURCE_IN_USE',
+      message: 'Customer has orders and cannot be deleted',
+      details: { orders_count: 1 },
+    });
   });
 
   it('filtra a listagem por cliente', async () => {

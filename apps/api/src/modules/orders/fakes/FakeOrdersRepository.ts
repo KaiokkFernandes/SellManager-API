@@ -44,6 +44,20 @@ export class FakeOrdersRepository implements IOrdersRepository {
     return this.findById(id);
   }
 
+  public countByCustomer(customerId: string): Promise<number> {
+    return Promise.resolve(
+      this.orders.filter(order => order.customer_id === customerId).length,
+    );
+  }
+
+  public countByProduct(productId: string): Promise<number> {
+    return Promise.resolve(
+      this.orders.filter(order =>
+        order.items.some(item => item.product_id === productId),
+      ).length,
+    );
+  }
+
   public create({ items, ...data }: ICreateOrderDTO): Promise<Order> {
     const now = new Date();
     const id = randomUUID();
