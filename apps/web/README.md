@@ -13,8 +13,8 @@ pnpm --filter api seed                  # admin, 30 clientes, 50 produtos, 18 pe
 pnpm dev                                # api (3333) + web (3000)
 ```
 
-Abra http://localhost:3000 e entre com `admin@sellmanager.dev` / `admin12345` (criado pelo
-seed). Em dev o front chama `/api/...` e o proxy do Vite encaminha para a API (sem CORS).
+Abra http://localhost:3000 e entre com um dos usuários do seed, um por papel (ADMIN, MANAGER
+e SELLER; credenciais de dev no [README raiz](../../README.md#development-users)). Em dev o front chama `/api/...` e o proxy do Vite encaminha para a API (sem CORS).
 
 | Script                                 | O que faz                           |
 | -------------------------------------- | ----------------------------------- |
@@ -43,6 +43,12 @@ Prints gerados pelo Playwright (`pnpm --filter web e2e`) em
 - **Produtos**: lista com miniatura, preço em BRL e selo de estoque (esgotado / baixo ≤ 5);
   formulário com o preço em centavos; imagem com preview, validação de tipo e tamanho
   (os limites do shared), progresso, substituição, remoção e placeholder sem imagem.
+- **Usuários** (só ADMIN): lista com busca e filtros de papel e situação na URL; cadastro com
+  papel e senha inicial; edição de nome e papel; ativar/desativar com confirmação. Na própria
+  conta, o papel fica bloqueado e não há "desativar", e as recusas da API (último ADMIN) aparecem
+  no diálogo.
+- **Meu perfil** (todos; link no nome do header): editar o nome e trocar a senha (exige a
+  atual). A sessão atual recebe um token novo e as outras são encerradas.
 - **Pedidos**: lista com cliente, data, itens, total e status, filtrável por cliente e
   período; criação com combobox de cliente e de produtos (busca no servidor), quantidade,
   preço unitário e subtotal por linha, produto repetido somando quantidade, total ao vivo,
@@ -258,6 +264,39 @@ return (
   texto; as regras continuam no shared).
 - O botão de enviar fica desabilitado enquanto `isSubmitting`, o que evita duplo submit.
 
+### Permissões (papéis)
+
+O mapa é o mesmo da API (`@sellmanager/shared`: `ROLE_PERMISSIONS`, `can`). No front ele só
+**esconde** a UI; quem decide é a API (403).
+
+```tsx
+// botão / item de menu
+const canDelete = usePermission('product:delete');
+{
+  canDelete ? <Button>Excluir</Button> : null;
+}
+
+// várias checagens no mesmo componente
+const can = useCan();
+can('customer:update');
+
+// rota: sem a permissão, a página 403 aparece dentro do layout
+createRoute({
+  path: '/new',
+  beforeLoad: requires('product:create'),
+  component: NewProductPage,
+});
+```
+
+- O perfil (com o papel) é garantido no `beforeLoad` do layout autenticado, então `requires`
+  nunca roda sem saber o papel. Ele revalida ao voltar para a aba, e o papel trocado por um
+  ADMIN chega sem relogar.
+- Item de menu novo: adicione em [`AuthenticatedLayout.tsx`](src/app/AuthenticatedLayout.tsx)
+  com `permission`.
+- Botões que o papel nunca vai poder usar **somem** (não ficam desabilitados). Exceção: a
+  própria conta em Usuários, onde o papel fica desabilitado com a explicação.
+- Não compare papel direto (`role === 'ADMIN'`); use sempre a permissão.
+
 ### Componentes reutilizáveis
 
 - `DataTable`: colunas tipadas (`sortKey` torna o cabeçalho ordenável, com `aria-sort`),
@@ -290,6 +329,13 @@ dependência de pacote). Para adicionar um, copie o componente do shadcn e ajust
 para `@/lib/utils`.
 
 ## Pendências
+
+- Pedidos não registram quem os criou: SELLER vê todos os pedidos. "Vendedor vê só os seus"
+  precisa de `created_by` no pedido.
+- `report:read` está reservada: ainda não há relatórios.
+- Não há fluxo para trocar o próprio e-mail (com confirmação por e-mail).
+- Papel alterado chega ao front ao voltar para a aba ou em até 1 min; até lá a UI pode mostrar
+  um botão que a API recusa (403, com mensagem).
 
 - O e2e cria dados de teste no banco de dev (nomes com `E2E`) e não os apaga; o seed não os
   remove. Um banco próprio para o e2e resolveria.

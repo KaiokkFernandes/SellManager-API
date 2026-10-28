@@ -73,6 +73,74 @@ Dates are ISO 8601 strings, and ids are UUIDs.
 Dependency graph: `config` ← `shared` ← `api`, `web`. `api-client` is generated from the API's
 `openapi.json`, but it doesn't import `api`. `api` and `web` never import each other.
 
+## Access control (roles and permissions)
+
+Every user has one role. What each role may do is a **map in code**:
+[`packages/shared/src/permissions.ts`](packages/shared/src/permissions.ts) (`ROLE_PERMISSIONS`
+and `can(role, permission)`). The same map is used everywhere:
+
+- **API**: every authenticated route in the contract declares `permission` (it does not
+  compile without one), and `mountRoute` adds `authorize(permission)`. A role without the
+  permission gets `403 FORBIDDEN` before validation runs. The role is read from the database
+  on every request, so a role change or a deactivated account takes effect immediately.
+- **Front-end**: `usePermission('product:delete')` hides menu items and buttons, and each route
+  declares the permission it needs. Opening a forbidden URL shows a 403 page.
+- **Tests and docs**: the integration test builds the role × route matrix from the map, and
+  the table below is generated from it. A unit test fails if this table is out of date
+  (`pnpm --filter api docs:permissions` rewrites it).
+
+<!-- permissions:start -->
+<!-- prettier-ignore-start -->
+
+| Permission | ADMIN | MANAGER | SELLER | Routes |
+| --- | :-: | :-: | :-: | --- |
+| `customer:read` | ✅ | ✅ | ✅ | `GET /customers`, `GET /customers/{id}` |
+| `customer:create` | ✅ | ✅ | ✅ | `POST /customers` |
+| `customer:update` | ✅ | ✅ | — | `PUT /customers/{id}` |
+| `customer:delete` | ✅ | ✅ | — | `DELETE /customers/{id}` |
+| `product:read` | ✅ | ✅ | ✅ | `GET /products`, `GET /products/{id}` |
+| `product:create` | ✅ | ✅ | — | `POST /products` |
+| `product:update` | ✅ | ✅ | — | `PUT /products/{id}`, `PATCH /products/{id}/image`, `DELETE /products/{id}/image` |
+| `product:delete` | ✅ | ✅ | — | `DELETE /products/{id}` |
+| `order:read` | ✅ | ✅ | ✅ | `GET /orders`, `GET /orders/{id}` |
+| `order:create` | ✅ | ✅ | ✅ | `POST /orders` |
+| `order:complete` | ✅ | ✅ | ✅ | `PATCH /orders/{id}/complete` |
+| `order:cancel` | ✅ | ✅ | — | `PATCH /orders/{id}/cancel` |
+| `report:read` | ✅ | ✅ | — | _reserved_ |
+| `user:read` | ✅ | — | — | `GET /users`, `GET /users/{id}` |
+| `user:create` | ✅ | — | — | `POST /users` |
+| `user:update` | ✅ | — | — | `PUT /users/{id}`, `PATCH /users/{id}/status` |
+
+Any signed-in user: `PATCH /users/avatar`, `GET /profile`, `PUT /profile`, `PUT /profile/password`.
+
+<!-- prettier-ignore-end -->
+<!-- permissions:end -->
+
+Rules that are not a permission:
+
+- Users are never deleted, only deactivated. A deactivated user cannot log in
+  (`403 ACCOUNT_DISABLED`, and only after the correct password) and their open sessions stop
+  working at once.
+- An ADMIN cannot change their own role or deactivate themselves, and the last active ADMIN
+  can never be demoted or deactivated (`409 CONFLICT`, `details.reason`: `SELF` | `LAST_ADMIN`).
+- Changing your own password (`PUT /profile/password`) or resetting it by e-mail ends every
+  other session.
+
+**Adding a permission**: add it to `PERMISSIONS` and to the roles in `ROLE_PERMISSIONS`, use it
+in the route (`permission: '…'`) and in the UI (`usePermission`), then run
+`pnpm openapi:generate` and `pnpm --filter api docs:permissions`.
+
+### Development users
+
+Created by `pnpm --filter api seed`. These are **development values only**: never use them
+in a real environment.
+
+| Role    | E-mail                     | Password        |
+| ------- | -------------------------- | --------------- |
+| ADMIN   | `admin@sellmanager.dev`    | `admin12345`    |
+| MANAGER | `gerente@sellmanager.dev`  | `gerente12345`  |
+| SELLER  | `vendedor@sellmanager.dev` | `vendedor12345` |
+
 ## Requirements
 
 - **Node.js 24** (see `.nvmrc`)
@@ -94,7 +162,7 @@ node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 
 docker compose up -d postgres mailpit
 pnpm --filter api migration:run
-pnpm --filter api seed   # optional: admin@sellmanager.dev / admin12345 + sample data
+pnpm --filter api seed   # optional: one user per role + sample data (see below)
 pnpm dev
 ```
 

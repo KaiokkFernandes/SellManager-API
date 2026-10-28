@@ -115,7 +115,8 @@ pnpm dev                                    # api + web; or: pnpm --filter api d
 ### Development seed
 
 `pnpm --filter api seed` fills the **development** database so pagination, search and filters
-can be tried for real: an admin user (`admin@sellmanager.dev` / `admin12345`), 30 customers,
+can be tried for real: one user per role (ADMIN, MANAGER and SELLER, credentials in the
+[root README](../../README.md#development-users)), 30 customers,
 50 products (some with low or zero stock) and 18 orders spread over the last 60 days, some
 completed or canceled.
 
@@ -182,34 +183,44 @@ Run them inside `apps/api`, or from the root with `pnpm --filter api <script>`.
 All bodies are JSON. Full schemas and examples are at **`/docs`**. 🔒 means the route requires
 `Authorization: Bearer <token>`.
 
-| Method | Path                  | Auth | Description                                           |
-| ------ | --------------------- | :--: | ----------------------------------------------------- |
-| POST   | `/users`              |      | Sign up                                               |
-| GET    | `/users`              |  🔒  | List users (paginated)                                |
-| PATCH  | `/users/avatar`       |  🔒  | Upload avatar (`multipart/form-data`, field `avatar`) |
-| POST   | `/sessions`           |      | Log in, returns `{ user, token }`                     |
-| GET    | `/profile`            |  🔒  | Current user's profile                                |
-| PUT    | `/profile`            |  🔒  | Update profile / change password                      |
-| POST   | `/password/forgot`    |      | Send recovery email (always `204`)                    |
-| POST   | `/password/reset`     |      | Reset password with the emailed token                 |
-| GET    | `/products`           |      | List products (`?q=&sort=&order=`, paginated)         |
-| GET    | `/products/:id`       |      | Get a product                                         |
-| POST   | `/products`           |  🔒  | Create a product                                      |
-| PUT    | `/products/:id`       |  🔒  | Update a product                                      |
-| DELETE | `/products/:id`       |  🔒  | Delete a product (`409` if it is in orders)           |
-| PATCH  | `/products/:id/image` |  🔒  | Upload/replace the image (`multipart`, field `image`) |
-| DELETE | `/products/:id/image` |  🔒  | Remove the image                                      |
-| GET    | `/customers`          |  🔒  | List customers (`?q=&sort=&order=`, paginated)        |
-| GET    | `/customers/:id`      |  🔒  | Get a customer                                        |
-| POST   | `/customers`          |  🔒  | Create a customer                                     |
-| PUT    | `/customers/:id`      |  🔒  | Update a customer                                     |
-| DELETE | `/customers/:id`      |  🔒  | Delete a customer (`409` if they have orders)         |
-| GET    | `/orders`             |  🔒  | List orders (`?customer_id=&from=&to=`, paginated)    |
-| GET    | `/orders/:id`         |  🔒  | Get an order with its items                           |
-| POST   | `/orders`             |  🔒  | Create an order                                       |
-| PATCH  | `/orders/:id/status`  |  🔒  | Change status: `pending → completed \| canceled`      |
+| Method | Path                   | Auth | Description                                            |
+| ------ | ---------------------- | :--: | ------------------------------------------------------ |
+| POST   | `/users`               |  🔒  | Create a user with role and initial password (ADMIN)   |
+| GET    | `/users`               |  🔒  | List users (`?q=&role=&status=`, ADMIN)                |
+| GET    | `/users/:id`           |  🔒  | Get a user (ADMIN)                                     |
+| PUT    | `/users/:id`           |  🔒  | Change name and role (ADMIN)                           |
+| PATCH  | `/users/:id/status`    |  🔒  | Activate / deactivate (ADMIN; users are never deleted) |
+| PATCH  | `/users/avatar`        |  🔒  | Upload avatar (`multipart/form-data`, field `avatar`)  |
+| POST   | `/sessions`            |      | Log in, returns `{ user, token }`                      |
+| GET    | `/profile`             |  🔒  | Current user's profile (with `role`)                   |
+| PUT    | `/profile`             |  🔒  | Change your own name                                   |
+| PUT    | `/profile/password`    |  🔒  | Change your password (needs the current one)           |
+| POST   | `/password/forgot`     |      | Send recovery email (always `204`)                     |
+| POST   | `/password/reset`      |      | Reset password with the emailed token                  |
+| GET    | `/products`            |      | List products (`?q=&sort=&order=`, paginated)          |
+| GET    | `/products/:id`        |      | Get a product                                          |
+| POST   | `/products`            |  🔒  | Create a product                                       |
+| PUT    | `/products/:id`        |  🔒  | Update a product                                       |
+| DELETE | `/products/:id`        |  🔒  | Delete a product (`409` if it is in orders)            |
+| PATCH  | `/products/:id/image`  |  🔒  | Upload/replace the image (`multipart`, field `image`)  |
+| DELETE | `/products/:id/image`  |  🔒  | Remove the image                                       |
+| GET    | `/customers`           |  🔒  | List customers (`?q=&sort=&order=`, paginated)         |
+| GET    | `/customers/:id`       |  🔒  | Get a customer                                         |
+| POST   | `/customers`           |  🔒  | Create a customer                                      |
+| PUT    | `/customers/:id`       |  🔒  | Update a customer                                      |
+| DELETE | `/customers/:id`       |  🔒  | Delete a customer (`409` if they have orders)          |
+| GET    | `/orders`              |  🔒  | List orders (`?customer_id=&from=&to=`, paginated)     |
+| GET    | `/orders/:id`          |  🔒  | Get an order with its items                            |
+| POST   | `/orders`              |  🔒  | Create an order                                        |
+| PATCH  | `/orders/:id/complete` |  🔒  | Complete a pending order                               |
+| PATCH  | `/orders/:id/cancel`   |  🔒  | Cancel a pending order (stock goes back)               |
 
-`/sessions`, `/password/*` and `POST /users` are rate limited to 20 requests per 15 minutes per IP.
+`/sessions` and `/password/*` are rate limited to 20 requests per 15 minutes per IP.
+
+🔒 routes also need a **permission** for the user's role (ADMIN, MANAGER or SELLER). Without
+it the answer is `403 FORBIDDEN` with `details.permission`. The matrix is in the
+[root README](../../README.md#access-control-roles-and-permissions), and `/docs` shows the
+permission on each operation. There is no public sign-up: an ADMIN creates users.
 
 **Listing options**
 

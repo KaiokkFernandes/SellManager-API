@@ -27,7 +27,8 @@
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
     "openapi:generate": "tsx scripts/generate-openapi.ts",
-    "openapi:check": "tsx scripts/generate-openapi.ts --check"
+    "openapi:check": "tsx scripts/generate-openapi.ts --check",
+    "docs:permissions": "tsx scripts/permissions-doc.ts"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
