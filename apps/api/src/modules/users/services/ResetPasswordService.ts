@@ -40,11 +40,13 @@ export class ResetPasswordService {
 
     const user = await this.usersRepository.findById(userToken.user_id);
 
-    if (!user) {
+    if (!user?.active) {
       throw new AppError('Invalid or expired token');
     }
 
     user.password = await this.hashProvider.generateHash(password);
+    // sessões abertas antes da troca deixam de valer
+    user.password_changed_at = new Date();
     await this.usersRepository.save(user);
 
     // Uso único: o token deixa de valer depois de redefinir a senha.

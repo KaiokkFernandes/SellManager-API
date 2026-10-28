@@ -8,12 +8,18 @@ import { ResetPasswordService } from '../../../services/ResetPasswordService';
 import { SendForgotPasswordEmailService } from '../../../services/SendForgotPasswordEmailService';
 import { ShowProfileService } from '../../../services/ShowProfileService';
 import { UpdateProfileService } from '../../../services/UpdateProfileService';
+import { ShowUserService } from '../../../services/ShowUserService';
 import { UpdateUserAvatarService } from '../../../services/UpdateUserAvatarService';
+import { UpdateUserService } from '../../../services/UpdateUserService';
+import { UpdateUserStatusService } from '../../../services/UpdateUserStatusService';
 import { toUserResponse } from '../UserMapper';
 
 interface UsersServices {
   list: ListUsersService;
+  show: ShowUserService;
   create: CreateUserService;
+  update: UpdateUserService;
+  updateStatus: UpdateUserStatusService;
   updateAvatar: UpdateUserAvatarService;
   authenticate: AuthenticateUserService;
   showProfile: ShowProfileService;
@@ -37,19 +43,57 @@ export class UsersController {
     input,
     reply,
   }) => {
-    // provisório: o cadastro deixa de ser público quando o CRUD de usuários entrar
-    const user = await this.services.create.execute({
-      ...input.body,
-      role: 'SELLER',
-    });
+    const user = await this.services.create.execute(input.body);
     reply(201, this.toResponse(user));
+  };
+
+  public show: RouteHandler<Routes['users']['show']> = async ({
+    input,
+    reply,
+  }) => {
+    const user = await this.services.show.execute({ id: input.params.id });
+    reply(200, this.toResponse(user));
+  };
+
+  public update: RouteHandler<Routes['users']['update']> = async ({
+    input,
+    request,
+    reply,
+  }) => {
+    const user = await this.services.update.execute({
+      actorId: request.user.id,
+      id: input.params.id,
+      ...input.body,
+    });
+    reply(200, this.toResponse(user));
+  };
+
+  public updateStatus: RouteHandler<Routes['users']['updateStatus']> = async ({
+    input,
+    request,
+    reply,
+  }) => {
+    const user = await this.services.updateStatus.execute({
+      actorId: request.user.id,
+      id: input.params.id,
+      active: input.body.active,
+    });
+    reply(200, this.toResponse(user));
   };
 
   public list: RouteHandler<Routes['users']['list']> = async ({
     input,
     reply,
   }) => {
-    const { data, meta } = await this.services.list.execute(input.query);
+    const { page, limit, q, role, status } = input.query;
+    const { data, meta } = await this.services.list.execute(
+      {
+        search: q,
+        role,
+        active: status === undefined ? undefined : status === 'active',
+      },
+      { page, limit },
+    );
     reply(200, { data: data.map(this.toResponse), meta });
   };
 

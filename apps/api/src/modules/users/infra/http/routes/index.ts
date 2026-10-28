@@ -10,7 +10,10 @@ import { ResetPasswordService } from '../../../services/ResetPasswordService';
 import { SendForgotPasswordEmailService } from '../../../services/SendForgotPasswordEmailService';
 import { ShowProfileService } from '../../../services/ShowProfileService';
 import { UpdateProfileService } from '../../../services/UpdateProfileService';
+import { ShowUserService } from '../../../services/ShowUserService';
 import { UpdateUserAvatarService } from '../../../services/UpdateUserAvatarService';
+import { UpdateUserService } from '../../../services/UpdateUserService';
+import { UpdateUserStatusService } from '../../../services/UpdateUserStatusService';
 import { UsersController } from '../controllers/UsersController';
 
 export function registerUsersRoutes(
@@ -23,7 +26,10 @@ export function registerUsersRoutes(
   const controller = new UsersController(
     {
       list: new ListUsersService(users),
+      show: new ShowUserService(users),
       create: new CreateUserService(users, hash),
+      update: new UpdateUserService(container.usersUnitOfWork),
+      updateStatus: new UpdateUserStatusService(container.usersUnitOfWork),
       updateAvatar: new UpdateUserAvatarService(users, storage),
       authenticate: new AuthenticateUserService(users, hash, token),
       showProfile: new ShowProfileService(users),
@@ -43,6 +49,9 @@ export function registerUsersRoutes(
 
   mount(routes.users.create, controller.create);
   mount(routes.users.list, controller.list);
+  mount(routes.users.show, controller.show);
+  mount(routes.users.update, controller.update);
+  mount(routes.users.updateStatus, controller.updateStatus);
   mount(
     routes.users.updateAvatar,
     controller.updateAvatar,

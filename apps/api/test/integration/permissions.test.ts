@@ -47,7 +47,6 @@ describe('matriz de permissões (gerada do mapa)', () => {
     // report:read fica reservada para a feature de relatórios
     expect(PERMISSIONS.filter(permission => !used.has(permission))).toEqual([
       'report:read',
-      'user:update',
     ]);
   });
 

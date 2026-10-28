@@ -50,7 +50,7 @@ describe('Contratos de resposta (@sellmanager/shared)', () => {
     const created = await request(ctx.app)
       .post('/users')
       .set('Authorization', auth)
-      .send(defaultUser)
+      .send({ ...defaultUser, role: 'SELLER' })
       .expect(201);
     expectContract(userSchema, created.body);
 

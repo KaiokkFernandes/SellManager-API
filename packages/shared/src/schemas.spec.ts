@@ -13,6 +13,7 @@ describe('@sellmanager/shared', () => {
       name: ' Kaio ',
       email: ' KAIO@Test.com ',
       password: 'senha-segura',
+      role: 'SELLER',
     });
 
     expect(body).toMatchObject({ name: 'Kaio', email: 'kaio@test.com' });
@@ -64,7 +65,7 @@ describe('contrato de rotas', () => {
     const ids = allRoutes.map(route => route.operationId);
     const keys = allRoutes.map(route => `${route.method} ${route.path}`);
 
-    expect(allRoutes).toHaveLength(25);
+    expect(allRoutes).toHaveLength(28);
     expect(new Set(ids).size).toBe(ids.length);
     expect(new Set(keys).size).toBe(keys.length);
   });
@@ -79,8 +80,9 @@ describe('contrato de rotas', () => {
     expect(routes.orders.create.errorStatuses).toEqual([
       400, 401, 403, 404, 409, 413, 500,
     ]);
+    // 403 = conta desativada (declarado na rota)
     expect(routes.sessions.create.errorStatuses).toEqual([
-      400, 401, 413, 429, 500,
+      400, 401, 403, 413, 429, 500,
     ]);
     expect(routes.users.updateAvatar.errorStatuses).toEqual([400, 401, 500]);
     expect(routes.profile.show.errorStatuses).toEqual([401, 404, 500]);

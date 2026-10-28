@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import { imageFileSchema } from './uploads';
-import { examples, isoDateSchema } from './common';
+import {
+  examples,
+  isoDateSchema,
+  paginationQuerySchema,
+  searchSchema,
+} from './common';
 import { roleSchema } from './permissions';
 
 const email = z.string().trim().toLowerCase().pipe(z.email());
@@ -10,20 +15,42 @@ const newPassword = z.string().min(8).max(72);
 
 // ---- Entradas
 
+const name = z.string().trim().min(1).max(120);
+
+/** Cadastro feito por um ADMIN, com a senha inicial que ele repassa ao usuário. */
 export const createUserBodySchema = z
   .object({
-    name: z.string().trim().min(1),
+    name,
     email,
     password: newPassword,
+    role: roleSchema,
   })
   .meta({
     id: 'CreateUserBody',
     example: {
       name: 'Kaio',
       email: 'kaio@example.com',
-      password: 'senha-segura-123',
+      password: 'senha-inicial-123',
+      role: 'SELLER',
     },
   });
+
+/** Edição por um ADMIN: nome e papel (e-mail é o login e não muda aqui). */
+export const updateUserBodySchema = z.object({ name, role: roleSchema }).meta({
+  id: 'UpdateUserBody',
+  example: { name: 'Kaio Fernandes', role: 'MANAGER' },
+});
+
+/** Ativar/desativar. Usuários nunca são excluídos (têm histórico). */
+export const updateUserStatusBodySchema = z
+  .object({ active: z.boolean() })
+  .meta({ id: 'UpdateUserStatusBody', example: { active: false } });
+
+export const listUsersQuerySchema = paginationQuerySchema.extend({
+  q: searchSchema.meta({ description: 'Busca por nome ou e-mail' }),
+  role: roleSchema.optional(),
+  status: z.enum(['active', 'inactive']).optional(),
+});
 
 export const sessionBodySchema = z
   .object({
@@ -87,6 +114,9 @@ export const updateProfileBodySchema = z
   });
 
 export type CreateUserBody = z.infer<typeof createUserBodySchema>;
+export type UpdateUserBody = z.infer<typeof updateUserBodySchema>;
+export type UpdateUserStatusBody = z.infer<typeof updateUserStatusBodySchema>;
+export type ListUsersQuery = z.infer<typeof listUsersQuerySchema>;
 export type SessionBody = z.infer<typeof sessionBodySchema>;
 export type ForgotPasswordBody = z.infer<typeof forgotPasswordBodySchema>;
 export type ResetPasswordBody = z.infer<typeof resetPasswordBodySchema>;

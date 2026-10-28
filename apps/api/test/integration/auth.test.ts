@@ -27,7 +27,7 @@ describe('Usuários, sessão, perfil e senha', () => {
     const created = await request(ctx.app)
       .post('/users')
       .set('Authorization', admin)
-      .send(defaultUser)
+      .send({ ...defaultUser, role: 'SELLER' })
       .expect(201);
     expect(created.body).not.toHaveProperty('password');
 
@@ -59,13 +59,14 @@ describe('Usuários, sessão, perfil e senha', () => {
       .send({ name: '', email: 'nao-e-email', password: '123' })
       .expect(400);
     expect(invalid.body.code).toBe('VALIDATION_FAILED');
-    expect(invalid.body.issues).toHaveLength(3);
+    // nome, e-mail, senha e papel
+    expect(invalid.body.issues).toHaveLength(4);
 
     const create = () =>
       request(ctx.app)
         .post('/users')
         .set('Authorization', admin)
-        .send(defaultUser);
+        .send({ ...defaultUser, role: 'SELLER' });
     await create().expect(201);
     await create().expect(409);
   });

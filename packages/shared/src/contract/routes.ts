@@ -1,8 +1,4 @@
-import {
-  idParamsSchema,
-  paginatedSchema,
-  paginationQuerySchema,
-} from '../common';
+import { idParamsSchema, paginatedSchema } from '../common';
 import {
   customerBodySchema,
   customerSchema,
@@ -26,7 +22,10 @@ import {
   resetPasswordBodySchema,
   sessionBodySchema,
   sessionSchema,
+  listUsersQuerySchema,
   updateProfileBodySchema,
+  updateUserBodySchema,
+  updateUserStatusBodySchema,
   userSchema,
 } from '../users';
 import { defineRoute, RouteDefinition } from './define';
@@ -53,12 +52,52 @@ export const routes = {
       method: 'get',
       path: '/users',
       operationId: 'listUsers',
-      summary: 'Lista usuários',
+      summary: 'Lista usuários, com busca e filtros por papel e situação',
       tags: ['Usuários'],
       auth: true,
       permission: 'user:read',
-      request: { query: paginationQuerySchema },
+      request: { query: listUsersQuerySchema },
       responses: { 200: paginatedSchema(userSchema) },
+    }),
+    show: defineRoute({
+      method: 'get',
+      path: '/users/{id}',
+      operationId: 'showUser',
+      summary: 'Mostra um usuário',
+      tags: ['Usuários'],
+      auth: true,
+      permission: 'user:read',
+      request: { params: idParamsSchema },
+      responses: { 200: userSchema },
+      errors: [404],
+    }),
+    update: defineRoute({
+      method: 'put',
+      path: '/users/{id}',
+      operationId: 'updateUser',
+      summary: 'Edita nome e papel',
+      description:
+        '409 ao mudar o próprio papel ou rebaixar o último ADMIN ativo.',
+      tags: ['Usuários'],
+      auth: true,
+      permission: 'user:update',
+      request: { params: idParamsSchema, body: updateUserBodySchema },
+      responses: { 200: userSchema },
+      errors: [404, 409],
+    }),
+    updateStatus: defineRoute({
+      method: 'patch',
+      path: '/users/{id}/status',
+      operationId: 'updateUserStatus',
+      summary: 'Ativa ou desativa um usuário',
+      description:
+        'Desativado não entra e perde as sessões abertas. 409 ao desativar a si mesmo ou o último ADMIN ativo.',
+      tags: ['Usuários'],
+      auth: true,
+      permission: 'user:update',
+      request: { params: idParamsSchema, body: updateUserStatusBodySchema },
+      responses: { 200: userSchema },
+      errors: [404, 409],
     }),
     updateAvatar: defineRoute({
       method: 'patch',
@@ -84,8 +123,8 @@ export const routes = {
       rateLimited: true,
       request: { body: sessionBodySchema },
       responses: { 200: sessionSchema },
-      // credenciais inválidas
-      errors: [401],
+      // 401 credenciais inválidas; 403 ACCOUNT_DISABLED (conta desativada)
+      errors: [401, 403],
     }),
   },
 

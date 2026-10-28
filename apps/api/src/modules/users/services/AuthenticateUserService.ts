@@ -32,6 +32,13 @@ export class AuthenticateUserService {
       throw new AppError('Incorrect email/password combination.', 401);
     }
 
+    // só depois de a senha conferir: não revela que a conta existe
+    if (!user.active) {
+      throw new AppError('This account is disabled', 403, {
+        code: 'ACCOUNT_DISABLED',
+      });
+    }
+
     const token = await this.tokenProvider.sign({ subject: user.id });
 
     return { user, token };
