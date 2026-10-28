@@ -18,6 +18,7 @@ import {
 import { getErrorMessage } from '@/lib/apiErrors';
 import { formatCents, formatDateTime } from '@/lib/format';
 import { notify } from '@/lib/notify';
+import { useCan } from '@/features/auth';
 import { useOrder, useUpdateOrderStatus } from './queries';
 
 const route = getRouteApi('/authenticated/orders/$orderId');
@@ -47,6 +48,7 @@ export function OrderDetailPage() {
   const order = useOrder(orderId);
   const updateStatus = useUpdateOrderStatus(orderId);
   const [action, setAction] = useState<Action | null>(null);
+  const can = useCan();
 
   if (order.isPending) {
     return (
@@ -82,14 +84,18 @@ export function OrderDetailPage() {
         actions={
           data.status === 'pending' ? (
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={() => setAction('canceled')}>
-                <Ban aria-hidden="true" />
-                Cancelar pedido
-              </Button>
-              <Button onClick={() => setAction('completed')}>
-                <CheckCircle2 aria-hidden="true" />
-                Concluir pedido
-              </Button>
+              {can('order:cancel') ? (
+                <Button variant="outline" onClick={() => setAction('canceled')}>
+                  <Ban aria-hidden="true" />
+                  Cancelar pedido
+                </Button>
+              ) : null}
+              {can('order:complete') ? (
+                <Button onClick={() => setAction('completed')}>
+                  <CheckCircle2 aria-hidden="true" />
+                  Concluir pedido
+                </Button>
+              ) : null}
             </div>
           ) : null
         }

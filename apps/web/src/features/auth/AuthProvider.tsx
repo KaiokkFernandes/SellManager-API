@@ -13,6 +13,7 @@ import { getTokenExpiry, isTokenExpired } from '@/lib/jwt';
 import { notify } from '@/lib/notify';
 import { queryKeys } from '@/lib/queryKeys';
 import { tokenStorage } from '@/lib/tokenStorage';
+import { profileQueryOptions } from './profileQuery';
 import {
   AuthContext,
   type AuthContextValue,
@@ -102,13 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [queryClient],
   );
 
-  const profile = useQuery({
-    queryKey: queryKeys.auth.profile,
-    queryFn: () => unwrap(api.GET('/profile')),
-    enabled: token !== null,
-    staleTime: Infinity,
-    retry: false,
-  });
+  const profile = useQuery({ ...profileQueryOptions, enabled: token !== null });
 
   const login = useCallback(
     async (credentials: SessionBody) => {
