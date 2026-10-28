@@ -1,23 +1,18 @@
 import AppError from '@shared/errors/AppError';
 import { Product } from '../domain/entities/Product';
-import {
-  ICreateProductDTO,
-  IProductsRepository,
-} from '../domain/repositories/IProductsRepository';
+import { IProductsRepository } from '../domain/repositories/IProductsRepository';
 
-interface IRequest extends ICreateProductDTO {
+/** O estoque não muda aqui: só por movimentação (entrada/ajuste). */
+interface IRequest {
   id: string;
+  name: string;
+  price: number;
 }
 
 export class UpdateProductService {
   constructor(private readonly productsRepository: IProductsRepository) {}
 
-  public async execute({
-    id,
-    name,
-    price,
-    quantity,
-  }: IRequest): Promise<Product> {
+  public async execute({ id, name, price }: IRequest): Promise<Product> {
     const product = await this.productsRepository.findById(id);
 
     if (!product) {
@@ -35,7 +30,6 @@ export class UpdateProductService {
 
     product.name = name;
     product.price = price;
-    product.quantity = quantity;
 
     return this.productsRepository.save(product);
   }

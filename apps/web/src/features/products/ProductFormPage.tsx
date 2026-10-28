@@ -37,6 +37,7 @@ export function NewProductPage() {
         <CardContent className="pt-6">
           <ProductForm
             submitLabel="Cadastrar produto"
+            withInitialStock
             onSubmit={values => create.mutateAsync(values)}
             // a imagem é enviada na tela de edição, já com o produto criado
             onSaved={created =>
@@ -116,7 +117,10 @@ export function EditProductPage() {
                 quantity: data.quantity,
               }}
               submitLabel="Salvar alterações"
-              onSubmit={values => update.mutateAsync(values)}
+              // o PUT não leva estoque (o campo nem aparece aqui)
+              onSubmit={({ name, price_cents }) =>
+                update.mutateAsync({ name, price_cents })
+              }
               onSaved={toList}
               onCancel={toList}
             />

@@ -14,14 +14,27 @@ export const productBodySchema = z
     name: z.string().trim().min(1),
     // limite da coluna decimal(10,2) do banco: 99.999.999,99
     price_cents: moneyCentsSchema.max(9_999_999_999),
-    quantity: z.number().int().nonnegative(),
+    quantity: z
+      .number()
+      .int()
+      .nonnegative()
+      .describe('Estoque inicial (registrado como movimentação INITIAL)'),
   })
   .meta({
     id: 'ProductBody',
     example: { name: 'Teclado mecânico', price_cents: 19990, quantity: 10 },
   });
 
+/** Na edição o estoque não muda: só por movimentação (entrada/ajuste). */
+export const updateProductBodySchema = productBodySchema
+  .omit({ quantity: true })
+  .meta({
+    id: 'UpdateProductBody',
+    example: { name: 'Teclado mecânico', price_cents: 19990 },
+  });
+
 export type ProductBody = z.infer<typeof productBodySchema>;
+export type UpdateProductBody = z.infer<typeof updateProductBodySchema>;
 
 export const PRODUCT_SORTS = [
   'name',

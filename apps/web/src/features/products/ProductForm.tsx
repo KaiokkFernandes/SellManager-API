@@ -17,15 +17,21 @@ interface ProductFormProps<T> {
   onSubmit: (values: ProductBody) => Promise<T>;
   onSaved: (result: T) => void;
   onCancel: () => void;
+  /** Só no cadastro: depois o estoque muda por entradas e ajustes. */
+  withInitialStock?: boolean;
 }
 
-/** Criar e editar. Preço em centavos (MoneyField), validação = schema do shared. */
+/**
+ * Criar e editar. Preço em centavos (MoneyField), validação = schema do shared.
+ * Na edição o estoque não aparece: ele só muda por movimentação.
+ */
 export function ProductForm<T>({
   defaultValues,
   submitLabel,
   onSubmit,
   onSaved,
   onCancel,
+  withInitialStock = false,
 }: ProductFormProps<T>) {
   const form = useZodForm(productBodySchema, {
     defaultValues: defaultValues ?? { name: '' },
@@ -56,15 +62,17 @@ export function ProductForm<T>({
       />
       <div className="grid gap-4 sm:grid-cols-2">
         <MoneyField control={form.control} name="price_cents" label="Preço" />
-        <NumberField
-          control={form.control}
-          name="quantity"
-          label="Estoque"
-          min={0}
-          step={1}
-          inputMode="numeric"
-          description="Unidades disponíveis"
-        />
+        {withInitialStock ? (
+          <NumberField
+            control={form.control}
+            name="quantity"
+            label="Estoque inicial"
+            min={0}
+            step={1}
+            inputMode="numeric"
+            description="Depois, só muda por entradas e ajustes"
+          />
+        ) : null}
       </div>
       <div className="flex flex-col-reverse gap-2 sm:flex-row">
         <Button

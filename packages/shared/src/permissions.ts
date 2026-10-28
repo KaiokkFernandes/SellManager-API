@@ -18,6 +18,8 @@ export const PERMISSIONS = [
   'product:create',
   'product:update',
   'product:delete',
+  'stock:read',
+  'stock:adjust',
   'order:read',
   'order:create',
   'order:pay',

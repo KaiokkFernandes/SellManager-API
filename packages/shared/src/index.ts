@@ -4,6 +4,7 @@ export * from './orders';
 export * from './orderWorkflow';
 export * from './permissions';
 export * from './products';
+export * from './stock';
 export * from './uploads';
 export * from './users';
 export * from './validation';

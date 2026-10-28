@@ -95,7 +95,7 @@ describe('Produtos', () => {
 
     await typing.type(await screen.findByLabelText('Nome'), 'Cabo USB-C');
     await typing.type(screen.getByLabelText('Preço'), '1.234,56');
-    await typing.type(screen.getByLabelText('Estoque'), '10');
+    await typing.type(screen.getByLabelText('Estoque inicial'), '10');
     await typing.click(
       screen.getByRole('button', { name: 'Cadastrar produto' }),
     );
@@ -138,7 +138,7 @@ describe('Produtos', () => {
 
     await typing.type(await screen.findByLabelText('Nome'), 'Cabo');
     await typing.type(screen.getByLabelText('Preço'), '10');
-    await typing.type(screen.getByLabelText('Estoque'), '1');
+    await typing.type(screen.getByLabelText('Estoque inicial'), '1');
     await typing.click(
       screen.getByRole('button', { name: 'Cadastrar produto' }),
     );
@@ -243,5 +243,34 @@ describe('Produtos', () => {
     expect(received).toContain('name="image"; filename="foto.png"');
     expect(received).toContain('Content-Type: image/png');
     expect(await screen.findByText('Imagem atualizada.')).toBeInTheDocument();
+  });
+
+  it('edição não mostra o estoque e o PUT não o envia', async () => {
+    signIn();
+    let sent: unknown;
+    server.use(
+      http.get(`${API}/products/:id`, () => HttpResponse.json(product)),
+      http.put(`${API}/products/:id`, async ({ request }) => {
+        sent = await request.json();
+        return HttpResponse.json(product);
+      }),
+      http.get(`${API}/products`, () => HttpResponse.json(page([product]))),
+    );
+    renderApp(`/products/${product.id}/edit`);
+    const typing = userEvent.setup();
+
+    const name = await screen.findByLabelText('Nome');
+    expect(screen.queryByLabelText(/Estoque/)).not.toBeInTheDocument();
+    await typing.type(name, ' 2m');
+    await typing.click(
+      screen.getByRole('button', { name: 'Salvar alterações' }),
+    );
+
+    await waitFor(() =>
+      expect(sent).toEqual({
+        name: `${product.name} 2m`,
+        price_cents: product.price_cents,
+      }),
+    );
   });
 });

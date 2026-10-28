@@ -1,10 +1,19 @@
 import request from 'supertest';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from 'vitest';
 import {
   authenticate,
   closeDatabase,
   createTestContext,
   resetDatabase,
+  stockInconsistencies,
   TestContext,
 } from './helpers';
 import { AppDataSource } from '@shared/infra/typeorm/data-source';
@@ -61,6 +70,10 @@ describe('/orders', () => {
         .send({ name: 'Ana', email: 'ana@test.com' })
         .expect(201)
     ).body.id as string;
+  });
+  afterEach(async () => {
+    // depois de qualquer fluxo: saldo = soma das movimentações
+    expect(await stockInconsistencies()).toEqual([]);
   });
   afterAll(closeDatabase);
 
@@ -324,7 +337,7 @@ describe('/orders', () => {
     await request(ctx.app)
       .put(`/products/${cable.id}`)
       .set('Authorization', auth)
-      .send({ name: 'Cabo trançado', price_cents: 5000, quantity: 8 })
+      .send({ name: 'Cabo trançado', price_cents: 5000 })
       .expect(200);
 
     const shown = await request(ctx.app)

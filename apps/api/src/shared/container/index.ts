@@ -6,7 +6,9 @@ import { OrdersUnitOfWork } from '@modules/orders/infra/typeorm/OrdersUnitOfWork
 import { UsersUnitOfWork } from '@modules/users/infra/typeorm/UsersUnitOfWork';
 import { OrdersRepository } from '@modules/orders/infra/typeorm/repositories/OrdersRepository';
 import { OrderStatusHistoryRepository } from '@modules/orders/infra/typeorm/repositories/OrderStatusHistoryRepository';
+import { ProductsUnitOfWork } from '@modules/products/infra/typeorm/ProductsUnitOfWork';
 import { ProductsRepository } from '@modules/products/infra/typeorm/repositories/ProductsRepository';
+import { StockMovementsRepository } from '@modules/products/infra/typeorm/repositories/StockMovementsRepository';
 import { UsersRepository } from '@modules/users/infra/typeorm/repositories/UsersRepository';
 import { UserTokensRepository } from '@modules/users/infra/typeorm/repositories/UserTokensRepository';
 import { BcryptHashProvider } from '@shared/providers/HashProvider/BcryptHashProvider';
@@ -72,6 +74,7 @@ export function makeContainer(
     users: new UsersRepository(dataSource),
     userTokens: new UserTokensRepository(dataSource),
     products: new ProductsRepository(dataSource),
+    stockMovements: new StockMovementsRepository(dataSource),
     customers: new CustomersRepository(dataSource),
     orders: new OrdersRepository(dataSource),
     orderStatusHistory: new OrderStatusHistoryRepository(dataSource),
@@ -82,6 +85,7 @@ export function makeContainer(
     providers,
     repositories,
     ordersUnitOfWork: new OrdersUnitOfWork(dataSource),
+    productsUnitOfWork: new ProductsUnitOfWork(dataSource),
     usersUnitOfWork: new UsersUnitOfWork(dataSource),
   };
 }

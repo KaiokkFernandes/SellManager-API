@@ -1,5 +1,6 @@
 import { DataSource } from 'typeorm';
 import { ProductsRepository } from '@modules/products/infra/typeorm/repositories/ProductsRepository';
+import { StockMovementsRepository } from '@modules/products/infra/typeorm/repositories/StockMovementsRepository';
 import {
   IOrdersTransactionContext,
   IOrdersUnitOfWork,
@@ -17,6 +18,7 @@ export class OrdersUnitOfWork implements IOrdersUnitOfWork {
       work({
         orders: new OrdersRepository(manager),
         products: new ProductsRepository(manager),
+        movements: new StockMovementsRepository(manager),
         history: new OrderStatusHistoryRepository(manager),
       }),
     );

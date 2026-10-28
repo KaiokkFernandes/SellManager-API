@@ -102,6 +102,8 @@ and `can(role, permission)`). The same map is used everywhere:
 | `product:create` | ✅ | ✅ | — | `POST /products` |
 | `product:update` | ✅ | ✅ | — | `PUT /products/{id}`, `PATCH /products/{id}/image`, `DELETE /products/{id}/image` |
 | `product:delete` | ✅ | ✅ | — | `DELETE /products/{id}` |
+| `stock:read` | ✅ | ✅ | — | `GET /products/{id}/stock-movements` |
+| `stock:adjust` | ✅ | ✅ | — | `POST /products/{id}/stock-movements` |
 | `order:read` | ✅ | ✅ | ✅ | `GET /orders`, `GET /orders/{id}` |
 | `order:create` | ✅ | ✅ | ✅ | `POST /orders` |
 | `order:pay` | ✅ | ✅ | ✅ | `PATCH /orders/{id}/pay` |

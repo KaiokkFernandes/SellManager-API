@@ -144,6 +144,19 @@ function deburr(value: string): string {
 
 async function cleanPreviousSeed(): Promise<void> {
   const seedCustomers = `SELECT id FROM customers WHERE email LIKE '%@${SEED_DOMAIN}'`;
+  const seedOrders = `SELECT id FROM orders WHERE customer_id IN (${seedCustomers})`;
+  // saídas/devoluções dos pedidos do seed somem junto com eles; produtos que
+  // sobrevivem (em pedidos de fora do seed) voltam a bater com a soma do livro
+  const touched = await AppDataSource.query<{ product_id: string }[]>(
+    // CTE: o TypeORM devolve [linhas, contagem] para DELETE puro
+    `WITH removed AS (DELETE FROM stock_movements WHERE order_id IN (${seedOrders}) RETURNING product_id)
+       SELECT DISTINCT product_id FROM removed`,
+  );
+  await AppDataSource.query(
+    `UPDATE products p SET quantity = COALESCE((SELECT SUM(m.quantity) FROM stock_movements m WHERE m.product_id = p.id), 0)
+       WHERE p.id = ANY($1)`,
+    [touched.map(row => row.product_id)],
+  );
   await AppDataSource.query(
     `DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE customer_id IN (${seedCustomers}))`,
   );
@@ -217,10 +230,11 @@ async function main(): Promise<void> {
   for (const [name, price, quantity] of PRODUCTS) {
     if (await products.findByName(name)) continue; // está em pedidos de fora do seed
     createdProducts.push(
-      await new CreateProductService(products).execute({
+      await new CreateProductService(container.productsUnitOfWork).execute({
         name,
         price,
         quantity,
+        created_by: actorByRole.ADMIN,
       }),
     );
   }

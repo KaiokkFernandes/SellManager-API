@@ -1,8 +1,10 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Customer } from '@modules/customers/domain/entities/Customer';
 import { FakeCustomersRepository } from '@modules/customers/fakes/FakeCustomersRepository';
 import { Product } from '@modules/products/domain/entities/Product';
 import { FakeProductsRepository } from '@modules/products/fakes/FakeProductsRepository';
+import { FakeStockMovementsRepository } from '@modules/products/fakes/FakeStockMovementsRepository';
+import { StockLedger } from '@modules/products/domain/StockLedger';
 import { FakeOrdersRepository } from '../fakes/FakeOrdersRepository';
 import { FakeOrdersUnitOfWork } from '../fakes/FakeOrdersUnitOfWork';
 import { FakeOrderStatusHistoryRepository } from '../fakes/FakeOrderStatusHistoryRepository';
@@ -18,6 +20,7 @@ describe('Order services', () => {
   let products: FakeProductsRepository;
   let orders: FakeOrdersRepository;
   let history: FakeOrderStatusHistoryRepository;
+  let movements: FakeStockMovementsRepository;
   let createOrder: CreateOrderService;
   let changeStatus: ChangeOrderStatusService;
   let customer: Customer;
@@ -32,17 +35,40 @@ describe('Order services', () => {
     products = new FakeProductsRepository();
     orders = new FakeOrdersRepository();
     history = new FakeOrderStatusHistoryRepository();
-    const unitOfWork = new FakeOrdersUnitOfWork(orders, products, history);
+    movements = new FakeStockMovementsRepository();
+    const unitOfWork = new FakeOrdersUnitOfWork(
+      orders,
+      products,
+      history,
+      movements,
+    );
     createOrder = new CreateOrderService(customers, unitOfWork);
     changeStatus = new ChangeOrderStatusService(unitOfWork);
 
     customer = await customers.create({ name: 'Ana', email: 'ana@test.com' });
-    keyboard = await products.create({
-      name: 'Teclado',
-      price: 199.9,
-      quantity: 10,
-    });
-    mouse = await products.create({ name: 'Mouse', price: 49.95, quantity: 1 });
+    // produtos nascem pelo livro de estoque, como na API
+    const seedProduct = async (
+      name: string,
+      price: number,
+      quantity: number,
+    ) => {
+      const product = await products.create({ name, price, quantity: 0 });
+      await new StockLedger(products, movements).move(product, {
+        type: 'INITIAL',
+        quantity,
+        created_by: ACTOR,
+      });
+      return product;
+    };
+    keyboard = await seedProduct('Teclado', 199.9, 10);
+    mouse = await seedProduct('Mouse', 49.95, 1);
+  });
+
+  afterEach(async () => {
+    // invariante: saldo do produto = soma das movimentações
+    for (const product of [keyboard, mouse]) {
+      expect(await stockOf(product)).toBe(movements.sumFor(product.id));
+    }
   });
 
   describe('CreateOrderService', () => {
@@ -82,6 +108,12 @@ describe('Order services', () => {
       });
 
       expect(await stockOf(keyboard)).toBe(7);
+      expect(movements.movements.at(-1)).toMatchObject({
+        type: 'SALE',
+        quantity: -3,
+        balance_after: 7,
+        order_id: expect.any(String),
+      });
     });
 
     it('soma itens repetidos do mesmo produto', async () => {
@@ -207,6 +239,14 @@ describe('Order services', () => {
         expect(canceled.status).toBe('canceled');
       }
       expect(await stockOf(keyboard)).toBe(10);
+      expect(
+        movements.movements
+          .filter(movement => movement.type === 'CANCEL_RETURN')
+          .map(movement => [movement.order_id, movement.quantity]),
+      ).toEqual([
+        [pending.id, 4],
+        [paid.id, 4],
+      ]);
     });
 
     it('pagar, enviar e entregar não mexem no estoque', async () => {

@@ -1,4 +1,4 @@
-import type { ProductBody, routes } from '@sellmanager/shared';
+import type { routes } from '@sellmanager/shared';
 import AppError from '@shared/errors/AppError';
 import type { RouteHandler } from '@shared/http/contract/mountRoute';
 import { fromCents } from '@shared/http/money';
@@ -9,7 +9,9 @@ import { ListProductsService } from '../../../services/ListProductsService';
 import { ShowProductService } from '../../../services/ShowProductService';
 import { UpdateProductImageService } from '../../../services/UpdateProductImageService';
 import { UpdateProductService } from '../../../services/UpdateProductService';
-import { toProductResponse } from '../ProductMapper';
+import { ListStockMovementsService } from '../../../services/ListStockMovementsService';
+import { RecordStockMovementService } from '../../../services/RecordStockMovementService';
+import { toProductResponse, toStockMovementResponse } from '../ProductMapper';
 
 interface ProductsServices {
   list: ListProductsService;
@@ -18,14 +20,11 @@ interface ProductsServices {
   update: UpdateProductService;
   delete: DeleteProductService;
   updateImage: UpdateProductImageService;
+  listStockMovements: ListStockMovementsService;
+  recordStockMovement: RecordStockMovementService;
 }
 
 type Routes = typeof routes.products;
-
-// contrato em centavos -> domínio em decimal
-function toProductInput({ name, price_cents, quantity }: ProductBody) {
-  return { name, price: fromCents(price_cents), quantity };
-}
 
 export class ProductsController {
   constructor(
@@ -50,17 +49,27 @@ export class ProductsController {
     reply(200, this.toResponse(product));
   };
 
-  public create: RouteHandler<Routes['create']> = async ({ input, reply }) => {
-    const product = await this.services.create.execute(
-      toProductInput(input.body),
-    );
+  public create: RouteHandler<Routes['create']> = async ({
+    input,
+    request,
+    reply,
+  }) => {
+    const { name, price_cents, quantity } = input.body;
+    // contrato em centavos -> domínio em decimal
+    const product = await this.services.create.execute({
+      name,
+      price: fromCents(price_cents),
+      quantity,
+      created_by: request.user.id,
+    });
     reply(201, this.toResponse(product));
   };
 
   public update: RouteHandler<Routes['update']> = async ({ input, reply }) => {
     const product = await this.services.update.execute({
       id: input.params.id,
-      ...toProductInput(input.body),
+      name: input.body.name,
+      price: fromCents(input.body.price_cents),
     });
     reply(200, this.toResponse(product));
   };
@@ -97,4 +106,23 @@ export class ProductsController {
     });
     reply(200, this.toResponse(product));
   };
+
+  public listStockMovements: RouteHandler<Routes['listStockMovements']> =
+    async ({ input, reply }) => {
+      const { data, meta } = await this.services.listStockMovements.execute(
+        { product_id: input.params.id },
+        input.query,
+      );
+      reply(200, { data: data.map(toStockMovementResponse), meta });
+    };
+
+  public createStockMovement: RouteHandler<Routes['createStockMovement']> =
+    async ({ input, request, reply }) => {
+      const movement = await this.services.recordStockMovement.execute({
+        product_id: input.params.id,
+        ...input.body,
+        created_by: request.user.id,
+      });
+      reply(201, toStockMovementResponse(movement));
+    };
 }

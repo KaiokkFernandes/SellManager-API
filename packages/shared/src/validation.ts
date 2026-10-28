@@ -8,6 +8,9 @@ export const VALIDATION_REASONS = {
   password_mismatch: 'Passwords do not match',
   same_password: 'The new password must be different from the current one',
   inverted_range: '`to` must be after `from`',
+  zero_quantity: 'Quantity must not be zero',
+  negative_entry: 'An entry must have a positive quantity',
+  reason_required: 'A reason is required',
 } as const;
 
 export type ValidationReason = keyof typeof VALIDATION_REASONS;

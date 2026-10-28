@@ -5,6 +5,9 @@ const REASON_MESSAGES: Record<ValidationReason, string> = {
   password_mismatch: 'As senhas não conferem',
   same_password: 'A nova senha deve ser diferente da atual',
   inverted_range: 'A data final deve ser posterior à inicial',
+  zero_quantity: 'A quantidade não pode ser zero',
+  negative_entry: 'A entrada deve ter quantidade positiva',
+  reason_required: 'Informe o motivo',
 };
 
 type Issue = Parameters<NonNullable<z.core.$ZodConfig['customError']>>[0];

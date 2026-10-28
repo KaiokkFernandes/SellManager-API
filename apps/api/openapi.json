@@ -469,7 +469,8 @@
           },
           "quantity": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "description": "Estoque inicial (registrado como movimentação INITIAL)"
           }
         },
         "required": [
@@ -481,6 +482,154 @@
           "name": "Teclado mecânico",
           "price_cents": 19990,
           "quantity": 10
+        }
+      },
+      "UpdateProductBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "price_cents": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9999999999,
+            "description": "Valor em centavos (inteiro). R$ 199,90 = 19990"
+          }
+        },
+        "required": [
+          "name",
+          "price_cents"
+        ],
+        "example": {
+          "name": "Teclado mecânico",
+          "price_cents": 19990
+        }
+      },
+      "StockMovement": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "INITIAL",
+              "ENTRY",
+              "SALE",
+              "CANCEL_RETURN",
+              "ADJUSTMENT"
+            ]
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "Com sinal: + entra, − sai"
+          },
+          "balance_after": {
+            "type": "integer",
+            "description": "Saldo do produto após"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "order_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Em SALE e CANCEL_RETURN"
+          },
+          "created_by": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "description": "null em registros migrados"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "product_id",
+          "type",
+          "quantity",
+          "balance_after",
+          "reason",
+          "order_id",
+          "created_by",
+          "created_at"
+        ],
+        "example": {
+          "id": "5c301fd4-233e-4eac-bb22-994b162e70d2",
+          "product_id": "8d83dcee-0204-4a7e-8488-ea60dc369ca4",
+          "type": "SALE",
+          "quantity": -2,
+          "balance_after": 8,
+          "reason": null,
+          "order_id": "6e2ba4c6-96f5-4d7f-9303-6f6b91a1a960",
+          "created_by": {
+            "id": "1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed",
+            "name": "Ana"
+          },
+          "created_at": "2026-10-24T20:00:00.000Z"
+        }
+      },
+      "StockMovementBody": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "ENTRY",
+              "ADJUSTMENT"
+            ]
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": -1000000,
+            "maximum": 1000000,
+            "description": "Positiva na entrada; no ajuste, negativa para retirar"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "type",
+          "quantity"
+        ],
+        "example": {
+          "type": "ADJUSTMENT",
+          "quantity": -2,
+          "reason": "Avaria no estoque"
         }
       },
       "ProductImageUploadBody": {
@@ -2392,7 +2541,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ProductBody"
+                "$ref": "#/components/schemas/UpdateProductBody"
               }
             }
           }
@@ -2550,6 +2699,268 @@
           },
           "409": {
             "description": "Conflito com o estado atual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/{id}/stock-movements": {
+      "get": {
+        "operationId": "listStockMovements",
+        "summary": "Movimentações de estoque do produto (mais recentes primeiro)",
+        "description": "Permissão: `stock:read` (ADMIN, MANAGER).",
+        "x-permission": "stock:read",
+        "tags": [
+          "Estoque"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 100,
+              "default": 20
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/StockMovement"
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "total_pages": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "page",
+                        "limit",
+                        "total",
+                        "total_pages"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createStockMovement",
+        "summary": "Registra uma entrada ou um ajuste manual de estoque",
+        "description": "Trava o produto e grava a movimentação e o novo saldo na mesma transação. 409 INSUFFICIENT_STOCK se o ajuste deixaria o saldo negativo.\n\nPermissão: `stock:adjust` (ADMIN, MANAGER).",
+        "x-permission": "stock:adjust",
+        "tags": [
+          "Estoque"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StockMovementBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Criado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockMovement"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito com o estado atual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload grande demais",
             "content": {
               "application/json": {
                 "schema": {

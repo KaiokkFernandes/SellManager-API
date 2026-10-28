@@ -9,23 +9,31 @@ import { ListProductsService } from '../../../services/ListProductsService';
 import { ShowProductService } from '../../../services/ShowProductService';
 import { UpdateProductImageService } from '../../../services/UpdateProductImageService';
 import { UpdateProductService } from '../../../services/UpdateProductService';
+import { ListStockMovementsService } from '../../../services/ListStockMovementsService';
+import { RecordStockMovementService } from '../../../services/RecordStockMovementService';
 import { ProductsController } from '../controllers/ProductsController';
 
 export function registerProductsRoutes(
   mount: MountRoute,
   container: Container,
 ): void {
-  const { products, orders } = container.repositories;
+  const { products, orders, stockMovements } = container.repositories;
+  const { productsUnitOfWork } = container;
   const { storage } = container.providers;
 
   const controller = new ProductsController(
     {
       list: new ListProductsService(products),
       show: new ShowProductService(products),
-      create: new CreateProductService(products),
+      create: new CreateProductService(productsUnitOfWork),
       update: new UpdateProductService(products),
       delete: new DeleteProductService(products, orders, storage),
       updateImage: new UpdateProductImageService(products, storage),
+      listStockMovements: new ListStockMovementsService(
+        products,
+        stockMovements,
+      ),
+      recordStockMovement: new RecordStockMovementService(productsUnitOfWork),
     },
     container.config.APP_API_URL,
   );
@@ -35,6 +43,8 @@ export function registerProductsRoutes(
   mount(routes.products.create, controller.create);
   mount(routes.products.update, controller.update);
   mount(routes.products.delete, controller.delete);
+  mount(routes.products.listStockMovements, controller.listStockMovements);
+  mount(routes.products.createStockMovement, controller.createStockMovement);
   mount(
     routes.products.updateImage,
     controller.updateImage,

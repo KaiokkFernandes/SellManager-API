@@ -11,7 +11,12 @@
  *    `applyApiError`, ações soltas usam `notify.error`).
  */
 import { unwrap, type Product } from '@sellmanager/api-client';
-import type { ProductBody, ProductSort, SortOrder } from '@sellmanager/shared';
+import type {
+  ProductBody,
+  ProductSort,
+  SortOrder,
+  UpdateProductBody,
+} from '@sellmanager/shared';
 import {
   keepPreviousData,
   useMutation,
@@ -87,7 +92,7 @@ export function useCreateProduct() {
 export function useUpdateProduct(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: ProductBody) =>
+    mutationFn: (body: UpdateProductBody) =>
       unwrap(api.PUT('/products/{id}', { params: { path: { id } }, body })),
     onSuccess: async product => {
       await productChanged(queryClient, product);

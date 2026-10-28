@@ -17,7 +17,13 @@ import {
   productBodySchema,
   productImageUploadBodySchema,
   productSchema,
+  updateProductBodySchema,
 } from '../products';
+import {
+  listStockMovementsQuerySchema,
+  stockMovementBodySchema,
+  stockMovementSchema,
+} from '../stock';
 import {
   avatarUploadBodySchema,
   changePasswordBodySchema,
@@ -264,7 +270,7 @@ export const routes = {
       tags: ['Produtos'],
       auth: true,
       permission: 'product:update',
-      request: { params: idParamsSchema, body: productBodySchema },
+      request: { params: idParamsSchema, body: updateProductBodySchema },
       responses: { 200: productSchema },
       errors: [404, 409],
     }),
@@ -279,6 +285,32 @@ export const routes = {
       permission: 'product:delete',
       request: { params: idParamsSchema },
       responses: { 204: null },
+      errors: [404, 409],
+    }),
+    listStockMovements: defineRoute({
+      method: 'get',
+      path: '/products/{id}/stock-movements',
+      operationId: 'listStockMovements',
+      summary: 'Movimentações de estoque do produto (mais recentes primeiro)',
+      tags: ['Estoque'],
+      auth: true,
+      permission: 'stock:read',
+      request: { params: idParamsSchema, query: listStockMovementsQuerySchema },
+      responses: { 200: paginatedSchema(stockMovementSchema) },
+      errors: [404],
+    }),
+    createStockMovement: defineRoute({
+      method: 'post',
+      path: '/products/{id}/stock-movements',
+      operationId: 'createStockMovement',
+      summary: 'Registra uma entrada ou um ajuste manual de estoque',
+      description:
+        'Trava o produto e grava a movimentação e o novo saldo na mesma transação. 409 INSUFFICIENT_STOCK se o ajuste deixaria o saldo negativo.',
+      tags: ['Estoque'],
+      auth: true,
+      permission: 'stock:adjust',
+      request: { params: idParamsSchema, body: stockMovementBodySchema },
+      responses: { 201: stockMovementSchema },
       errors: [404, 409],
     }),
     updateImage: defineRoute({
