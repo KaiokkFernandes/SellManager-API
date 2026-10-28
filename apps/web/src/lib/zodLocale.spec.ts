@@ -1,4 +1,5 @@
 import {
+  changePasswordBodySchema,
   createOrderBodySchema,
   customerBodySchema,
   productBodySchema,
@@ -57,6 +58,21 @@ describe('mensagens de validação em pt-BR (schemas do shared)', () => {
     ).toEqual({
       customer_id: 'Campo obrigatório',
       products: 'Adicione ao menos um item',
+    });
+  });
+
+  it('validações por motivo do shared (refine) saem em pt-BR', () => {
+    expect(
+      messages(
+        changePasswordBodySchema.safeParse({
+          current_password: 'senha-atual',
+          password: 'senha-atual',
+          password_confirmation: 'outra-coisa',
+        }),
+      ),
+    ).toEqual({
+      password_confirmation: 'As senhas não conferem',
+      password: 'A nova senha deve ser diferente da atual',
     });
   });
 });

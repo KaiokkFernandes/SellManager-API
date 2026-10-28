@@ -7,6 +7,7 @@ import {
   searchSchema,
 } from './common';
 import { roleSchema } from './permissions';
+import { because } from './validation';
 
 const email = z.string().trim().toLowerCase().pipe(z.email());
 
@@ -74,10 +75,10 @@ export const resetPasswordBodySchema = z
     password: newPassword,
     password_confirmation: z.string(),
   })
-  .refine(data => data.password === data.password_confirmation, {
-    message: 'Passwords do not match',
-    path: ['password_confirmation'],
-  })
+  .refine(
+    data => data.password === data.password_confirmation,
+    because('password_mismatch', 'password_confirmation'),
+  )
   .meta({
     id: 'ResetPasswordBody',
     example: {
@@ -99,14 +100,14 @@ export const changePasswordBodySchema = z
     password: newPassword,
     password_confirmation: z.string(),
   })
-  .refine(data => data.password === data.password_confirmation, {
-    message: 'Passwords do not match',
-    path: ['password_confirmation'],
-  })
-  .refine(data => data.password !== data.current_password, {
-    message: 'The new password must be different from the current one',
-    path: ['password'],
-  })
+  .refine(
+    data => data.password === data.password_confirmation,
+    because('password_mismatch', 'password_confirmation'),
+  )
+  .refine(
+    data => data.password !== data.current_password,
+    because('same_password', 'password'),
+  )
   .meta({
     id: 'ChangePasswordBody',
     example: {

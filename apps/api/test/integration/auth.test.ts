@@ -148,7 +148,15 @@ describe('Usuários, sessão, perfil e senha', () => {
       current_password: defaultUser.password,
       password: 'nova-senha-123',
       password_confirmation: 'outra',
-    }).expect(400);
+    })
+      .expect(400)
+      .expect(response =>
+        // motivo declarado no shared, texto em inglês dado pela API
+        expect(response.body.issues[0]).toMatchObject({
+          path: 'password_confirmation',
+          message: 'Passwords do not match',
+        }),
+      );
 
     // o iat tem resolução de segundos: espera virar o segundo para o corte ser nítido
     await new Promise(resolve => setTimeout(resolve, 1100));

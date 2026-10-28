@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import '@config/zod';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import express, { Express } from 'express';

@@ -5,4 +5,5 @@ export * from './permissions';
 export * from './products';
 export * from './uploads';
 export * from './users';
+export * from './validation';
 export * from './contract';

@@ -5,6 +5,7 @@ import {
   moneyCentsSchema,
   paginationQuerySchema,
 } from './common';
+import { because } from './validation';
 
 export const ORDER_STATUSES = ['pending', 'completed', 'canceled'] as const;
 
@@ -48,10 +49,10 @@ export const listOrdersQuerySchema = paginationQuerySchema
       description: 'Criados antes deste instante, exclusivo (ISO 8601)',
     }),
   })
-  .refine(({ from, to }) => !from || !to || new Date(from) < new Date(to), {
-    path: ['to'],
-    message: '`to` must be after `from`',
-  });
+  .refine(
+    ({ from, to }) => !from || !to || new Date(from) < new Date(to),
+    because('inverted_range', 'to'),
+  );
 
 export type CreateOrderBody = z.infer<typeof createOrderBodySchema>;
 export type ListOrdersQuery = z.infer<typeof listOrdersQuerySchema>;
