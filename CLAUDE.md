@@ -54,6 +54,10 @@
 - Permissões: mapa único em `packages/shared/src/permissions.ts`. Toda rota autenticada declara
   `permission` no contrato (a API aplica `authorize`); no front use `usePermission`/`useCan` e
   `requires(...)` na rota. Nunca checar papel "na mão" (`role === 'ADMIN'`).
+- Pedidos: transições só pela tabela `ORDER_TRANSITIONS` (`packages/shared/src/orderWorkflow.ts`),
+  validadas no domínio (`nextOrderStatus`); o front só lê para decidir os botões.
+- Estoque: nunca alterar `products.quantity` direto — só via `StockLedger` (domínio), que grava a
+  movimentação junto; operações de pedido/estoque em transação com o produto travado.
 - Dinheiro em centavos inteiros (`*_cents`); erros `{ status, code, message, issues?, details? }`.
 - Cada módulo da api (`apps/api/src/modules/<m>`) tem `domain/` (interfaces puras),
   `services/` (casos de uso), `fakes/` (repositórios em memória) e `infra/{typeorm,http}`.
