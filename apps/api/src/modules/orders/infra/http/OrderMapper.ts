@@ -1,6 +1,9 @@
-import type { Order as OrderResponse } from '@sellmanager/shared';
+import type {
+  OrderDetails as OrderDetailsResponse,
+  Order as OrderResponse,
+} from '@sellmanager/shared';
 import { toCents } from '@shared/http/money';
-import { Order } from '../../domain/entities/Order';
+import { Order, OrderDetails } from '../../domain/entities/Order';
 
 export function toOrderResponse(order: Order): OrderResponse {
   return {
@@ -19,5 +22,21 @@ export function toOrderResponse(order: Order): OrderResponse {
     })),
     created_at: order.created_at.toISOString(),
     updated_at: order.updated_at.toISOString(),
+  };
+}
+
+export function toOrderDetailsResponse(
+  order: OrderDetails,
+): OrderDetailsResponse {
+  return {
+    ...toOrderResponse(order),
+    history: order.history.map(change => ({
+      id: change.id,
+      from_status: change.from_status,
+      to_status: change.to_status,
+      changed_by: change.changed_by ? { ...change.changed_by } : null,
+      reason: change.reason,
+      created_at: change.created_at.toISOString(),
+    })),
   };
 }

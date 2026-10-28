@@ -709,6 +709,142 @@
         ],
         "description": "Nome atual do produto (o preço do item é o da compra)"
       },
+      "OrderDetails": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "customer_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "customer": {
+            "$ref": "#/components/schemas/OrderCustomer"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "paid",
+              "shipped",
+              "delivered",
+              "canceled"
+            ]
+          },
+          "total_cents": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Valor em centavos (inteiro). R$ 199,90 = 19990"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItem"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderStatusChange"
+            },
+            "description": "Mudanças de status, em ordem cronológica"
+          }
+        },
+        "required": [
+          "id",
+          "customer_id",
+          "customer",
+          "status",
+          "total_cents",
+          "items",
+          "created_at",
+          "updated_at",
+          "history"
+        ]
+      },
+      "OrderStatusChange": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "from_status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "pending",
+              "paid",
+              "shipped",
+              "delivered",
+              "canceled",
+              null
+            ],
+            "description": "null na criação do pedido"
+          },
+          "to_status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "paid",
+              "shipped",
+              "delivered",
+              "canceled"
+            ]
+          },
+          "changed_by": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "description": "null em registros migrados de antes do histórico"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Motivo (cancelamento)"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "from_status",
+          "to_status",
+          "changed_by",
+          "reason",
+          "created_at"
+        ]
+      },
       "CreateOrderBody": {
         "type": "object",
         "properties": {
@@ -3460,7 +3596,7 @@
     "/orders/{id}": {
       "get": {
         "operationId": "showOrder",
-        "summary": "Mostra um pedido com os itens",
+        "summary": "Mostra um pedido com os itens e o histórico de status",
         "description": "Permissão: `order:read` (ADMIN, MANAGER, SELLER).",
         "x-permission": "order:read",
         "tags": [
@@ -3488,7 +3624,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Order"
+                  "$ref": "#/components/schemas/OrderDetails"
                 }
               }
             }
@@ -3577,7 +3713,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Order"
+                  "$ref": "#/components/schemas/OrderDetails"
                 }
               }
             }
@@ -3676,7 +3812,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Order"
+                  "$ref": "#/components/schemas/OrderDetails"
                 }
               }
             }
@@ -3775,7 +3911,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Order"
+                  "$ref": "#/components/schemas/OrderDetails"
                 }
               }
             }
@@ -3884,7 +4020,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Order"
+                  "$ref": "#/components/schemas/OrderDetails"
                 }
               }
             }

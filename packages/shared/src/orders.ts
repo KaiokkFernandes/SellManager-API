@@ -128,7 +128,33 @@ export const orderSchema = z
     },
   });
 
+export const orderStatusChangeSchema = z
+  .object({
+    id: z.uuid(),
+    from_status: orderStatusSchema
+      .nullable()
+      .describe('null na criação do pedido'),
+    to_status: orderStatusSchema,
+    changed_by: z
+      .object({ id: z.uuid(), name: z.string() })
+      .nullable()
+      .describe('null em registros migrados de antes do histórico'),
+    reason: z.string().nullable().describe('Motivo (cancelamento)'),
+    created_at: isoDateSchema,
+  })
+  .meta({ id: 'OrderStatusChange' });
+
+export const orderDetailsSchema = orderSchema
+  .extend({
+    history: z
+      .array(orderStatusChangeSchema)
+      .describe('Mudanças de status, em ordem cronológica'),
+  })
+  .meta({ id: 'OrderDetails' });
+
 export type OrderCustomer = z.infer<typeof orderCustomerSchema>;
 export type OrderProduct = z.infer<typeof orderProductSchema>;
 export type OrderItem = z.infer<typeof orderItemSchema>;
 export type Order = z.infer<typeof orderSchema>;
+export type OrderStatusChange = z.infer<typeof orderStatusChangeSchema>;
+export type OrderDetails = z.infer<typeof orderDetailsSchema>;

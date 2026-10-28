@@ -191,6 +191,16 @@ async function main(): Promise<void> {
     }
   }
 
+  // pedidos do seed ficam no histórico como criados/movidos pelos usuários do seed
+  const actorByRole = Object.fromEntries(
+    await Promise.all(
+      SEED_USERS.map(async ({ role, email }) => [
+        role,
+        (await users.findByEmail(email))?.id ?? '',
+      ]),
+    ),
+  ) as Record<(typeof SEED_USERS)[number]['role'], string>;
+
   const createdCustomers = [];
   const usedNames = new Set<string>();
   while (createdCustomers.length < 30) {
@@ -229,6 +239,7 @@ async function main(): Promise<void> {
       lines.set(pick(inStock).id, 1 + Math.floor(next() * 2));
 
     const order = await createOrder.execute({
+      created_by: actorByRole.SELLER,
       customer_id: pick(createdCustomers).id,
       products: [...lines].map(([id, quantity]) => ({ id, quantity })),
     });
@@ -237,10 +248,15 @@ async function main(): Promise<void> {
         id: order.id,
         action: 'cancel',
         reason: 'Cliente desistiu',
+        changed_by: actorByRole.MANAGER,
       });
     else if (index % 3 === 0)
       for (const action of ['pay', 'ship', 'deliver'] as const)
-        await changeStatus.execute({ id: order.id, action });
+        await changeStatus.execute({
+          id: order.id,
+          action,
+          changed_by: actorByRole.MANAGER,
+        });
 
     // espalha as datas pelos últimos 60 dias (para o filtro por período)
     const daysAgo = Math.floor(next() * 60);

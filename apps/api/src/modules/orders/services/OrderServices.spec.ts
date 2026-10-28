@@ -5,15 +5,19 @@ import { Product } from '@modules/products/domain/entities/Product';
 import { FakeProductsRepository } from '@modules/products/fakes/FakeProductsRepository';
 import { FakeOrdersRepository } from '../fakes/FakeOrdersRepository';
 import { FakeOrdersUnitOfWork } from '../fakes/FakeOrdersUnitOfWork';
+import { FakeOrderStatusHistoryRepository } from '../fakes/FakeOrderStatusHistoryRepository';
 import { CreateOrderService } from './CreateOrderService';
 import { ListOrdersService } from './ListOrdersService';
 import { ShowOrderService } from './ShowOrderService';
 import { ChangeOrderStatusService } from './ChangeOrderStatusService';
 
+const ACTOR = 'user-1';
+
 describe('Order services', () => {
   let customers: FakeCustomersRepository;
   let products: FakeProductsRepository;
   let orders: FakeOrdersRepository;
+  let history: FakeOrderStatusHistoryRepository;
   let createOrder: CreateOrderService;
   let changeStatus: ChangeOrderStatusService;
   let customer: Customer;
@@ -27,7 +31,8 @@ describe('Order services', () => {
     customers = new FakeCustomersRepository();
     products = new FakeProductsRepository();
     orders = new FakeOrdersRepository();
-    const unitOfWork = new FakeOrdersUnitOfWork(orders, products);
+    history = new FakeOrderStatusHistoryRepository();
+    const unitOfWork = new FakeOrdersUnitOfWork(orders, products, history);
     createOrder = new CreateOrderService(customers, unitOfWork);
     changeStatus = new ChangeOrderStatusService(unitOfWork);
 
@@ -43,6 +48,7 @@ describe('Order services', () => {
   describe('CreateOrderService', () => {
     it('cria o pedido copiando o preço do produto e calculando o total', async () => {
       const order = await createOrder.execute({
+        created_by: ACTOR,
         customer_id: customer.id,
         products: [
           { id: keyboard.id, quantity: 2 },
@@ -70,6 +76,7 @@ describe('Order services', () => {
 
     it('baixa o estoque dos produtos', async () => {
       await createOrder.execute({
+        created_by: ACTOR,
         customer_id: customer.id,
         products: [{ id: keyboard.id, quantity: 3 }],
       });
@@ -79,6 +86,7 @@ describe('Order services', () => {
 
     it('soma itens repetidos do mesmo produto', async () => {
       const order = await createOrder.execute({
+        created_by: ACTOR,
         customer_id: customer.id,
         products: [
           { id: keyboard.id, quantity: 1 },
@@ -93,6 +101,7 @@ describe('Order services', () => {
     it('rejeita estoque insuficiente sem alterar nada (atomicidade)', async () => {
       await expect(
         createOrder.execute({
+          created_by: ACTOR,
           customer_id: customer.id,
           products: [
             { id: keyboard.id, quantity: 1 },
@@ -112,6 +121,7 @@ describe('Order services', () => {
     it('rejeita cliente inexistente', async () => {
       await expect(
         createOrder.execute({
+          created_by: ACTOR,
           customer_id: 'nope',
           products: [{ id: keyboard.id, quantity: 1 }],
         }),
@@ -124,6 +134,7 @@ describe('Order services', () => {
     it('rejeita produtos inexistentes informando quais', async () => {
       await expect(
         createOrder.execute({
+          created_by: ACTOR,
           customer_id: customer.id,
           products: [{ id: 'nope', quantity: 1 }],
         }),
@@ -141,10 +152,12 @@ describe('Order services', () => {
         email: 'bia@test.com',
       });
       const order = await createOrder.execute({
+        created_by: ACTOR,
         customer_id: customer.id,
         products: [{ id: keyboard.id, quantity: 1 }],
       });
       await createOrder.execute({
+        created_by: ACTOR,
         customer_id: other.id,
         products: [{ id: keyboard.id, quantity: 1 }],
       });
@@ -154,12 +167,12 @@ describe('Order services', () => {
       });
       expect(list.data.map(item => item.id)).toEqual([order.id]);
 
-      const shown = await new ShowOrderService(orders).execute({
+      const shown = await new ShowOrderService(orders, history).execute({
         id: order.id,
       });
       expect(shown.items).toHaveLength(1);
       await expect(
-        new ShowOrderService(orders).execute({ id: 'nope' }),
+        new ShowOrderService(orders, history).execute({ id: 'nope' }),
       ).rejects.toMatchObject({
         statusCode: 404,
       });
@@ -169,6 +182,7 @@ describe('Order services', () => {
   describe('ChangeOrderStatusService', () => {
     const createPending = () =>
       createOrder.execute({
+        created_by: ACTOR,
         customer_id: customer.id,
         products: [{ id: keyboard.id, quantity: 4 }],
       });
@@ -176,11 +190,16 @@ describe('Order services', () => {
     it('cancelar (pendente ou pago) devolve o estoque', async () => {
       const pending = await createPending();
       const paid = await createPending();
-      await changeStatus.execute({ id: paid.id, action: 'pay' });
+      await changeStatus.execute({
+        changed_by: ACTOR,
+        id: paid.id,
+        action: 'pay',
+      });
       expect(await stockOf(keyboard)).toBe(2);
 
       for (const order of [pending, paid]) {
         const canceled = await changeStatus.execute({
+          changed_by: ACTOR,
           id: order.id,
           action: 'cancel',
           reason: 'Cliente desistiu',
@@ -198,21 +217,74 @@ describe('Order services', () => {
         ['ship', 'shipped'],
         ['deliver', 'delivered'],
       ] as const) {
-        const changed = await changeStatus.execute({ id: order.id, action });
+        const changed = await changeStatus.execute({
+          changed_by: ACTOR,
+          id: order.id,
+          action,
+        });
         expect(changed.status).toBe(status);
       }
       expect(await stockOf(keyboard)).toBe(6);
     });
 
+    it('registra cada mudança no histórico (de/para, quem e motivo)', async () => {
+      const order = await createPending();
+      await changeStatus.execute({
+        changed_by: ACTOR,
+        id: order.id,
+        action: 'pay',
+      });
+      const canceled = await changeStatus.execute({
+        changed_by: 'manager-1',
+        id: order.id,
+        action: 'cancel',
+        reason: '  Cliente desistiu  ',
+      });
+
+      expect(
+        canceled.history.map(
+          ({ from_status, to_status, changed_by, reason }) => ({
+            from_status,
+            to_status,
+            by: changed_by?.id,
+            reason,
+          }),
+        ),
+      ).toEqual([
+        { from_status: null, to_status: 'pending', by: ACTOR, reason: null },
+        { from_status: 'pending', to_status: 'paid', by: ACTOR, reason: null },
+        {
+          from_status: 'paid',
+          to_status: 'canceled',
+          by: 'manager-1',
+          reason: 'Cliente desistiu',
+        },
+      ]);
+    });
+
     it('transição inválida: 409 sem alterar nada', async () => {
       const order = await createPending();
-      await changeStatus.execute({ id: order.id, action: 'pay' });
-      await changeStatus.execute({ id: order.id, action: 'ship' });
+      await changeStatus.execute({
+        changed_by: ACTOR,
+        id: order.id,
+        action: 'pay',
+      });
+      await changeStatus.execute({
+        changed_by: ACTOR,
+        id: order.id,
+        action: 'ship',
+      });
 
       await expect(
-        changeStatus.execute({ id: order.id, action: 'cancel', reason: 'x' }),
+        changeStatus.execute({
+          changed_by: ACTOR,
+          id: order.id,
+          action: 'cancel',
+          reason: 'x',
+        }),
       ).rejects.toMatchObject({ statusCode: 409, code: 'INVALID_TRANSITION' });
       expect((await orders.findById(order.id))?.status).toBe('shipped');
+      expect(history.rows).toHaveLength(3); // criação, pago, enviado
       expect(await stockOf(keyboard)).toBe(6);
     });
 
@@ -220,14 +292,19 @@ describe('Order services', () => {
       const order = await createPending();
 
       await expect(
-        changeStatus.execute({ id: order.id, action: 'cancel', reason: ' ' }),
+        changeStatus.execute({
+          changed_by: ACTOR,
+          id: order.id,
+          action: 'cancel',
+          reason: ' ',
+        }),
       ).rejects.toMatchObject({ statusCode: 400 });
       expect(await stockOf(keyboard)).toBe(6);
     });
 
     it('responde 404 para pedido inexistente', async () => {
       await expect(
-        changeStatus.execute({ id: 'nope', action: 'pay' }),
+        changeStatus.execute({ changed_by: ACTOR, id: 'nope', action: 'pay' }),
       ).rejects.toMatchObject({ statusCode: 404 });
     });
   });

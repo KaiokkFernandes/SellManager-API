@@ -6,6 +6,7 @@ import {
   OrderItemSchema,
   OrderSchema,
 } from '@modules/orders/infra/typeorm/schemas/OrderSchemas';
+import { OrderStatusHistorySchema } from '@modules/orders/infra/typeorm/schemas/OrderStatusHistorySchema';
 import { ProductSchema } from '@modules/products/infra/typeorm/schemas/ProductSchema';
 import { UserSchema } from '@modules/users/infra/typeorm/schemas/UserSchema';
 import { UserTokenSchema } from '@modules/users/infra/typeorm/schemas/UserTokenSchema';
@@ -16,6 +17,7 @@ import { ProductNameCaseInsensitive1761350700000 } from './migrations/1761350700
 import { AddProductImage1761350800000 } from './migrations/1761350800000-AddProductImage';
 import { AddUserRoles1761350900000 } from './migrations/1761350900000-AddUserRoles';
 import { AddOrderWorkflow1761351000000 } from './migrations/1761351000000-AddOrderWorkflow';
+import { AddOrderStatusHistory1761351100000 } from './migrations/1761351100000-AddOrderStatusHistory';
 
 // Entidades e migrations são listadas explicitamente (sem glob) para funcionar
 // igual em dev (tsx), no build (dist/) e nos testes.
@@ -33,6 +35,7 @@ export const AppDataSource = new DataSource({
     CustomerSchema,
     OrderSchema,
     OrderItemSchema,
+    OrderStatusHistorySchema,
   ],
   migrations: [
     CreateInitialSchema1761350400000,
@@ -42,6 +45,7 @@ export const AppDataSource = new DataSource({
     AddProductImage1761350800000,
     AddUserRoles1761350900000,
     AddOrderWorkflow1761351000000,
+    AddOrderStatusHistory1761351100000,
   ],
   synchronize: false,
   logging: env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],

@@ -1,4 +1,5 @@
 import type { OrderStatus } from '@sellmanager/shared';
+import type { OrderStatusChange } from './OrderStatusChange';
 
 // Fonte única dos status: @sellmanager/shared (usado também pelo front-end).
 export { ORDER_STATUSES } from '@sellmanager/shared';
@@ -36,6 +37,11 @@ export interface Order {
   items: OrderItem[];
   created_at: Date;
   updated_at: Date;
+}
+
+/** Pedido com o histórico de status (detalhe e respostas das transições). */
+export interface OrderDetails extends Order {
+  history: OrderStatusChange[];
 }
 
 /** Soma em centavos para evitar erro de ponto flutuante (0.1 + 0.2). */

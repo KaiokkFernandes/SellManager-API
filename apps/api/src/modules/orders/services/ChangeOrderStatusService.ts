@@ -1,6 +1,6 @@
 import type { OrderAction } from '@sellmanager/shared';
 import AppError from '@shared/errors/AppError';
-import { Order } from '../domain/entities/Order';
+import { OrderDetails } from '../domain/entities/Order';
 import { nextOrderStatus } from '../domain/orderWorkflow';
 import { IOrdersUnitOfWork } from '../domain/repositories/IOrdersUnitOfWork';
 
@@ -9,14 +9,21 @@ interface IRequest {
   action: OrderAction;
   /** Obrigatório no cancelamento. */
   reason?: string;
+  /** Usuário que fez a mudança (vai para o histórico). */
+  changed_by: string;
 }
 
 /** Pagar, enviar, entregar ou cancelar: valida a transição no domínio. */
 export class ChangeOrderStatusService {
   constructor(private readonly unitOfWork: IOrdersUnitOfWork) {}
 
-  public execute({ id, action, reason }: IRequest): Promise<Order> {
-    return this.unitOfWork.run(async ({ orders, products }) => {
+  public execute({
+    id,
+    action,
+    reason,
+    changed_by,
+  }: IRequest): Promise<OrderDetails> {
+    return this.unitOfWork.run(async ({ orders, products, history }) => {
       // trava o pedido: duas mudanças simultâneas não passam do mesmo status
       const order = await orders.findByIdForUpdate(id);
 
@@ -45,7 +52,15 @@ export class ChangeOrderStatusService {
         }
       }
 
-      return orders.updateStatus(id, status);
+      const updated = await orders.updateStatus(id, status);
+      await history.add({
+        order_id: id,
+        from_status: order.status,
+        to_status: status,
+        changed_by_id: changed_by,
+        reason: action === 'cancel' ? reason?.trim() : undefined,
+      });
+      return { ...updated, history: await history.findByOrder(id) };
     });
   }
 }

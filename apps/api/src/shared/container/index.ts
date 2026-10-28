@@ -5,6 +5,7 @@ import { CustomersRepository } from '@modules/customers/infra/typeorm/repositori
 import { OrdersUnitOfWork } from '@modules/orders/infra/typeorm/OrdersUnitOfWork';
 import { UsersUnitOfWork } from '@modules/users/infra/typeorm/UsersUnitOfWork';
 import { OrdersRepository } from '@modules/orders/infra/typeorm/repositories/OrdersRepository';
+import { OrderStatusHistoryRepository } from '@modules/orders/infra/typeorm/repositories/OrderStatusHistoryRepository';
 import { ProductsRepository } from '@modules/products/infra/typeorm/repositories/ProductsRepository';
 import { UsersRepository } from '@modules/users/infra/typeorm/repositories/UsersRepository';
 import { UserTokensRepository } from '@modules/users/infra/typeorm/repositories/UserTokensRepository';
@@ -73,6 +74,7 @@ export function makeContainer(
     products: new ProductsRepository(dataSource),
     customers: new CustomersRepository(dataSource),
     orders: new OrdersRepository(dataSource),
+    orderStatusHistory: new OrderStatusHistoryRepository(dataSource),
   };
 
   return {

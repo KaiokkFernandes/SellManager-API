@@ -8,6 +8,7 @@ import {
   cancelOrderBodySchema,
   createOrderBodySchema,
   listOrdersQuerySchema,
+  orderDetailsSchema,
   orderSchema,
 } from '../orders';
 import { ORDER_TRANSITIONS, type OrderAction } from '../orderWorkflow';
@@ -48,7 +49,7 @@ function transitionRoute(
     auth: true,
     permission,
     request: { params: idParamsSchema },
-    responses: { 200: orderSchema },
+    responses: { 200: orderDetailsSchema },
     errors: [404, 409],
   });
 }
@@ -389,12 +390,12 @@ export const routes = {
       method: 'get',
       path: '/orders/{id}',
       operationId: 'showOrder',
-      summary: 'Mostra um pedido com os itens',
+      summary: 'Mostra um pedido com os itens e o histórico de status',
       tags: ['Pedidos'],
       auth: true,
       permission: 'order:read',
       request: { params: idParamsSchema },
-      responses: { 200: orderSchema },
+      responses: { 200: orderDetailsSchema },
       errors: [404],
     }),
     create: defineRoute({
@@ -435,7 +436,7 @@ export const routes = {
       auth: true,
       permission: ORDER_TRANSITIONS.cancel.permission,
       request: { params: idParamsSchema, body: cancelOrderBodySchema },
-      responses: { 200: orderSchema },
+      responses: { 200: orderDetailsSchema },
       errors: [404, 409],
     }),
   },

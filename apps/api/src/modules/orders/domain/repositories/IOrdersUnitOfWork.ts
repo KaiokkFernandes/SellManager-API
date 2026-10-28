@@ -1,9 +1,11 @@
 import { IProductsRepository } from '@modules/products/domain/repositories/IProductsRepository';
+import { IOrderStatusHistoryRepository } from './IOrderStatusHistoryRepository';
 import { IOrdersRepository } from './IOrdersRepository';
 
 export interface IOrdersTransactionContext {
   orders: IOrdersRepository;
   products: IProductsRepository;
+  history: IOrderStatusHistoryRepository;
 }
 
 /**

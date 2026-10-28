@@ -4,7 +4,7 @@ import type { RouteHandler } from '@shared/http/contract/mountRoute';
 import { CreateOrderService } from '../../../services/CreateOrderService';
 import { ListOrdersService } from '../../../services/ListOrdersService';
 import { ShowOrderService } from '../../../services/ShowOrderService';
-import { toOrderResponse } from '../OrderMapper';
+import { toOrderDetailsResponse, toOrderResponse } from '../OrderMapper';
 
 interface OrdersServices {
   list: ListOrdersService;
@@ -34,47 +34,71 @@ export class OrdersController {
 
   public show: RouteHandler<Routes['show']> = async ({ input, reply }) => {
     const order = await this.services.show.execute({ id: input.params.id });
-    reply(200, toOrderResponse(order));
+    reply(200, toOrderDetailsResponse(order));
   };
 
-  public create: RouteHandler<Routes['create']> = async ({ input, reply }) => {
-    const order = await this.services.create.execute(input.body);
+  public create: RouteHandler<Routes['create']> = async ({
+    input,
+    request,
+    reply,
+  }) => {
+    const order = await this.services.create.execute({
+      ...input.body,
+      created_by: request.user.id,
+    });
     reply(201, toOrderResponse(order));
   };
 
-  public pay: RouteHandler<Routes['pay']> = async ({ input, reply }) => {
+  public pay: RouteHandler<Routes['pay']> = async ({
+    input,
+    request,
+    reply,
+  }) => {
     const order = await this.services.changeStatus.execute({
       id: input.params.id,
       action: 'pay',
+      changed_by: request.user.id,
     });
-    reply(200, toOrderResponse(order));
+    reply(200, toOrderDetailsResponse(order));
   };
 
-  public ship: RouteHandler<Routes['ship']> = async ({ input, reply }) => {
+  public ship: RouteHandler<Routes['ship']> = async ({
+    input,
+    request,
+    reply,
+  }) => {
     const order = await this.services.changeStatus.execute({
       id: input.params.id,
       action: 'ship',
+      changed_by: request.user.id,
     });
-    reply(200, toOrderResponse(order));
+    reply(200, toOrderDetailsResponse(order));
   };
 
   public deliver: RouteHandler<Routes['deliver']> = async ({
     input,
+    request,
     reply,
   }) => {
     const order = await this.services.changeStatus.execute({
       id: input.params.id,
       action: 'deliver',
+      changed_by: request.user.id,
     });
-    reply(200, toOrderResponse(order));
+    reply(200, toOrderDetailsResponse(order));
   };
 
-  public cancel: RouteHandler<Routes['cancel']> = async ({ input, reply }) => {
+  public cancel: RouteHandler<Routes['cancel']> = async ({
+    input,
+    request,
+    reply,
+  }) => {
     const order = await this.services.changeStatus.execute({
       id: input.params.id,
       action: 'cancel',
       reason: input.body.reason,
+      changed_by: request.user.id,
     });
-    reply(200, toOrderResponse(order));
+    reply(200, toOrderDetailsResponse(order));
   };
 }

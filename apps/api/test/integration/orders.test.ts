@@ -154,6 +154,25 @@ describe('/orders', () => {
     }
     expect(await stockOf(cable)).toBe(6);
 
+    const shown = await request(ctx.app)
+      .get(`/orders/${id}`)
+      .set('Authorization', auth)
+      .expect(200);
+    expect(
+      shown.body.history.map(
+        (change: { from_status: string | null; to_status: string }) => [
+          change.from_status,
+          change.to_status,
+        ],
+      ),
+    ).toEqual([
+      [null, 'pending'],
+      ['pending', 'paid'],
+      ['paid', 'shipped'],
+      ['shipped', 'delivered'],
+    ]);
+    expect(shown.body.history[1].changed_by).toMatchObject({ name: 'Kaio' });
+
     const filtered = await request(ctx.app)
       .get('/orders?status=delivered')
       .set('Authorization', auth)
@@ -177,6 +196,18 @@ describe('/orders', () => {
       }).expect(200);
     }
     expect(await stockOf(cable)).toBe(10);
+
+    const canceled = await act(paid.body.id as string, 'pay').expect(409);
+    expect(canceled.body.details.status).toBe('canceled');
+    const shown = await request(ctx.app)
+      .get(`/orders/${paid.body.id as string}`)
+      .set('Authorization', auth)
+      .expect(200);
+    expect(shown.body.history.at(-1)).toMatchObject({
+      from_status: 'paid',
+      to_status: 'canceled',
+      reason: 'Cliente desistiu',
+    });
   });
 
   it('transição inválida responde 409 INVALID_TRANSITION com as ações possíveis', async () => {

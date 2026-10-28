@@ -11,12 +11,12 @@ export function registerOrdersRoutes(
   mount: MountRoute,
   container: Container,
 ): void {
-  const { orders, customers } = container.repositories;
+  const { orders, orderStatusHistory, customers } = container.repositories;
   const { ordersUnitOfWork } = container;
 
   const controller = new OrdersController({
     list: new ListOrdersService(orders),
-    show: new ShowOrderService(orders),
+    show: new ShowOrderService(orders, orderStatusHistory),
     create: new CreateOrderService(customers, ordersUnitOfWork),
     changeStatus: new ChangeOrderStatusService(ordersUnitOfWork),
   });
