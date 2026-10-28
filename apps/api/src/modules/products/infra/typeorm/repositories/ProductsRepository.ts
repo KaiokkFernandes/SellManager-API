@@ -97,6 +97,23 @@ export class ProductsRepository implements IProductsRepository {
     return this.withCategories(rows);
   }
 
+  public async findBelowMinStock(
+    pagination: PaginationParams,
+  ): Promise<PageResult<Product>> {
+    const { skip, take } = toSkipTake(pagination);
+    // mesma regra de isBelowMinStock (domínio), em SQL; índice parcial na migration
+    const [rows, total] = await this.ormRepository
+      .createQueryBuilder('product')
+      .where('product.quantity < product.min_stock')
+      .orderBy('product.min_stock - product.quantity', 'DESC')
+      .addOrderBy('product.name', 'ASC')
+      .addOrderBy('product.id', 'ASC')
+      .skip(skip)
+      .take(take)
+      .getManyAndCount();
+    return { items: await this.withCategories(rows), total };
+  }
+
   public async create(data: ICreateProductDTO): Promise<Product> {
     const row = await this.ormRepository.save(
       this.ormRepository.create({ ...data, image: null }),

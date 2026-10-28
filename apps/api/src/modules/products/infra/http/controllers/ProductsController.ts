@@ -9,12 +9,14 @@ import { ListProductsService } from '../../../services/ListProductsService';
 import { ShowProductService } from '../../../services/ShowProductService';
 import { UpdateProductImageService } from '../../../services/UpdateProductImageService';
 import { UpdateProductService } from '../../../services/UpdateProductService';
+import { ListLowStockProductsService } from '../../../services/ListLowStockProductsService';
 import { ListStockMovementsService } from '../../../services/ListStockMovementsService';
 import { RecordStockMovementService } from '../../../services/RecordStockMovementService';
 import { toProductResponse, toStockMovementResponse } from '../ProductMapper';
 
 interface ProductsServices {
   list: ListProductsService;
+  lowStock: ListLowStockProductsService;
   show: ShowProductService;
   create: CreateProductService;
   update: UpdateProductService;
@@ -44,6 +46,14 @@ export class ProductsController {
     reply(200, { data: data.map(this.toResponse), meta });
   };
 
+  public lowStock: RouteHandler<Routes['lowStock']> = async ({
+    input,
+    reply,
+  }) => {
+    const { data, meta } = await this.services.lowStock.execute(input.query);
+    reply(200, { data: data.map(this.toResponse), meta });
+  };
+
   public show: RouteHandler<Routes['show']> = async ({ input, reply }) => {
     const product = await this.services.show.execute({ id: input.params.id });
     reply(200, this.toResponse(product));
@@ -54,13 +64,14 @@ export class ProductsController {
     request,
     reply,
   }) => {
-    const { name, price_cents, quantity, category_id } = input.body;
+    const { name, price_cents, quantity, category_id, min_stock } = input.body;
     // contrato em centavos -> domínio em decimal
     const product = await this.services.create.execute({
       name,
       price: fromCents(price_cents),
       quantity,
       category_id,
+      min_stock,
       created_by: request.user.id,
     });
     reply(201, this.toResponse(product));
@@ -72,6 +83,7 @@ export class ProductsController {
       name: input.body.name,
       price: fromCents(input.body.price_cents),
       category_id: input.body.category_id,
+      min_stock: input.body.min_stock,
     });
     reply(200, this.toResponse(product));
   };

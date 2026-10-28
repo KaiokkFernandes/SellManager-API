@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { Product } from '../domain/entities/Product';
+import { isBelowMinStock, Product } from '../domain/entities/Product';
 import { StockLedger } from '../domain/StockLedger';
 import { FakeProductsRepository } from '../fakes/FakeProductsRepository';
 import { FakeProductsUnitOfWork } from '../fakes/FakeProductsUnitOfWork';
 import { FakeStockMovementsRepository } from '../fakes/FakeStockMovementsRepository';
+import { ListLowStockProductsService } from './ListLowStockProductsService';
 import { ListStockMovementsService } from './ListStockMovementsService';
 import { RecordStockMovementService } from './RecordStockMovementService';
 
@@ -165,6 +166,38 @@ describe('estoque', () => {
     expect(meta.total).toBe(2);
     await expect(list.execute({ product_id: 'nope' })).rejects.toMatchObject({
       statusCode: 404,
+    });
+  });
+
+  describe('estoque mínimo', () => {
+    it.each([
+      [0, 0, false],
+      [5, 0, false],
+      [2, 3, true],
+      [3, 3, false],
+      [0, 1, true],
+    ])('saldo %d com mínimo %d: abaixo=%s', (quantity, min_stock, below) => {
+      expect(isBelowMinStock({ quantity, min_stock })).toBe(below);
+    });
+
+    it('lista só os abaixo do mínimo, maior falta primeiro', async () => {
+      for (const [name, quantity, min_stock] of [
+        ['Mouse', 1, 2],
+        ['Hub', 0, 5],
+        ['Teclado', 9, 3],
+        ['Webcam', 2, 4],
+      ] as const) {
+        await products.create({ name, price: 1, quantity, min_stock });
+      }
+
+      const { data } = await new ListLowStockProductsService(
+        products,
+      ).execute();
+      expect(data.map(product => product.name)).toEqual([
+        'Hub',
+        'Webcam',
+        'Mouse',
+      ]);
     });
   });
 });

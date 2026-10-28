@@ -110,6 +110,7 @@ describe('Produtos', () => {
       price_cents: 123456,
       quantity: 10,
       category_id: null,
+      min_stock: 0,
     });
     expect(await screen.findByText('Sem imagem')).toBeInTheDocument();
   });
@@ -272,6 +273,7 @@ describe('Produtos', () => {
         name: `${product.name} 2m`,
         price_cents: product.price_cents,
         category_id: null,
+        min_stock: 0,
       }),
     );
   });

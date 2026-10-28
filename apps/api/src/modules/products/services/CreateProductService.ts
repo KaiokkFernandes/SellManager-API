@@ -10,6 +10,7 @@ interface IRequest {
   /** Estoque inicial: vira a movimentação INITIAL. */
   quantity: number;
   category_id?: string | null;
+  min_stock?: number;
   created_by: string;
 }
 
@@ -27,6 +28,7 @@ export class CreateProductService {
     price,
     quantity,
     category_id = null,
+    min_stock = 0,
     created_by,
   }: IRequest): Promise<Product> {
     await assertCategoryExists(this.categoriesRepository, category_id);
@@ -45,6 +47,7 @@ export class CreateProductService {
         price,
         quantity: 0,
         category_id,
+        min_stock,
       });
       if (quantity > 0) {
         await new StockLedger(products, movements).move(product, {

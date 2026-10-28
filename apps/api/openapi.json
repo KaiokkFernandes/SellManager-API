@@ -419,6 +419,13 @@
           "quantity": {
             "type": "integer"
           },
+          "min_stock": {
+            "type": "integer"
+          },
+          "below_min_stock": {
+            "type": "boolean",
+            "description": "Estoque abaixo do mínimo (regra do domínio)"
+          },
           "category": {
             "$ref": "#/components/schemas/ProductCategory"
           },
@@ -443,6 +450,8 @@
           "name",
           "price_cents",
           "quantity",
+          "min_stock",
+          "below_min_stock",
           "category",
           "image_url",
           "created_at",
@@ -453,6 +462,8 @@
           "name": "Teclado mecânico",
           "price_cents": 19990,
           "quantity": 10,
+          "min_stock": 3,
+          "below_min_stock": false,
           "category": {
             "id": "2f1d3c4b-5a69-4788-9a0b-1c2d3e4f5a6b",
             "name": "Periféricos"
@@ -506,6 +517,13 @@
             ],
             "format": "uuid",
             "default": null
+          },
+          "min_stock": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000,
+            "default": 0,
+            "description": "Abaixo disso o produto entra no alerta; 0 desliga"
           }
         },
         "required": [
@@ -517,7 +535,8 @@
           "name": "Teclado mecânico",
           "price_cents": 19990,
           "quantity": 10,
-          "category_id": null
+          "category_id": null,
+          "min_stock": 3
         }
       },
       "UpdateProductBody": {
@@ -540,6 +559,13 @@
             ],
             "format": "uuid",
             "default": null
+          },
+          "min_stock": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000,
+            "default": 0,
+            "description": "Abaixo disso o produto entra no alerta; 0 desliga"
           }
         },
         "required": [
@@ -2521,6 +2547,132 @@
           },
           "413": {
             "description": "Payload grande demais",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/low-stock": {
+      "get": {
+        "operationId": "listLowStockProducts",
+        "summary": "Produtos abaixo do estoque mínimo (maior falta primeiro)",
+        "description": "Permissão: `product:read` (ADMIN, MANAGER, SELLER).",
+        "x-permission": "product:read",
+        "tags": [
+          "Estoque"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 100,
+              "default": 20
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Product"
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "total_pages": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "page",
+                        "limit",
+                        "total",
+                        "total_pages"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
             "content": {
               "application/json": {
                 "schema": {

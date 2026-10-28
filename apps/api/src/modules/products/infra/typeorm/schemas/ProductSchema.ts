@@ -21,6 +21,7 @@ export const ProductSchema = new EntitySchema<ProductRow>({
       },
     },
     quantity: { type: 'int' },
+    min_stock: { type: 'int', default: 0 },
     category_id: { type: 'uuid', nullable: true },
     image: { type: 'varchar', nullable: true },
     created_at: { type: 'timestamptz', createDate: true },

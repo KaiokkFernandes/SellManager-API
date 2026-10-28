@@ -176,4 +176,51 @@ describe('estoque (movimentações)', () => {
       .expect(404);
     await move({ type: 'ENTRY', quantity: 1 }).expect(404);
   });
+
+  it('estoque mínimo: alerta no produto e lista de estoque baixo', async () => {
+    const create = (name: string, quantity: number, min_stock: number) =>
+      request(ctx.app)
+        .post('/products')
+        .set('Authorization', auth)
+        .send({ name, price_cents: 100, quantity, min_stock })
+        .expect(201);
+
+    const hub = await create('Hub', 1, 5);
+    expect(hub.body).toMatchObject({ min_stock: 5, below_min_stock: true });
+    await create('Mouse', 2, 3);
+    await create('Teclado', 9, 3);
+
+    const seller = await authenticate(ctx, {
+      email: 'vendedor@test.com',
+      role: 'SELLER',
+    });
+    const low = await request(ctx.app)
+      .get('/products/low-stock')
+      .set('Authorization', seller)
+      .expect(200);
+    expect(low.body.meta.total).toBe(2);
+    expect(
+      low.body.data.map((product: { name: string }) => product.name),
+    ).toEqual(['Hub', 'Mouse']);
+
+    // a entrada tira o produto da lista
+    await request(ctx.app)
+      .post(`/products/${hub.body.id as string}/stock-movements`)
+      .set('Authorization', auth)
+      .send({ type: 'ENTRY', quantity: 10 })
+      .expect(201);
+    const after = await request(ctx.app)
+      .get('/products/low-stock')
+      .set('Authorization', auth)
+      .expect(200);
+    expect(after.body.meta.total).toBe(1);
+
+    // editar o mínimo: zero desliga o alerta
+    const edited = await request(ctx.app)
+      .put(`/products/${productId}`)
+      .set('Authorization', auth)
+      .send({ name: 'Cabo', price_cents: 1000, min_stock: 20 })
+      .expect(200);
+    expect(edited.body.below_min_stock).toBe(true);
+  });
 });

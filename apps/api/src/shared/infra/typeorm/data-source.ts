@@ -22,6 +22,7 @@ import { AddOrderWorkflow1761351000000 } from './migrations/1761351000000-AddOrd
 import { AddOrderStatusHistory1761351100000 } from './migrations/1761351100000-AddOrderStatusHistory';
 import { AddStockMovements1761351200000 } from './migrations/1761351200000-AddStockMovements';
 import { AddCategories1761351300000 } from './migrations/1761351300000-AddCategories';
+import { AddProductMinStock1761351400000 } from './migrations/1761351400000-AddProductMinStock';
 
 // Entidades e migrations são listadas explicitamente (sem glob) para funcionar
 // igual em dev (tsx), no build (dist/) e nos testes.
@@ -54,6 +55,7 @@ export const AppDataSource = new DataSource({
     AddOrderStatusHistory1761351100000,
     AddStockMovements1761351200000,
     AddCategories1761351300000,
+    AddProductMinStock1761351400000,
   ],
   synchronize: false,
   logging: env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],

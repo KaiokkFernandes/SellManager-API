@@ -8,6 +8,7 @@ export interface ICreateProductDTO {
   price: number;
   quantity: number;
   category_id?: string | null;
+  min_stock?: number;
 }
 
 /** Busca no nome e filtro por categoria; padrão: nome ascendente. */
@@ -25,6 +26,8 @@ export interface IProductsRepository {
   findByName(name: string): Promise<Product | null>;
   /** Busca e trava os produtos até o fim da unidade de trabalho atual. */
   findByIdsForUpdate(ids: string[]): Promise<Product[]>;
+  /** Abaixo do estoque mínimo, maior falta (mínimo − saldo) primeiro. */
+  findBelowMinStock(pagination: PaginationParams): Promise<PageResult<Product>>;
   create(data: ICreateProductDTO): Promise<Product>;
   save(product: Product): Promise<Product>;
   remove(product: Product): Promise<void>;

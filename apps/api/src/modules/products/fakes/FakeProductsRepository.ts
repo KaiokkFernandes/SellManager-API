@@ -5,7 +5,7 @@ import {
   slicePage,
 } from '@shared/domain/pagination';
 import { matchesSearch, sortInMemory } from '@shared/domain/listing';
-import { Product } from '../domain/entities/Product';
+import { isBelowMinStock, Product } from '../domain/entities/Product';
 import {
   ICreateProductDTO,
   IFindProductsFilter,
@@ -65,6 +65,20 @@ export class FakeProductsRepository implements IProductsRepository {
     );
   }
 
+  public findBelowMinStock(
+    pagination: PaginationParams,
+  ): Promise<PageResult<Product>> {
+    const below = this.products
+      .filter(isBelowMinStock)
+      .sort(
+        (a, b) =>
+          b.min_stock - b.quantity - (a.min_stock - a.quantity) ||
+          a.name.localeCompare(b.name),
+      )
+      .map(product => ({ ...product }));
+    return Promise.resolve(slicePage(below, pagination));
+  }
+
   public create(data: ICreateProductDTO): Promise<Product> {
     const now = new Date();
     const product: Product = {
@@ -72,6 +86,7 @@ export class FakeProductsRepository implements IProductsRepository {
       created_at: now,
       updated_at: now,
       image: null,
+      min_stock: 0,
       ...data,
       category_id: data.category_id ?? null,
       category: this.summary(data.category_id ?? null),

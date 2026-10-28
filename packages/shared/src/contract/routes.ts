@@ -3,7 +3,11 @@ import {
   categorySchema,
   listCategoriesQuerySchema,
 } from '../categories';
-import { idParamsSchema, paginatedSchema } from '../common';
+import {
+  idParamsSchema,
+  paginatedSchema,
+  paginationQuerySchema,
+} from '../common';
 import {
   customerBodySchema,
   customerSchema,
@@ -241,6 +245,17 @@ export const routes = {
       auth: true,
       permission: 'product:read',
       request: { query: listProductsQuerySchema },
+      responses: { 200: paginatedSchema(productSchema) },
+    }),
+    lowStock: defineRoute({
+      method: 'get',
+      path: '/products/low-stock',
+      operationId: 'listLowStockProducts',
+      summary: 'Produtos abaixo do estoque mínimo (maior falta primeiro)',
+      tags: ['Estoque'],
+      auth: true,
+      permission: 'product:read',
+      request: { query: paginationQuerySchema },
       responses: { 200: paginatedSchema(productSchema) },
     }),
     show: defineRoute({

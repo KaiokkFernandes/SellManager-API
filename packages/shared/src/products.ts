@@ -21,6 +21,13 @@ export const productBodySchema = z
       .nonnegative()
       .describe('Estoque inicial (registrado como movimentação INITIAL)'),
     category_id: z.uuid().nullable().default(null),
+    min_stock: z
+      .number()
+      .int()
+      .nonnegative()
+      .max(1_000_000)
+      .default(0)
+      .describe('Abaixo disso o produto entra no alerta; 0 desliga'),
   })
   .meta({
     id: 'ProductBody',
@@ -29,6 +36,7 @@ export const productBodySchema = z
       price_cents: 19990,
       quantity: 10,
       category_id: null,
+      min_stock: 3,
     },
   });
 
@@ -69,6 +77,10 @@ export const productSchema = z
     name: z.string(),
     price_cents: moneyCentsSchema,
     quantity: z.number().int(),
+    min_stock: z.number().int(),
+    below_min_stock: z
+      .boolean()
+      .describe('Estoque abaixo do mínimo (regra do domínio)'),
     category: productCategorySchema.nullable(),
     image_url: z.url().nullable(),
     created_at: isoDateSchema,
@@ -81,6 +93,8 @@ export const productSchema = z
       name: 'Teclado mecânico',
       price_cents: 19990,
       quantity: 10,
+      min_stock: 3,
+      below_min_stock: false,
       category: {
         id: '2f1d3c4b-5a69-4788-9a0b-1c2d3e4f5a6b',
         name: 'Periféricos',

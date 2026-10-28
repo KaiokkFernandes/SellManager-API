@@ -10,6 +10,7 @@ interface IRequest {
   name: string;
   price: number;
   category_id?: string | null;
+  min_stock?: number;
 }
 
 export class UpdateProductService {
@@ -26,6 +27,7 @@ export class UpdateProductService {
     name,
     price,
     category_id = null,
+    min_stock = 0,
   }: IRequest): Promise<Product> {
     const product = await this.productsRepository.findById(id);
 
@@ -46,6 +48,7 @@ export class UpdateProductService {
 
     product.name = name;
     product.category_id = category_id;
+    product.min_stock = min_stock;
     product.price = price;
 
     return this.productsRepository.save(product);
