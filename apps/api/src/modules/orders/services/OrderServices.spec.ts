@@ -8,14 +8,14 @@ import { FakeOrdersUnitOfWork } from '../fakes/FakeOrdersUnitOfWork';
 import { CreateOrderService } from './CreateOrderService';
 import { ListOrdersService } from './ListOrdersService';
 import { ShowOrderService } from './ShowOrderService';
-import { UpdateOrderStatusService } from './UpdateOrderStatusService';
+import { ChangeOrderStatusService } from './ChangeOrderStatusService';
 
 describe('Order services', () => {
   let customers: FakeCustomersRepository;
   let products: FakeProductsRepository;
   let orders: FakeOrdersRepository;
   let createOrder: CreateOrderService;
-  let updateStatus: UpdateOrderStatusService;
+  let changeStatus: ChangeOrderStatusService;
   let customer: Customer;
   let keyboard: Product;
   let mouse: Product;
@@ -29,7 +29,7 @@ describe('Order services', () => {
     orders = new FakeOrdersRepository();
     const unitOfWork = new FakeOrdersUnitOfWork(orders, products);
     createOrder = new CreateOrderService(customers, unitOfWork);
-    updateStatus = new UpdateOrderStatusService(unitOfWork);
+    changeStatus = new ChangeOrderStatusService(unitOfWork);
 
     customer = await customers.create({ name: 'Ana', email: 'ana@test.com' });
     keyboard = await products.create({
@@ -166,39 +166,68 @@ describe('Order services', () => {
     });
   });
 
-  describe('UpdateOrderStatusService', () => {
-    it('cancelar devolve o estoque', async () => {
-      const order = await createOrder.execute({
+  describe('ChangeOrderStatusService', () => {
+    const createPending = () =>
+      createOrder.execute({
         customer_id: customer.id,
         products: [{ id: keyboard.id, quantity: 4 }],
       });
 
-      const canceled = await updateStatus.execute({
-        id: order.id,
-        status: 'canceled',
-      });
+    it('cancelar (pendente ou pago) devolve o estoque', async () => {
+      const pending = await createPending();
+      const paid = await createPending();
+      await changeStatus.execute({ id: paid.id, action: 'pay' });
+      expect(await stockOf(keyboard)).toBe(2);
 
-      expect(canceled.status).toBe('canceled');
+      for (const order of [pending, paid]) {
+        const canceled = await changeStatus.execute({
+          id: order.id,
+          action: 'cancel',
+          reason: 'Cliente desistiu',
+        });
+        expect(canceled.status).toBe('canceled');
+      }
       expect(await stockOf(keyboard)).toBe(10);
     });
 
-    it('concluir não mexe no estoque e impede cancelar depois', async () => {
-      const order = await createOrder.execute({
-        customer_id: customer.id,
-        products: [{ id: keyboard.id, quantity: 4 }],
-      });
+    it('pagar, enviar e entregar não mexem no estoque', async () => {
+      const order = await createPending();
 
-      await updateStatus.execute({ id: order.id, status: 'completed' });
-
+      for (const [action, status] of [
+        ['pay', 'paid'],
+        ['ship', 'shipped'],
+        ['deliver', 'delivered'],
+      ] as const) {
+        const changed = await changeStatus.execute({ id: order.id, action });
+        expect(changed.status).toBe(status);
+      }
       expect(await stockOf(keyboard)).toBe(6);
+    });
+
+    it('transição inválida: 409 sem alterar nada', async () => {
+      const order = await createPending();
+      await changeStatus.execute({ id: order.id, action: 'pay' });
+      await changeStatus.execute({ id: order.id, action: 'ship' });
+
       await expect(
-        updateStatus.execute({ id: order.id, status: 'canceled' }),
-      ).rejects.toMatchObject({ statusCode: 409 });
+        changeStatus.execute({ id: order.id, action: 'cancel', reason: 'x' }),
+      ).rejects.toMatchObject({ statusCode: 409, code: 'INVALID_TRANSITION' });
+      expect((await orders.findById(order.id))?.status).toBe('shipped');
+      expect(await stockOf(keyboard)).toBe(6);
+    });
+
+    it('cancelar exige motivo', async () => {
+      const order = await createPending();
+
+      await expect(
+        changeStatus.execute({ id: order.id, action: 'cancel', reason: ' ' }),
+      ).rejects.toMatchObject({ statusCode: 400 });
+      expect(await stockOf(keyboard)).toBe(6);
     });
 
     it('responde 404 para pedido inexistente', async () => {
       await expect(
-        updateStatus.execute({ id: 'nope', status: 'completed' }),
+        changeStatus.execute({ id: 'nope', action: 'pay' }),
       ).rejects.toMatchObject({ statusCode: 404 });
     });
   });

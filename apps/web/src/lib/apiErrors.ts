@@ -18,6 +18,8 @@ const MESSAGES: Record<
   CONFLICT: 'Essa operação conflita com o estado atual dos dados.',
   ALREADY_EXISTS: 'Já existe um registro com esses dados.',
   INSUFFICIENT_STOCK: 'Estoque insuficiente para concluir o pedido.',
+  INVALID_TRANSITION:
+    'O pedido mudou de situação. Recarregue para ver as ações possíveis.',
   RESOURCE_IN_USE: 'Este item está em uso e não pode ser removido.',
   PAYLOAD_TOO_LARGE: 'Os dados enviados são grandes demais.',
   RATE_LIMITED: 'Muitas tentativas. Aguarde um instante e tente de novo.',

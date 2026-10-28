@@ -225,14 +225,16 @@ describe('Pedidos', () => {
     expect(screen.getByRole('button', { name: 'Criar pedido' })).toBeEnabled();
   });
 
-  it('detalhe mostra itens a preço da compra e cancela após confirmar', async () => {
+  it('detalhe mostra itens a preço da compra e cancela com motivo', async () => {
     signIn();
     let status = 'pending';
+    let sentBody: unknown;
     server.use(
       http.get(`${API}/orders/:id`, () =>
         HttpResponse.json({ ...order, status }),
       ),
-      http.patch(`${API}/orders/:id/cancel`, () => {
+      http.patch(`${API}/orders/:id/cancel`, async ({ request }) => {
+        sentBody = await request.json();
         status = 'canceled';
         return HttpResponse.json({ ...order, status });
       }),
@@ -253,9 +255,17 @@ describe('Pedidos', () => {
     const dialog = await screen.findByRole('alertdialog', {
       name: 'Cancelar pedido?',
     });
-    await typing.click(
-      within(dialog).getByRole('button', { name: 'Cancelar pedido' }),
-    );
+    const confirm = within(dialog).getByRole('button', {
+      name: 'Cancelar pedido',
+    });
+    // sem motivo: o schema do shared barra antes de chamar a API
+    await typing.click(confirm);
+    const reason = within(dialog).getByLabelText('Motivo do cancelamento');
+    await waitFor(() => expect(reason).toBeInvalid());
+    expect(status).toBe('pending');
+
+    await typing.type(reason, 'Cliente desistiu');
+    await typing.click(confirm);
 
     expect(
       await screen.findByText(
@@ -264,9 +274,9 @@ describe('Pedidos', () => {
     ).toBeInTheDocument();
     await waitFor(() =>
       expect(
-        screen.queryByRole('button', { name: 'Concluir pedido' }),
+        screen.queryByRole('button', { name: 'Registrar pagamento' }),
       ).not.toBeInTheDocument(),
     );
-    expect(status).toBe('canceled');
+    expect(sentBody).toEqual({ reason: 'Cliente desistiu' });
   });
 });

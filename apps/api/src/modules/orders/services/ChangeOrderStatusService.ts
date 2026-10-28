@@ -1,36 +1,37 @@
+import type { OrderAction } from '@sellmanager/shared';
 import AppError from '@shared/errors/AppError';
-import {
-  canChangeOrderStatus,
-  Order,
-  OrderStatus,
-} from '../domain/entities/Order';
+import { Order } from '../domain/entities/Order';
+import { nextOrderStatus } from '../domain/orderWorkflow';
 import { IOrdersUnitOfWork } from '../domain/repositories/IOrdersUnitOfWork';
 
 interface IRequest {
   id: string;
-  status: OrderStatus;
+  action: OrderAction;
+  /** Obrigatório no cancelamento. */
+  reason?: string;
 }
 
-export class UpdateOrderStatusService {
+/** Pagar, enviar, entregar ou cancelar: valida a transição no domínio. */
+export class ChangeOrderStatusService {
   constructor(private readonly unitOfWork: IOrdersUnitOfWork) {}
 
-  public execute({ id, status }: IRequest): Promise<Order> {
+  public execute({ id, action, reason }: IRequest): Promise<Order> {
     return this.unitOfWork.run(async ({ orders, products }) => {
+      // trava o pedido: duas mudanças simultâneas não passam do mesmo status
       const order = await orders.findByIdForUpdate(id);
 
       if (!order) {
         throw new AppError('Order not found', 404);
       }
 
-      if (!canChangeOrderStatus(order.status, status)) {
-        throw new AppError(
-          `Cannot change order status from ${order.status} to ${status}`,
-          409,
-        );
-      }
+      const status = nextOrderStatus(order.status, action);
 
-      // Cancelar devolve os itens ao estoque.
-      if (status === 'canceled') {
+      if (action === 'cancel') {
+        if (!reason?.trim()) {
+          throw new AppError('A reason is required to cancel an order', 400);
+        }
+
+        // cancelar devolve os itens ao estoque
         const lockedProducts = await products.findByIdsForUpdate(
           order.items.map(item => item.product_id),
         );

@@ -5,10 +5,12 @@ import {
   listCustomersQuerySchema,
 } from '../customers';
 import {
+  cancelOrderBodySchema,
   createOrderBodySchema,
   listOrdersQuerySchema,
   orderSchema,
 } from '../orders';
+import { ORDER_TRANSITIONS, type OrderAction } from '../orderWorkflow';
 import {
   listProductsQuerySchema,
   productBodySchema,
@@ -30,6 +32,26 @@ import {
   userSchema,
 } from '../users';
 import { defineRoute, RouteDefinition } from './define';
+
+/** Transição sem corpo (pagar, enviar, entregar). */
+function transitionRoute(
+  action: Exclude<OrderAction, 'cancel'>,
+  doc: { operationId: string; summary: string },
+) {
+  const { from, permission } = ORDER_TRANSITIONS[action];
+  return defineRoute({
+    method: 'patch',
+    path: `/orders/{id}/${action}`,
+    ...doc,
+    description: `Só a partir de: ${from.join(', ')}. 409 INVALID_TRANSITION nos demais status.`,
+    tags: ['Pedidos'],
+    auth: true,
+    permission,
+    request: { params: idParamsSchema },
+    responses: { 200: orderSchema },
+    errors: [404, 409],
+  });
+}
 
 /**
  * Contrato único da API: a fonte para o roteamento e a validação da API,
@@ -389,31 +411,30 @@ export const routes = {
       responses: { 201: orderSchema },
       errors: [404, 409],
     }),
-    // concluir e cancelar são rotas separadas porque exigem permissões diferentes
-    complete: defineRoute({
-      method: 'patch',
-      path: '/orders/{id}/complete',
-      operationId: 'completeOrder',
-      summary: 'Conclui um pedido pendente',
-      description: '409 se o pedido já foi concluído ou cancelado.',
-      tags: ['Pedidos'],
-      auth: true,
-      permission: 'order:complete',
-      request: { params: idParamsSchema },
-      responses: { 200: orderSchema },
-      errors: [404, 409],
+    // uma rota por ação: cada uma exige uma permissão diferente do mapa
+    pay: transitionRoute('pay', {
+      operationId: 'payOrder',
+      summary: 'Registra o pagamento de um pedido pendente',
+    }),
+    ship: transitionRoute('ship', {
+      operationId: 'shipOrder',
+      summary: 'Marca um pedido pago como enviado',
+    }),
+    deliver: transitionRoute('deliver', {
+      operationId: 'deliverOrder',
+      summary: 'Marca um pedido enviado como entregue',
     }),
     cancel: defineRoute({
       method: 'patch',
       path: '/orders/{id}/cancel',
       operationId: 'cancelOrder',
-      summary: 'Cancela um pedido pendente',
+      summary: 'Cancela um pedido pendente ou pago (motivo obrigatório)',
       description:
-        'Devolve os itens ao estoque. 409 se o pedido já foi concluído ou cancelado.',
+        'Devolve todos os itens ao estoque. 409 INVALID_TRANSITION a partir de enviado, entregue ou cancelado.',
       tags: ['Pedidos'],
       auth: true,
-      permission: 'order:cancel',
-      request: { params: idParamsSchema },
+      permission: ORDER_TRANSITIONS.cancel.permission,
+      request: { params: idParamsSchema, body: cancelOrderBodySchema },
       responses: { 200: orderSchema },
       errors: [404, 409],
     }),

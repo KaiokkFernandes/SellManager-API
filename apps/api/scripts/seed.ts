@@ -11,7 +11,7 @@ import type { Role } from '@sellmanager/shared';
 import { env } from '@config/env';
 import { CreateCustomerService } from '@modules/customers/services/CreateCustomerService';
 import { CreateOrderService } from '@modules/orders/services/CreateOrderService';
-import { UpdateOrderStatusService } from '@modules/orders/services/UpdateOrderStatusService';
+import { ChangeOrderStatusService } from '@modules/orders/services/ChangeOrderStatusService';
 import { CreateProductService } from '@modules/products/services/CreateProductService';
 import { CreateUserService } from '@modules/users/services/CreateUserService';
 import { makeContainer } from '@shared/container';
@@ -219,7 +219,7 @@ async function main(): Promise<void> {
     customers,
     container.ordersUnitOfWork,
   );
-  const updateStatus = new UpdateOrderStatusService(container.ordersUnitOfWork);
+  const changeStatus = new ChangeOrderStatusService(container.ordersUnitOfWork);
   const inStock = createdProducts.filter(product => product.quantity >= 10);
   let orders = 0;
   for (let index = 0; index < 18; index += 1) {
@@ -233,9 +233,14 @@ async function main(): Promise<void> {
       products: [...lines].map(([id, quantity]) => ({ id, quantity })),
     });
     if (index % 5 === 1)
-      await updateStatus.execute({ id: order.id, status: 'canceled' });
+      await changeStatus.execute({
+        id: order.id,
+        action: 'cancel',
+        reason: 'Cliente desistiu',
+      });
     else if (index % 3 === 0)
-      await updateStatus.execute({ id: order.id, status: 'completed' });
+      for (const action of ['pay', 'ship', 'deliver'] as const)
+        await changeStatus.execute({ id: order.id, action });
 
     // espalha as datas pelos últimos 60 dias (para o filtro por período)
     const daysAgo = Math.floor(next() * 60);

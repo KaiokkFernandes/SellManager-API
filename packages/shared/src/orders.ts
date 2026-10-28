@@ -5,13 +5,8 @@ import {
   moneyCentsSchema,
   paginationQuerySchema,
 } from './common';
+import { orderStatusSchema } from './orderWorkflow';
 import { because } from './validation';
-
-export const ORDER_STATUSES = ['pending', 'completed', 'canceled'] as const;
-
-export type OrderStatus = (typeof ORDER_STATUSES)[number];
-
-export const orderStatusSchema = z.enum(ORDER_STATUSES);
 
 // ---- Entradas
 
@@ -41,6 +36,7 @@ const instantSchema = z.iso.datetime({ offset: true });
 export const listOrdersQuerySchema = paginationQuerySchema
   .extend({
     customer_id: z.uuid().optional(),
+    status: orderStatusSchema.optional(),
     from: instantSchema.optional().meta({
       description:
         'Criados a partir deste instante, inclusivo (ISO 8601, ex.: 2026-10-01T00:00:00-03:00)',
@@ -54,7 +50,15 @@ export const listOrdersQuerySchema = paginationQuerySchema
     because('inverted_range', 'to'),
   );
 
+export const cancelOrderBodySchema = z
+  .object({ reason: z.string().trim().min(3).max(500) })
+  .meta({
+    id: 'CancelOrderBody',
+    example: { reason: 'Cliente desistiu da compra' },
+  });
+
 export type CreateOrderBody = z.infer<typeof createOrderBodySchema>;
+export type CancelOrderBody = z.infer<typeof cancelOrderBodySchema>;
 export type ListOrdersQuery = z.infer<typeof listOrdersQuerySchema>;
 
 // ---- Respostas

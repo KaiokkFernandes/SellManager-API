@@ -17,6 +17,7 @@ export interface ICreateOrderDTO {
 
 export interface IFindOrdersFilter {
   customer_id?: string;
+  status?: OrderStatus;
   /** Criados a partir deste instante (inclusivo). */
   from?: Date;
   /** Criados antes deste instante (exclusivo). */

@@ -15,6 +15,7 @@ import { CreateOrders1761350600000 } from './migrations/1761350600000-CreateOrde
 import { ProductNameCaseInsensitive1761350700000 } from './migrations/1761350700000-ProductNameCaseInsensitive';
 import { AddProductImage1761350800000 } from './migrations/1761350800000-AddProductImage';
 import { AddUserRoles1761350900000 } from './migrations/1761350900000-AddUserRoles';
+import { AddOrderWorkflow1761351000000 } from './migrations/1761351000000-AddOrderWorkflow';
 
 // Entidades e migrations são listadas explicitamente (sem glob) para funcionar
 // igual em dev (tsx), no build (dist/) e nos testes.
@@ -40,6 +41,7 @@ export const AppDataSource = new DataSource({
     ProductNameCaseInsensitive1761350700000,
     AddProductImage1761350800000,
     AddUserRoles1761350900000,
+    AddOrderWorkflow1761351000000,
   ],
   synchronize: false,
   logging: env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],

@@ -133,37 +133,99 @@ describe('/orders', () => {
     expect(await stockOf(monitor)).toBe(0);
   });
 
-  it('cancelar devolve o estoque e pedidos finalizados não mudam mais', async () => {
+  const act = (id: string, action: string, body: object = {}) =>
+    request(ctx.app)
+      .patch(`/orders/${id}/${action}`)
+      .set('Authorization', auth)
+      .send(body);
+
+  it('percorre pending → paid → shipped → delivered sem mexer no estoque', async () => {
     const cable = await createProduct('Cabo', 100, 10);
     const created = await order([{ id: cable.id, quantity: 4 }]).expect(201);
-    const orderUrl = `/orders/${created.body.id as string}`;
+    const id = created.body.id as string;
 
-    await request(ctx.app)
-      .patch(`${orderUrl}/cancel`)
+    for (const [action, status] of [
+      ['pay', 'paid'],
+      ['ship', 'shipped'],
+      ['deliver', 'delivered'],
+    ]) {
+      const response = await act(id, action).expect(200);
+      expect(response.body.status).toBe(status);
+    }
+    expect(await stockOf(cable)).toBe(6);
+
+    const filtered = await request(ctx.app)
+      .get('/orders?status=delivered')
       .set('Authorization', auth)
       .expect(200);
-    expect(await stockOf(cable)).toBe(10);
-
-    await request(ctx.app)
-      .patch(`${orderUrl}/complete`)
-      .set('Authorization', auth)
-      .expect(409);
-    await request(ctx.app)
-      .patch(`${orderUrl}/cancel`)
-      .set('Authorization', auth)
-      .expect(409);
+    expect(filtered.body.meta.total).toBe(1);
   });
 
-  it('concluir não mexe no estoque', async () => {
+  it('cancelar (pendente ou pago) devolve o estoque e exige motivo', async () => {
     const cable = await createProduct('Cabo', 100, 10);
-    const created = await order([{ id: cable.id, quantity: 4 }]).expect(201);
+    const pending = await order([{ id: cable.id, quantity: 4 }]).expect(201);
+    const paid = await order([{ id: cable.id, quantity: 3 }]).expect(201);
+    await act(paid.body.id as string, 'pay').expect(200);
+    expect(await stockOf(cable)).toBe(3);
 
-    const completed = await request(ctx.app)
-      .patch(`/orders/${created.body.id as string}/complete`)
-      .set('Authorization', auth)
-      .expect(200);
-    expect(completed.body.status).toBe('completed');
-    expect(await stockOf(cable)).toBe(6);
+    const missing = await act(pending.body.id as string, 'cancel').expect(400);
+    expect(missing.body.issues[0]).toMatchObject({ path: 'reason' });
+
+    for (const created of [pending, paid]) {
+      await act(created.body.id as string, 'cancel', {
+        reason: 'Cliente desistiu',
+      }).expect(200);
+    }
+    expect(await stockOf(cable)).toBe(10);
+  });
+
+  it('transição inválida responde 409 INVALID_TRANSITION com as ações possíveis', async () => {
+    const cable = await createProduct('Cabo', 100, 10);
+    const created = await order([{ id: cable.id, quantity: 1 }]).expect(201);
+    const id = created.body.id as string;
+
+    const early = await act(id, 'ship').expect(409);
+    expect(early.body).toMatchObject({
+      code: 'INVALID_TRANSITION',
+      message: 'Cannot ship an order that is pending',
+      details: {
+        status: 'pending',
+        action: 'ship',
+        allowed_actions: ['pay', 'cancel'],
+      },
+    });
+
+    await act(id, 'pay').expect(200);
+    await act(id, 'ship').expect(200);
+    const late = await act(id, 'cancel', { reason: 'Tarde demais' }).expect(
+      409,
+    );
+    expect(late.body.details.allowed_actions).toEqual(['deliver']);
+    expect(await stockOf(cable)).toBe(9);
+  });
+
+  it('SELLER registra o pagamento, mas não envia nem cancela (403 antes do estado)', async () => {
+    const cable = await createProduct('Cabo', 100, 10);
+    const created = await order([{ id: cable.id, quantity: 2 }]).expect(201);
+    const id = created.body.id as string;
+    const seller = await authenticate(ctx, {
+      email: 'vendedor@test.com',
+      role: 'SELLER',
+    });
+    const asSeller = (action: string, body: object = {}) =>
+      request(ctx.app)
+        .patch(`/orders/${id}/${action}`)
+        .set('Authorization', seller)
+        .send(body);
+
+    await asSeller('pay').expect(200);
+    const ship = await asSeller('ship').expect(403);
+    expect(ship.body).toMatchObject({
+      code: 'FORBIDDEN',
+      details: { permission: 'order:ship' },
+    });
+    await asSeller('cancel', { reason: 'Cliente desistiu' }).expect(403);
+    expect(await stockOf(cable)).toBe(8);
   });
 
   it('valida cliente e produtos inexistentes', async () => {

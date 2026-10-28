@@ -116,6 +116,7 @@
               "CONFLICT",
               "ALREADY_EXISTS",
               "INSUFFICIENT_STOCK",
+              "INVALID_TRANSITION",
               "RESOURCE_IN_USE",
               "PAYLOAD_TOO_LARGE",
               "RATE_LIMITED",
@@ -571,7 +572,9 @@
             "type": "string",
             "enum": [
               "pending",
-              "completed",
+              "paid",
+              "shipped",
+              "delivered",
               "canceled"
             ]
           },
@@ -748,6 +751,22 @@
               "quantity": 2
             }
           ]
+        }
+      },
+      "CancelOrderBody": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "example": {
+          "reason": "Cliente desistiu da compra"
         }
       }
     },
@@ -3208,6 +3227,21 @@
           {
             "schema": {
               "type": "string",
+              "enum": [
+                "pending",
+                "paid",
+                "shipped",
+                "delivered",
+                "canceled"
+              ]
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
               "format": "date-time",
               "description": "Criados a partir deste instante, inclusivo (ISO 8601, ex.: 2026-10-01T00:00:00-03:00)"
             },
@@ -3512,12 +3546,210 @@
         }
       }
     },
-    "/orders/{id}/complete": {
+    "/orders/{id}/pay": {
       "patch": {
-        "operationId": "completeOrder",
-        "summary": "Conclui um pedido pendente",
-        "description": "409 se o pedido já foi concluído ou cancelado.\n\nPermissão: `order:complete` (ADMIN, MANAGER, SELLER).",
-        "x-permission": "order:complete",
+        "operationId": "payOrder",
+        "summary": "Registra o pagamento de um pedido pendente",
+        "description": "Só a partir de: pending. 409 INVALID_TRANSITION nos demais status.\n\nPermissão: `order:pay` (ADMIN, MANAGER, SELLER).",
+        "x-permission": "order:pay",
+        "tags": [
+          "Pedidos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito com o estado atual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders/{id}/ship": {
+      "patch": {
+        "operationId": "shipOrder",
+        "summary": "Marca um pedido pago como enviado",
+        "description": "Só a partir de: paid. 409 INVALID_TRANSITION nos demais status.\n\nPermissão: `order:ship` (ADMIN, MANAGER).",
+        "x-permission": "order:ship",
+        "tags": [
+          "Pedidos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito com o estado atual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders/{id}/deliver": {
+      "patch": {
+        "operationId": "deliverOrder",
+        "summary": "Marca um pedido enviado como entregue",
+        "description": "Só a partir de: shipped. 409 INVALID_TRANSITION nos demais status.\n\nPermissão: `order:deliver` (ADMIN, MANAGER).",
+        "x-permission": "order:deliver",
         "tags": [
           "Pedidos"
         ],
@@ -3614,8 +3846,8 @@
     "/orders/{id}/cancel": {
       "patch": {
         "operationId": "cancelOrder",
-        "summary": "Cancela um pedido pendente",
-        "description": "Devolve os itens ao estoque. 409 se o pedido já foi concluído ou cancelado.\n\nPermissão: `order:cancel` (ADMIN, MANAGER).",
+        "summary": "Cancela um pedido pendente ou pago (motivo obrigatório)",
+        "description": "Devolve todos os itens ao estoque. 409 INVALID_TRANSITION a partir de enviado, entregue ou cancelado.\n\nPermissão: `order:cancel` (ADMIN, MANAGER).",
         "x-permission": "order:cancel",
         "tags": [
           "Pedidos"
@@ -3636,6 +3868,16 @@
             "in": "path"
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelOrderBody"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -3689,6 +3931,16 @@
           },
           "409": {
             "description": "Conflito com o estado atual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload grande demais",
             "content": {
               "application/json": {
                 "schema": {

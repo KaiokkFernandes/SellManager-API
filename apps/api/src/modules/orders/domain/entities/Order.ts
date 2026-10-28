@@ -38,19 +38,6 @@ export interface Order {
   updated_at: Date;
 }
 
-const allowedTransitions: Record<OrderStatus, OrderStatus[]> = {
-  pending: ['completed', 'canceled'],
-  completed: [],
-  canceled: [],
-};
-
-export function canChangeOrderStatus(
-  from: OrderStatus,
-  to: OrderStatus,
-): boolean {
-  return allowedTransitions[from].includes(to);
-}
-
 /** Soma em centavos para evitar erro de ponto flutuante (0.1 + 0.2). */
 export function calculateOrderTotal(
   items: Pick<OrderItem, 'price' | 'quantity'>[],

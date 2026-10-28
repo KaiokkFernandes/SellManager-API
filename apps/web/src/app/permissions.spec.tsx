@@ -97,13 +97,13 @@ describe('controle de acesso no front (mapa do shared)', () => {
     ).toBeInTheDocument();
   });
 
-  it('SELLER conclui, mas não cancela pedido', async () => {
+  it('SELLER registra o pagamento, mas não cancela pedido', async () => {
     signIn('SELLER');
     mockLists();
     renderApp(`/orders/${order.id}`);
 
     expect(
-      await screen.findByRole('button', { name: 'Concluir pedido' }),
+      await screen.findByRole('button', { name: 'Registrar pagamento' }),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'Cancelar pedido' }),

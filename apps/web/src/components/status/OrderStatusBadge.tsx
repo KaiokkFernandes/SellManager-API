@@ -1,18 +1,15 @@
 import type { OrderStatus } from '@sellmanager/shared';
 import { Badge } from '@/components/ui/badge';
-
-const LABEL: Record<OrderStatus, string> = {
-  pending: 'Pendente',
-  completed: 'Concluído',
-  canceled: 'Cancelado',
-};
+import { ORDER_STATUS_LABELS } from './orderStatusLabels';
 
 const VARIANT = {
   pending: 'warning',
-  completed: 'success',
+  paid: 'default',
+  shipped: 'default',
+  delivered: 'success',
   canceled: 'outline',
 } as const;
 
 export function OrderStatusBadge({ status }: { status: OrderStatus }) {
-  return <Badge variant={VARIANT[status]}>{LABEL[status]}</Badge>;
+  return <Badge variant={VARIANT[status]}>{ORDER_STATUS_LABELS[status]}</Badge>;
 }
