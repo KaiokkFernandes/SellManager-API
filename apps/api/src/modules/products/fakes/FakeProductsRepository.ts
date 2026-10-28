@@ -15,12 +15,25 @@ import {
 export class FakeProductsRepository implements IProductsRepository {
   public readonly products: Product[] = [];
 
+  /** Nome da categoria pelo id (os testes ligam ao fake de categorias). */
+  constructor(
+    private readonly categoryName: (id: string) => string = () => '',
+  ) {}
+
+  private summary(categoryId: string | null): Product['category'] {
+    return categoryId
+      ? { id: categoryId, name: this.categoryName(categoryId) }
+      : null;
+  }
+
   public findAll(
-    { search, sort = 'name', order }: IFindProductsFilter,
+    { search, category_id, sort = 'name', order }: IFindProductsFilter,
     pagination: PaginationParams,
   ): Promise<PageResult<Product>> {
-    const found = this.products.filter(product =>
-      matchesSearch(search, product.name),
+    const found = this.products.filter(
+      product =>
+        matchesSearch(search, product.name) &&
+        (!category_id || product.category_id === category_id),
     );
     return Promise.resolve(
       slicePage(
@@ -60,6 +73,8 @@ export class FakeProductsRepository implements IProductsRepository {
       updated_at: now,
       image: null,
       ...data,
+      category_id: data.category_id ?? null,
+      category: this.summary(data.category_id ?? null),
     };
     this.products.push(product);
     return Promise.resolve({ ...product });
@@ -67,7 +82,11 @@ export class FakeProductsRepository implements IProductsRepository {
 
   public save(product: Product): Promise<Product> {
     const index = this.products.findIndex(item => item.id === product.id);
-    const saved = { ...product, updated_at: new Date() };
+    const saved = {
+      ...product,
+      category: this.summary(product.category_id),
+      updated_at: new Date(),
+    };
     if (index >= 0) this.products[index] = saved;
     else this.products.push(saved);
     return Promise.resolve({ ...saved });

@@ -7,10 +7,13 @@ export interface ICreateProductDTO {
   name: string;
   price: number;
   quantity: number;
+  category_id?: string | null;
 }
 
-/** Busca no nome; padrão: nome ascendente. */
-export type IFindProductsFilter = IListFilter<ProductSort>;
+/** Busca no nome e filtro por categoria; padrão: nome ascendente. */
+export interface IFindProductsFilter extends IListFilter<ProductSort> {
+  category_id?: string;
+}
 
 export interface IProductsRepository {
   findAll(

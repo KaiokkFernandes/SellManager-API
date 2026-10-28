@@ -26,7 +26,7 @@ export async function createTestContext(): Promise<TestContext> {
 
 export async function resetDatabase(): Promise<void> {
   await AppDataSource.query(
-    'TRUNCATE stock_movements, order_status_history, order_items, orders, customers, products, user_tokens, users CASCADE',
+    'TRUNCATE categories, stock_movements, order_status_history, order_items, orders, customers, products, user_tokens, users CASCADE',
   );
 }
 

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { FakeCategoriesRepository } from '@modules/categories/fakes/FakeCategoriesRepository';
 import { FakeOrdersRepository } from '@modules/orders/fakes/FakeOrdersRepository';
 import { FakeStorageProvider } from '@shared/providers/StorageProvider/FakeStorageProvider';
 import { FakeProductsRepository } from '../fakes/FakeProductsRepository';
@@ -15,18 +16,28 @@ describe('Product services', () => {
   let repository: FakeProductsRepository;
   let storage: FakeStorageProvider;
   let movements: FakeStockMovementsRepository;
+  let categories: FakeCategoriesRepository;
   let createProduct: (data: {
     name: string;
     price: number;
     quantity: number;
+    category_id?: string | null;
   }) => ReturnType<CreateProductService['execute']>;
+  const update = (data: Parameters<UpdateProductService['execute']>[0]) =>
+    new UpdateProductService(repository, categories).execute(data);
 
   beforeEach(() => {
-    repository = new FakeProductsRepository();
+    categories = new FakeCategoriesRepository(
+      id => repository.products.filter(p => p.category_id === id).length,
+    );
+    repository = new FakeProductsRepository(
+      id => categories.categories.find(c => c.id === id)?.name ?? '',
+    );
     storage = new FakeStorageProvider();
     movements = new FakeStockMovementsRepository();
     const service = new CreateProductService(
       new FakeProductsUnitOfWork(repository, movements),
+      categories,
     );
     createProduct = data => service.execute({ ...data, created_by: 'admin-1' });
   });
@@ -67,7 +78,7 @@ describe('Product services', () => {
   it('editar não mexe no estoque', async () => {
     const created = await createProduct(keyboard);
 
-    const updated = await new UpdateProductService(repository).execute({
+    const updated = await update({
       id: created.id,
       name: 'Teclado sem fio',
       price: 210,
@@ -75,6 +86,37 @@ describe('Product services', () => {
 
     expect(updated.quantity).toBe(10);
     expect(movements.movements).toHaveLength(1);
+  });
+
+  it('categoria: precisa existir, aparece no produto e filtra a lista', async () => {
+    const peripherals = await categories.create({ name: 'Periféricos' });
+    const mouse = await createProduct({
+      ...keyboard,
+      name: 'Mouse',
+      category_id: peripherals.id,
+    });
+    await createProduct(keyboard);
+
+    expect(mouse.category).toEqual({ id: peripherals.id, name: 'Periféricos' });
+    const { data } = await new ListProductsService(repository).execute({
+      category_id: peripherals.id,
+    });
+    expect(data.map(product => product.name)).toEqual(['Mouse']);
+
+    await expect(
+      createProduct({ ...keyboard, name: 'Cabo', category_id: 'nope' }),
+    ).rejects.toMatchObject({ statusCode: 404, message: 'Category not found' });
+    await expect(
+      update({ id: mouse.id, name: 'Mouse', price: 1, category_id: 'nope' }),
+    ).rejects.toMatchObject({ statusCode: 404 });
+
+    const moved = await update({
+      id: mouse.id,
+      name: 'Mouse',
+      price: 1,
+      category_id: null,
+    });
+    expect(moved.category).toBeNull();
   });
 
   it('lista com busca e ordenação', async () => {
@@ -134,7 +176,7 @@ describe('Product services', () => {
   it('atualiza mantendo o próprio nome', async () => {
     const created = await createProduct(keyboard);
 
-    const updated = await new UpdateProductService(repository).execute({
+    const updated = await update({
       id: created.id,
       name: keyboard.name,
       price: 150,
@@ -151,7 +193,7 @@ describe('Product services', () => {
     });
 
     await expect(
-      new UpdateProductService(repository).execute({
+      update({
         id: created.id,
         name: 'Mouse',
         price: keyboard.price,

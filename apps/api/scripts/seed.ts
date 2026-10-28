@@ -230,7 +230,10 @@ async function main(): Promise<void> {
   for (const [name, price, quantity] of PRODUCTS) {
     if (await products.findByName(name)) continue; // está em pedidos de fora do seed
     createdProducts.push(
-      await new CreateProductService(container.productsUnitOfWork).execute({
+      await new CreateProductService(
+        container.productsUnitOfWork,
+        container.repositories.categories,
+      ).execute({
         name,
         price,
         quantity,

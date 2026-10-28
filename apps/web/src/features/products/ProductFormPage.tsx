@@ -115,11 +115,12 @@ export function EditProductPage() {
                 name: data.name,
                 price_cents: data.price_cents,
                 quantity: data.quantity,
+                category_id: data.category?.id ?? null,
               }}
               submitLabel="Salvar alterações"
               // o PUT não leva estoque (o campo nem aparece aqui)
-              onSubmit={({ name, price_cents }) =>
-                update.mutateAsync({ name, price_cents })
+              onSubmit={({ name, price_cents, category_id }) =>
+                update.mutateAsync({ name, price_cents, category_id })
               }
               onSaved={toList}
               onCancel={toList}

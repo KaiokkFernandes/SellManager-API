@@ -47,6 +47,7 @@ describe('@sellmanager/shared', () => {
           name: 'Teclado',
           price_cents: 19990,
           quantity: 1,
+          category: null,
           image_url: null,
           created_at: now,
           updated_at: now,
@@ -65,7 +66,7 @@ describe('contrato de rotas', () => {
     const ids = allRoutes.map(route => route.operationId);
     const keys = allRoutes.map(route => `${route.method} ${route.path}`);
 
-    expect(allRoutes).toHaveLength(33);
+    expect(allRoutes).toHaveLength(37);
     expect(new Set(ids).size).toBe(ids.length);
     expect(new Set(keys).size).toBe(keys.length);
   });

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { productCategorySchema } from './categories';
 import { imageFileSchema } from './uploads';
 import {
   examples,
@@ -19,10 +20,16 @@ export const productBodySchema = z
       .int()
       .nonnegative()
       .describe('Estoque inicial (registrado como movimentação INITIAL)'),
+    category_id: z.uuid().nullable().default(null),
   })
   .meta({
     id: 'ProductBody',
-    example: { name: 'Teclado mecânico', price_cents: 19990, quantity: 10 },
+    example: {
+      name: 'Teclado mecânico',
+      price_cents: 19990,
+      quantity: 10,
+      category_id: null,
+    },
   });
 
 /** Na edição o estoque não muda: só por movimentação (entrada/ajuste). */
@@ -30,7 +37,11 @@ export const updateProductBodySchema = productBodySchema
   .omit({ quantity: true })
   .meta({
     id: 'UpdateProductBody',
-    example: { name: 'Teclado mecânico', price_cents: 19990 },
+    example: {
+      name: 'Teclado mecânico',
+      price_cents: 19990,
+      category_id: null,
+    },
   });
 
 export type ProductBody = z.infer<typeof productBodySchema>;
@@ -46,6 +57,7 @@ export type ProductSort = (typeof PRODUCT_SORTS)[number];
 
 export const listProductsQuerySchema = paginationQuerySchema.extend({
   q: searchSchema.meta({ description: 'Busca por nome' }),
+  category_id: z.uuid().optional(),
   sort: z.enum(PRODUCT_SORTS).default('name'),
   order: sortOrderSchema,
 });
@@ -57,6 +69,7 @@ export const productSchema = z
     name: z.string(),
     price_cents: moneyCentsSchema,
     quantity: z.number().int(),
+    category: productCategorySchema.nullable(),
     image_url: z.url().nullable(),
     created_at: isoDateSchema,
     updated_at: isoDateSchema,
@@ -68,6 +81,10 @@ export const productSchema = z
       name: 'Teclado mecânico',
       price_cents: 19990,
       quantity: 10,
+      category: {
+        id: '2f1d3c4b-5a69-4788-9a0b-1c2d3e4f5a6b',
+        name: 'Periféricos',
+      },
       image_url:
         'http://localhost:3333/files/3f1c9a0b2d4e5f60718293a4b5c6d7e8.webp',
       created_at: examples.date,

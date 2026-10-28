@@ -36,9 +36,9 @@ export class ProductsController {
     toProductResponse(product, this.apiUrl);
 
   public list: RouteHandler<Routes['list']> = async ({ input, reply }) => {
-    const { page, limit, q, sort, order } = input.query;
+    const { page, limit, q, category_id, sort, order } = input.query;
     const { data, meta } = await this.services.list.execute(
-      { search: q, sort, order },
+      { search: q, category_id, sort, order },
       { page, limit },
     );
     reply(200, { data: data.map(this.toResponse), meta });
@@ -54,12 +54,13 @@ export class ProductsController {
     request,
     reply,
   }) => {
-    const { name, price_cents, quantity } = input.body;
+    const { name, price_cents, quantity, category_id } = input.body;
     // contrato em centavos -> domínio em decimal
     const product = await this.services.create.execute({
       name,
       price: fromCents(price_cents),
       quantity,
+      category_id,
       created_by: request.user.id,
     });
     reply(201, this.toResponse(product));
@@ -70,6 +71,7 @@ export class ProductsController {
       id: input.params.id,
       name: input.body.name,
       price: fromCents(input.body.price_cents),
+      category_id: input.body.category_id,
     });
     reply(200, this.toResponse(product));
   };

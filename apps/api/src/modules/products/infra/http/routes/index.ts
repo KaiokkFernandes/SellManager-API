@@ -17,7 +17,8 @@ export function registerProductsRoutes(
   mount: MountRoute,
   container: Container,
 ): void {
-  const { products, orders, stockMovements } = container.repositories;
+  const { products, orders, stockMovements, categories } =
+    container.repositories;
   const { productsUnitOfWork } = container;
   const { storage } = container.providers;
 
@@ -25,8 +26,8 @@ export function registerProductsRoutes(
     {
       list: new ListProductsService(products),
       show: new ShowProductService(products),
-      create: new CreateProductService(productsUnitOfWork),
-      update: new UpdateProductService(products),
+      create: new CreateProductService(productsUnitOfWork, categories),
+      update: new UpdateProductService(products, categories),
       delete: new DeleteProductService(products, orders, storage),
       updateImage: new UpdateProductImageService(products, storage),
       listStockMovements: new ListStockMovementsService(

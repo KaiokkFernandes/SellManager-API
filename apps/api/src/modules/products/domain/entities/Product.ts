@@ -3,6 +3,9 @@ export interface Product {
   name: string;
   price: number;
   quantity: number;
+  category_id: string | null;
+  /** Resumo da categoria, carregado junto pelo repositório. */
+  category: { id: string; name: string } | null;
   /** Nome do arquivo no storage, ou null sem imagem. */
   image: string | null;
   created_at: Date;

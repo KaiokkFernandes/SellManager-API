@@ -1,4 +1,6 @@
+import type { ICategoriesRepository } from '@modules/categories/domain/repositories/ICategoriesRepository';
 import AppError from '@shared/errors/AppError';
+import { assertCategoryExists } from './CreateProductService';
 import { Product } from '../domain/entities/Product';
 import { IProductsRepository } from '../domain/repositories/IProductsRepository';
 
@@ -7,12 +9,24 @@ interface IRequest {
   id: string;
   name: string;
   price: number;
+  category_id?: string | null;
 }
 
 export class UpdateProductService {
-  constructor(private readonly productsRepository: IProductsRepository) {}
+  constructor(
+    private readonly productsRepository: IProductsRepository,
+    private readonly categoriesRepository: Pick<
+      ICategoriesRepository,
+      'findById'
+    >,
+  ) {}
 
-  public async execute({ id, name, price }: IRequest): Promise<Product> {
+  public async execute({
+    id,
+    name,
+    price,
+    category_id = null,
+  }: IRequest): Promise<Product> {
     const product = await this.productsRepository.findById(id);
 
     if (!product) {
@@ -28,7 +42,10 @@ export class UpdateProductService {
       );
     }
 
+    await assertCategoryExists(this.categoriesRepository, category_id);
+
     product.name = name;
+    product.category_id = category_id;
     product.price = price;
 
     return this.productsRepository.save(product);

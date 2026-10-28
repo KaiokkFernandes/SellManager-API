@@ -30,6 +30,7 @@ export const product = {
   name: 'Cabo USB-C',
   price_cents: 4990,
   quantity: 10,
+  category: null,
   image_url: null,
   created_at: '2026-01-01T00:00:00.000Z',
   updated_at: '2026-01-01T00:00:00.000Z',

@@ -109,6 +109,7 @@ describe('Produtos', () => {
       name: 'Cabo USB-C',
       price_cents: 123456,
       quantity: 10,
+      category_id: null,
     });
     expect(await screen.findByText('Sem imagem')).toBeInTheDocument();
   });
@@ -270,6 +271,7 @@ describe('Produtos', () => {
       expect(sent).toEqual({
         name: `${product.name} 2m`,
         price_cents: product.price_cents,
+        category_id: null,
       }),
     );
   });
