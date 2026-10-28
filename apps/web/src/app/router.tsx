@@ -39,6 +39,12 @@ import {
 } from '@/features/products';
 import { ForbiddenError } from '@/lib/forbidden';
 import { ProfilePage } from '@/features/profile';
+import {
+  EditUserPage,
+  NewUserPage,
+  UsersListPage,
+  usersSearchSchema,
+} from '@/features/users';
 import { safeRedirect } from '@/lib/safeRedirect';
 import { AuthenticatedLayout } from './AuthenticatedLayout';
 
@@ -198,6 +204,32 @@ const orderDetailRoute = createRoute({
   component: OrderDetailPage,
 });
 
+// ---- Usuários (só ADMIN, pelo mapa)
+const usersRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/users',
+  component: Outlet,
+});
+const usersListRoute = createRoute({
+  getParentRoute: () => usersRoute,
+  path: '/',
+  beforeLoad: requires('user:read'),
+  validateSearch: usersSearchSchema,
+  component: UsersListPage,
+});
+const newUserRoute = createRoute({
+  getParentRoute: () => usersRoute,
+  path: '/new',
+  beforeLoad: requires('user:create'),
+  component: NewUserPage,
+});
+const editUserRoute = createRoute({
+  getParentRoute: () => usersRoute,
+  path: '/$userId/edit',
+  beforeLoad: requires('user:update'),
+  component: EditUserPage,
+});
+
 const routeTree = rootRoute.addChildren([
   loginRoute,
   authenticatedRoute.addChildren([
@@ -214,6 +246,7 @@ const routeTree = rootRoute.addChildren([
       editProductRoute,
     ]),
     ordersRoute.addChildren([ordersListRoute, newOrderRoute, orderDetailRoute]),
+    usersRoute.addChildren([usersListRoute, newUserRoute, editUserRoute]),
   ]),
 ]);
 

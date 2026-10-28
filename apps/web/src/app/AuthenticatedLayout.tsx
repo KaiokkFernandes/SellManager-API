@@ -1,5 +1,11 @@
 import { ROLE_LABELS, type Permission } from '@sellmanager/shared';
-import { LayoutDashboard, Package, ShoppingCart, Users } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
+  UserCog,
+  Users,
+} from 'lucide-react';
 import { AppLayout, type NavItem } from '@/components/layout/AppLayout';
 import { useAuth, useCan } from '@/features/auth';
 
@@ -24,6 +30,7 @@ const navItems: readonly (NavItem & { permission?: Permission })[] = [
     icon: ShoppingCart,
     permission: 'order:read',
   },
+  { to: '/users', label: 'Usuários', icon: UserCog, permission: 'user:read' },
 ];
 
 export function AuthenticatedLayout() {
