@@ -95,6 +95,8 @@
               "BAD_REQUEST",
               "INVALID_UPLOAD",
               "UNAUTHORIZED",
+              "FORBIDDEN",
+              "ACCOUNT_DISABLED",
               "NOT_FOUND",
               "CONFLICT",
               "ALREADY_EXISTS",

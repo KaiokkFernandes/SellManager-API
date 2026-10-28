@@ -12,6 +12,8 @@ const MESSAGES: Record<
   BAD_REQUEST: 'A requisição é inválida.',
   INVALID_UPLOAD: 'O arquivo enviado não é válido.',
   UNAUTHORIZED: 'Sessão inválida ou expirada. Entre novamente.',
+  FORBIDDEN: 'Você não tem permissão para fazer isso.',
+  ACCOUNT_DISABLED: 'Esta conta está desativada. Fale com um administrador.',
   NOT_FOUND: 'O item não foi encontrado.',
   CONFLICT: 'Essa operação conflita com o estado atual dos dados.',
   ALREADY_EXISTS: 'Já existe um registro com esses dados.',
