@@ -15,6 +15,7 @@ import {
 import { getErrorMessage } from '@/lib/apiErrors';
 import { formatCents, formatDateTime } from '@/lib/format';
 import { OrderActions } from './OrderActions';
+import { OrderTimeline } from './OrderTimeline';
 import { useOrder } from './queries';
 
 const route = getRouteApi('/authenticated/orders/$orderId');
@@ -71,50 +72,60 @@ export function OrderDetailPage() {
         </span>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Itens</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <caption className="sr-only">
-              Itens do pedido, com o preço do momento da compra
-            </caption>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead>Produto</TableHead>
-                <TableHead className="text-right">Preço na compra</TableHead>
-                <TableHead className="text-right">Qtd.</TableHead>
-                <TableHead className="text-right">Subtotal</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.items.map(item => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">
-                    {item.product.name}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {formatCents(item.price_cents)}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {item.quantity}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {formatCents(item.price_cents * item.quantity)}
-                  </TableCell>
+      <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+        <Card>
+          <CardHeader>
+            <CardTitle>Itens</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <caption className="sr-only">
+                Itens do pedido, com o preço do momento da compra
+              </caption>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Produto</TableHead>
+                  <TableHead className="text-right">Preço na compra</TableHead>
+                  <TableHead className="text-right">Qtd.</TableHead>
+                  <TableHead className="text-right">Subtotal</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <p className="mt-4 flex justify-end gap-3 border-t pt-4 text-lg">
-            <span className="text-muted-foreground">Total</span>
-            <span className="font-semibold tabular-nums">
-              {formatCents(data.total_cents)}
-            </span>
-          </p>
-        </CardContent>
-      </Card>
+              </TableHeader>
+              <TableBody>
+                {data.items.map(item => (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-medium">
+                      {item.product.name}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formatCents(item.price_cents)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {item.quantity}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formatCents(item.price_cents * item.quantity)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <p className="mt-4 flex justify-end gap-3 border-t pt-4 text-lg">
+              <span className="text-muted-foreground">Total</span>
+              <span className="font-semibold tabular-nums">
+                {formatCents(data.total_cents)}
+              </span>
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="self-start">
+          <CardHeader>
+            <CardTitle>Histórico</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <OrderTimeline history={data.history} />
+          </CardContent>
+        </Card>
+      </div>
     </>
   );
 }

@@ -2,6 +2,7 @@ import type {
   ApiError,
   Customer,
   Order,
+  OrderDetails,
   Product,
   Session,
   User,
@@ -74,6 +75,48 @@ export const order = {
   created_at: '2026-10-20T15:30:00.000Z',
   updated_at: '2026-10-20T15:30:00.000Z',
 } satisfies Order;
+
+/** Detalhe do pedido (GET /orders/{id} e transições): com o histórico. */
+export const orderDetails = {
+  ...order,
+  history: [
+    {
+      id: 'c2000000-0000-4000-8000-000000000001',
+      from_status: null,
+      to_status: 'pending',
+      changed_by: { id: 'u1000000-0000-4000-8000-000000000001', name: 'Vera' },
+      reason: null,
+      created_at: '2026-10-20T15:30:00.000Z',
+    },
+  ],
+} satisfies OrderDetails;
+
+/** Detalhe com o status trocado (o histórico ganha a linha da mudança). */
+export function orderWith(
+  status: OrderDetails['status'],
+  reason: string | null = null,
+): OrderDetails {
+  return status === 'pending'
+    ? orderDetails
+    : {
+        ...orderDetails,
+        status,
+        history: [
+          ...orderDetails.history,
+          {
+            id: 'c2000000-0000-4000-8000-000000000002',
+            from_status: 'pending',
+            to_status: status,
+            changed_by: {
+              id: 'u1000000-0000-4000-8000-000000000002',
+              name: 'Gil',
+            },
+            reason,
+            created_at: '2026-10-21T10:00:00.000Z',
+          },
+        ],
+      };
+}
 
 /** JWT sem assinatura válida, só com o `exp` (o front não valida a assinatura). */
 export function makeToken(expiresAtSeconds: number): string {
