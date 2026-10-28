@@ -35,8 +35,18 @@ async function menuLabels() {
 
 describe('controle de acesso no front (mapa do shared)', () => {
   it.each<[Role, string[]]>([
-    ['ADMIN', ['Dashboard', 'Clientes', 'Produtos', 'Pedidos', 'Usuários']],
-    ['MANAGER', ['Dashboard', 'Clientes', 'Produtos', 'Pedidos']],
+    [
+      'ADMIN',
+      [
+        'Dashboard',
+        'Clientes',
+        'Produtos',
+        'Categorias',
+        'Pedidos',
+        'Usuários',
+      ],
+    ],
+    ['MANAGER', ['Dashboard', 'Clientes', 'Produtos', 'Categorias', 'Pedidos']],
     ['SELLER', ['Dashboard', 'Clientes', 'Produtos', 'Pedidos']],
   ])('%s vê o menu certo e o papel no header', async (role, expected) => {
     signIn(role);

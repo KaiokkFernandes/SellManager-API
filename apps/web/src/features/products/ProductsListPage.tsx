@@ -19,6 +19,7 @@ import { formatCents } from '@/lib/format';
 import { toSort } from '@/lib/listSearch';
 import { useCan } from '@/features/auth';
 import { DeleteProductDialog } from './DeleteProductDialog';
+import { ProductName } from './ProductName';
 import { ProductThumbnail } from './ProductThumbnail';
 import { useCategoryOptions, useProductsList } from './queries';
 import { StockBadge } from './StockBadge';
@@ -210,26 +211,6 @@ function RowActions({
 }
 
 /** Nome do produto: link para a edição só para quem pode editar. */
-function ProductName({
-  product,
-  className,
-}: {
-  product: Product;
-  className: string;
-}) {
-  const canEdit = useCan()('product:update');
-  if (!canEdit) return <span className={className}>{product.name}</span>;
-  return (
-    <Link
-      to="/products/$productId/edit"
-      params={{ productId: product.id }}
-      className={`${className} hover:underline`}
-    >
-      {product.name}
-    </Link>
-  );
-}
-
 const ALL = 'all';
 
 function CategoryFilter({

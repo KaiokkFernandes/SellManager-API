@@ -7,6 +7,7 @@ import {
   errorResponse,
   page,
   product,
+  productDetailHandler,
   signIn,
 } from '@/test/fixtures';
 import { renderApp } from '@/test/render';
@@ -43,7 +44,7 @@ function mockProducts() {
         ),
       );
     }),
-    http.get(`${API}/products/:id`, () => HttpResponse.json(product)),
+    productDetailHandler(product),
     http.get(`${API}/categories`, () => HttpResponse.json(page([category]))),
   );
   return requests;
@@ -260,7 +261,7 @@ describe('Produtos', () => {
     signIn();
     let sent: unknown;
     server.use(
-      http.get(`${API}/products/:id`, () => HttpResponse.json(product)),
+      productDetailHandler(product),
       http.put(`${API}/products/:id`, async ({ request }) => {
         sent = await request.json();
         return HttpResponse.json(product);

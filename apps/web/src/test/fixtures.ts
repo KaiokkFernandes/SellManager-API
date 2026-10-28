@@ -174,3 +174,13 @@ export function signIn(role: Role = 'ADMIN') {
   );
   return profile;
 }
+
+/**
+ * GET /products/{id} sem engolir /products/low-stock (o alerta do layout):
+ * resolver sem retorno deixa o MSW seguir para o handler padrão.
+ */
+export function productDetailHandler(body: Product) {
+  return http.get('http://api.test/products/:id', ({ params }) =>
+    params.id === 'low-stock' ? undefined : HttpResponse.json(body),
+  );
+}

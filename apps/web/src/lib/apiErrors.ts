@@ -55,12 +55,17 @@ export function getFieldErrors(error: unknown): Record<string, string> {
   );
 }
 
-/** `orders_count` do erro RESOURCE_IN_USE (exclusão barrada por pedidos). */
-export function getInUseOrdersCount(error: unknown): number | undefined {
+/**
+ * Contagem do erro RESOURCE_IN_USE (exclusão barrada): `orders_count` em
+ * clientes/produtos, `products_count` em categorias.
+ */
+export function getInUseCount(
+  error: unknown,
+  key: 'orders_count' | 'products_count' = 'orders_count',
+): number | undefined {
   if (!(error instanceof ApiClientError) || error.code !== 'RESOURCE_IN_USE')
     return undefined;
-  const count = (error.details as { orders_count?: unknown } | undefined)
-    ?.orders_count;
+  const count = (error.details as Record<string, unknown> | undefined)?.[key];
   return typeof count === 'number' ? count : undefined;
 }
 

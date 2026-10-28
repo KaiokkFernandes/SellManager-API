@@ -3,7 +3,13 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
-import { category, page, product, signIn } from '@/test/fixtures';
+import {
+  category,
+  page,
+  product,
+  productDetailHandler,
+  signIn,
+} from '@/test/fixtures';
 import { renderApp } from '@/test/render';
 import { server } from '@/test/server';
 
@@ -25,7 +31,7 @@ function mockProduct() {
   const movements: StockMovement[] = [initial];
   const posted: unknown[] = [];
   server.use(
-    http.get(`${API}/products/:id`, () => HttpResponse.json(product)),
+    productDetailHandler(product),
     http.get(`${API}/categories`, () => HttpResponse.json(page([category]))),
     http.get(`${API}/products/:id/stock-movements`, () =>
       HttpResponse.json(page([...movements].reverse())),
@@ -135,7 +141,7 @@ describe('Estoque no produto', () => {
         body = await request.json();
         return HttpResponse.json(product, { status: 201 });
       }),
-      http.get(`${API}/products/:id`, () => HttpResponse.json(product)),
+      productDetailHandler(product),
       http.get(`${API}/products/:id/stock-movements`, () =>
         HttpResponse.json(page([initial])),
       ),

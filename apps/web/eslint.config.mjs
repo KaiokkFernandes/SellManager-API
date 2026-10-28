@@ -13,6 +13,7 @@ const FEATURES = [
   'dashboard',
   'customers',
   'products',
+  'categories',
   'orders',
   'users',
   'profile',

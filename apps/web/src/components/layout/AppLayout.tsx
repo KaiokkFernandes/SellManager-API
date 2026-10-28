@@ -1,4 +1,5 @@
 import { Link, Outlet, type LinkProps } from '@tanstack/react-router';
+import type { ReactNode } from 'react';
 import {
   LogOut,
   Menu,
@@ -33,6 +34,8 @@ interface AppLayoutProps {
   /** Destino do link no nome do usuário (página de perfil). */
   profileTo: LinkProps['to'];
   onLogout: () => void;
+  /** Conteúdo extra no cabeçalho, antes do usuário (ex.: alertas). */
+  headerExtra?: ReactNode;
 }
 
 function NavLinks({
@@ -77,6 +80,7 @@ export function AppLayout({
   userName,
   userRole,
   profileTo,
+  headerExtra,
   onLogout,
 }: AppLayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
@@ -153,6 +157,7 @@ export function AppLayout({
           </Button>
 
           <div className="ml-auto flex items-center gap-1 sm:gap-2">
+            {headerExtra}
             {userName === undefined ? (
               <Skeleton className="h-4 w-24" />
             ) : (

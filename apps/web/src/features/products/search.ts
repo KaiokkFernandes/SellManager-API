@@ -12,3 +12,8 @@ export const editProductSearchSchema = z.object({
   tab: z.enum(['data', 'movements']).optional().catch(undefined),
   page: z.number().int().positive().optional().catch(undefined),
 });
+
+/** Página de estoque baixo: ?page= */
+export const lowStockSearchSchema = z.object({
+  page: z.number().int().positive().optional().catch(undefined),
+});

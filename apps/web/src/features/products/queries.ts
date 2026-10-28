@@ -192,3 +192,16 @@ export function useRecordStockMovement(id: string) {
     },
   });
 }
+
+/** Produtos abaixo do estoque mínimo (página e alerta do layout). */
+export function useLowStockProducts(page = 1, limit = PAGE_SIZE) {
+  const query = { page, limit };
+  return useQuery({
+    queryKey: queryKeys.products.lowStock(query),
+    queryFn: () =>
+      unwrap(api.GET('/products/low-stock', { params: { query } })),
+    placeholderData: keepPreviousData,
+    // o alerta também acompanha vendas feitas em outras sessões
+    refetchInterval: 60_000,
+  });
+}
