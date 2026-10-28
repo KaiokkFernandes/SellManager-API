@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/features/auth';
@@ -10,6 +11,7 @@ export function App({
   router?: ReturnType<typeof createAppRouter>;
 }) {
   const auth = useAuth();
+  const queryClient = useQueryClient();
   const [router] = useState(() => injected ?? createAppRouter());
 
   // login/logout/401/expiração: re-executa os beforeLoad (redireciona se preciso)
@@ -17,5 +19,5 @@ export function App({
     void router.invalidate();
   }, [router, auth.isAuthenticated]);
 
-  return <RouterProvider router={router} context={{ auth }} />;
+  return <RouterProvider router={router} context={{ auth, queryClient }} />;
 }

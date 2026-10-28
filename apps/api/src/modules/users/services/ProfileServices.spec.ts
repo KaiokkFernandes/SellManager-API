@@ -1,97 +1,76 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { FakeHashProvider } from '@shared/providers/HashProvider/FakeHashProvider';
+import { FakeTokenProvider } from '@shared/providers/TokenProvider/FakeTokenProvider';
 import { User } from '../domain/entities/User';
 import { FakeUsersRepository } from '../fakes/FakeUsersRepository';
+import { ChangePasswordService } from './ChangePasswordService';
 import { ShowProfileService } from './ShowProfileService';
 import { UpdateProfileService } from './UpdateProfileService';
 
-describe('ShowProfileService / UpdateProfileService', () => {
+describe('perfil próprio', () => {
   let usersRepository: FakeUsersRepository;
-  let updateProfile: UpdateProfileService;
+  let hash: FakeHashProvider;
   let user: User;
 
   beforeEach(async () => {
     usersRepository = new FakeUsersRepository();
-    updateProfile = new UpdateProfileService(
-      usersRepository,
-      new FakeHashProvider(),
-    );
+    hash = new FakeHashProvider();
     user = await usersRepository.create({
+      role: 'SELLER',
       name: 'Kaio',
       email: 'kaio@test.com',
-      password: 'hashed:old',
+      password: await hash.generateHash('senha-atual'),
     });
   });
 
-  it('mostra o perfil do usuário', async () => {
-    const profile = await new ShowProfileService(usersRepository).execute({
-      user_id: user.id,
+  it('mostra o perfil e responde 404 para usuário inexistente', async () => {
+    const show = new ShowProfileService(usersRepository);
+    expect((await show.execute({ user_id: user.id })).email).toBe(
+      'kaio@test.com',
+    );
+    await expect(show.execute({ user_id: 'nope' })).rejects.toMatchObject({
+      statusCode: 404,
     });
-    expect(profile.email).toBe('kaio@test.com');
   });
 
-  it('responde 404 para usuário inexistente', async () => {
-    await expect(
-      new ShowProfileService(usersRepository).execute({ user_id: 'nope' }),
-    ).rejects.toMatchObject({ statusCode: 404 });
-  });
-
-  it('atualiza nome e e-mail mantendo o próprio e-mail', async () => {
-    const updated = await updateProfile.execute({
+  it('edita só o nome (papel e e-mail não mudam)', async () => {
+    const updated = await new UpdateProfileService(usersRepository).execute({
       user_id: user.id,
       name: 'Kaio F',
+    });
+    expect(updated).toMatchObject({
+      name: 'Kaio F',
       email: 'kaio@test.com',
+      role: 'SELLER',
     });
-    expect(updated.name).toBe('Kaio F');
   });
 
-  it('não permite usar o e-mail de outro usuário', async () => {
-    await usersRepository.create({
-      name: 'Ana',
-      email: 'ana@test.com',
-      password: 'x',
+  it('troca a senha exigindo a atual, registra a data e emite token novo', async () => {
+    const change = new ChangePasswordService(
+      usersRepository,
+      hash,
+      new FakeTokenProvider(),
+    );
+
+    await expect(
+      change.execute({
+        user_id: user.id,
+        current_password: 'errada',
+        password: 'nova-senha',
+      }),
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      code: 'VALIDATION_FAILED',
+      issues: [{ path: 'current_password' }],
     });
 
-    await expect(
-      updateProfile.execute({
-        user_id: user.id,
-        name: 'Kaio',
-        email: 'ana@test.com',
-      }),
-    ).rejects.toMatchObject({ statusCode: 409 });
-  });
-
-  it('exige a senha antiga para trocar a senha', async () => {
-    await expect(
-      updateProfile.execute({
-        user_id: user.id,
-        name: 'Kaio',
-        email: 'kaio@test.com',
-        password: 'nova',
-      }),
-    ).rejects.toThrow('You need to inform the old password');
-  });
-
-  it('rejeita senha antiga incorreta', async () => {
-    await expect(
-      updateProfile.execute({
-        user_id: user.id,
-        name: 'Kaio',
-        email: 'kaio@test.com',
-        password: 'nova',
-        old_password: 'errada',
-      }),
-    ).rejects.toThrow('Old password does not match');
-  });
-
-  it('troca a senha quando a antiga confere', async () => {
-    const updated = await updateProfile.execute({
+    const { user: saved, token } = await change.execute({
       user_id: user.id,
-      name: 'Kaio',
-      email: 'kaio@test.com',
-      password: 'nova',
-      old_password: 'old',
+      current_password: 'senha-atual',
+      password: 'nova-senha',
     });
-    expect(updated.password).toBe('hashed:nova');
+    expect(await hash.compareHash('nova-senha', saved.password)).toBe(true);
+    expect(saved.password_changed_at).toBeInstanceOf(Date);
+    expect(token).toContain(user.id);
   });
 });

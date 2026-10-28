@@ -1,4 +1,4 @@
-import type { User } from '@sellmanager/api-client';
+import type { Session, User } from '@sellmanager/api-client';
 import type { SessionBody } from '@sellmanager/shared';
 import { createContext } from 'react';
 
@@ -13,6 +13,8 @@ export interface AuthContextValue {
   endedBy: SessionEnd | null;
   login: (credentials: SessionBody) => Promise<void>;
   logout: () => void;
+  /** Troca o token da sessão atual (ex.: após trocar a senha a API emite outro). */
+  replaceSession: (session: Session) => void;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

@@ -3,6 +3,7 @@ import { env } from '@config/env';
 import uploadConfig from '@config/upload';
 import { CustomersRepository } from '@modules/customers/infra/typeorm/repositories/CustomersRepository';
 import { OrdersUnitOfWork } from '@modules/orders/infra/typeorm/OrdersUnitOfWork';
+import { UsersUnitOfWork } from '@modules/users/infra/typeorm/UsersUnitOfWork';
 import { OrdersRepository } from '@modules/orders/infra/typeorm/repositories/OrdersRepository';
 import { ProductsRepository } from '@modules/products/infra/typeorm/repositories/ProductsRepository';
 import { UsersRepository } from '@modules/users/infra/typeorm/repositories/UsersRepository';
@@ -79,6 +80,7 @@ export function makeContainer(
     providers,
     repositories,
     ordersUnitOfWork: new OrdersUnitOfWork(dataSource),
+    usersUnitOfWork: new UsersUnitOfWork(dataSource),
   };
 }
 

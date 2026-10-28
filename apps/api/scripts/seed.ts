@@ -2,10 +2,12 @@
 /* eslint-disable no-console -- script de linha de comando */
 // Uso: pnpm --filter api seed
 //
+// Usuários: um por papel (ADMIN, MANAGER, SELLER).
 // Idempotente: apaga só o que o próprio seed criou (clientes @seed.sellmanager.dev,
 // os pedidos deles e os produtos da lista abaixo que não estejam em outros
 // pedidos) e recria. Usa os services, então estoque, preços e totais seguem as
 // mesmas regras da API.
+import type { Role } from '@sellmanager/shared';
 import { env } from '@config/env';
 import { CreateCustomerService } from '@modules/customers/services/CreateCustomerService';
 import { CreateOrderService } from '@modules/orders/services/CreateOrderService';
@@ -15,11 +17,32 @@ import { CreateUserService } from '@modules/users/services/CreateUserService';
 import { makeContainer } from '@shared/container';
 import { AppDataSource } from '@shared/infra/typeorm/data-source';
 
-export const ADMIN = {
-  name: 'Admin',
-  email: 'admin@sellmanager.dev',
-  password: 'admin12345',
-};
+/** Credenciais SÓ de desenvolvimento, uma por papel (documentadas no README). */
+export const SEED_USERS = [
+  {
+    name: 'Admin',
+    email: 'admin@sellmanager.dev',
+    password: 'admin12345',
+    role: 'ADMIN',
+  },
+  {
+    name: 'Gerente',
+    email: 'gerente@sellmanager.dev',
+    password: 'gerente12345',
+    role: 'MANAGER',
+  },
+  {
+    name: 'Vendedor',
+    email: 'vendedor@sellmanager.dev',
+    password: 'vendedor12345',
+    role: 'SELLER',
+  },
+] as const satisfies readonly {
+  name: string;
+  email: string;
+  password: string;
+  role: Role;
+}[];
 const SEED_DOMAIN = 'seed.sellmanager.dev';
 
 const FIRST_NAMES = [
@@ -151,8 +174,21 @@ async function main(): Promise<void> {
 
   await cleanPreviousSeed();
 
-  if (!(await users.findByEmail(ADMIN.email))) {
-    await new CreateUserService(users, container.providers.hash).execute(ADMIN);
+  // cria os que faltam; os existentes voltam ao papel e à senha do seed, ativos
+  const { hash } = container.providers;
+  for (const seedUser of SEED_USERS) {
+    const existing = await users.findByEmail(seedUser.email);
+    if (!existing) {
+      await new CreateUserService(users, hash).execute(seedUser);
+    } else {
+      await users.save({
+        ...existing,
+        name: seedUser.name,
+        role: seedUser.role,
+        active: true,
+        password: await hash.generateHash(seedUser.password),
+      });
+    }
   }
 
   const createdCustomers = [];
@@ -213,7 +249,9 @@ async function main(): Promise<void> {
   console.log(
     `Seed concluído: ${createdCustomers.length} clientes, ${createdProducts.length} produtos e ${orders} pedidos.`,
   );
-  console.log(`Login: ${ADMIN.email} / ${ADMIN.password}`);
+  for (const { role, email, password } of SEED_USERS) {
+    console.log(`  ${role.padEnd(7)} ${email} / ${password}`);
+  }
 }
 
 main()

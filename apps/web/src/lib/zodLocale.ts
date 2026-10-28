@@ -1,4 +1,11 @@
+import { validationReason, type ValidationReason } from '@sellmanager/shared';
 import { z } from 'zod';
+
+const REASON_MESSAGES: Record<ValidationReason, string> = {
+  password_mismatch: 'As senhas não conferem',
+  same_password: 'A nova senha deve ser diferente da atual',
+  inverted_range: 'A data final deve ser posterior à inicial',
+};
 
 type Issue = Parameters<NonNullable<z.core.$ZodConfig['customError']>>[0];
 
@@ -51,6 +58,11 @@ function friendlyMessage(issue: Issue): string | undefined {
       if (issue.format === 'email') return 'E-mail inválido';
       if (issue.format === 'uuid') return 'Selecione uma opção válida';
       return undefined;
+    case 'custom': {
+      // validações por motivo declaradas no shared (refine)
+      const reason = validationReason(issue.params);
+      return reason ? REASON_MESSAGES[reason] : undefined;
+    }
     default:
       return undefined;
   }

@@ -51,6 +51,17 @@
             ],
             "format": "uri"
           },
+          "role": {
+            "type": "string",
+            "enum": [
+              "ADMIN",
+              "MANAGER",
+              "SELLER"
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time"
@@ -66,6 +77,8 @@
           "email",
           "avatar",
           "avatar_url",
+          "role",
+          "active",
           "created_at",
           "updated_at"
         ],
@@ -75,6 +88,8 @@
           "email": "kaio@example.com",
           "avatar": null,
           "avatar_url": null,
+          "role": "ADMIN",
+          "active": true,
           "created_at": "2026-10-24T20:00:00.000Z",
           "updated_at": "2026-10-24T20:00:00.000Z"
         }
@@ -95,6 +110,8 @@
               "BAD_REQUEST",
               "INVALID_UPLOAD",
               "UNAUTHORIZED",
+              "FORBIDDEN",
+              "ACCOUNT_DISABLED",
               "NOT_FOUND",
               "CONFLICT",
               "ALREADY_EXISTS",
@@ -163,7 +180,8 @@
         "properties": {
           "name": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "maxLength": 120
           },
           "email": {
             "type": "string"
@@ -172,17 +190,67 @@
             "type": "string",
             "minLength": 8,
             "maxLength": 72
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "ADMIN",
+              "MANAGER",
+              "SELLER"
+            ]
           }
         },
         "required": [
           "name",
           "email",
-          "password"
+          "password",
+          "role"
         ],
         "example": {
           "name": "Kaio",
           "email": "kaio@example.com",
-          "password": "senha-segura-123"
+          "password": "senha-inicial-123",
+          "role": "SELLER"
+        }
+      },
+      "UpdateUserBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "ADMIN",
+              "MANAGER",
+              "SELLER"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "role"
+        ],
+        "example": {
+          "name": "Kaio Fernandes",
+          "role": "MANAGER"
+        }
+      },
+      "UpdateUserStatusBody": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "active"
+        ],
+        "example": {
+          "active": false
         }
       },
       "AvatarUploadBody": {
@@ -219,6 +287,8 @@
             "email": "kaio@example.com",
             "avatar": null,
             "avatar_url": null,
+            "role": "ADMIN",
+            "active": true,
             "created_at": "2026-10-24T20:00:00.000Z",
             "updated_at": "2026-10-24T20:00:00.000Z"
           },
@@ -250,13 +320,23 @@
         "properties": {
           "name": {
             "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "example": {
+          "name": "Kaio F"
+        }
+      },
+      "ChangePasswordBody": {
+        "type": "object",
+        "properties": {
+          "current_password": {
+            "type": "string",
             "minLength": 1
-          },
-          "email": {
-            "type": "string"
-          },
-          "old_password": {
-            "type": "string"
           },
           "password": {
             "type": "string",
@@ -268,13 +348,12 @@
           }
         },
         "required": [
-          "name",
-          "email"
+          "current_password",
+          "password",
+          "password_confirmation"
         ],
         "example": {
-          "name": "Kaio F",
-          "email": "kaio@example.com",
-          "old_password": "senha-segura-123",
+          "current_password": "senha-segura-123",
           "password": "nova-senha-123",
           "password_confirmation": "nova-senha-123"
         }
@@ -670,24 +749,6 @@
             }
           ]
         }
-      },
-      "UpdateOrderStatusBody": {
-        "type": "object",
-        "properties": {
-          "status": {
-            "type": "string",
-            "enum": [
-              "completed",
-              "canceled"
-            ]
-          }
-        },
-        "required": [
-          "status"
-        ],
-        "example": {
-          "status": "completed"
-        }
       }
     },
     "parameters": {}
@@ -696,11 +757,17 @@
     "/users": {
       "post": {
         "operationId": "createUser",
-        "summary": "Cadastra um usuário",
+        "summary": "Cadastra um usuário (só ADMIN)",
+        "description": "Permissão: `user:create` (ADMIN).",
+        "x-permission": "user:create",
         "tags": [
           "Usuários"
         ],
-        "security": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -732,6 +799,26 @@
               }
             }
           },
+          "401": {
+            "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Conflito com o estado atual",
             "content": {
@@ -744,16 +831,6 @@
           },
           "413": {
             "description": "Payload grande demais",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Muitas requisições",
             "content": {
               "application/json": {
                 "schema": {
@@ -776,7 +853,9 @@
       },
       "get": {
         "operationId": "listUsers",
-        "summary": "Lista usuários",
+        "summary": "Lista usuários, com busca e filtros por papel e situação",
+        "description": "Permissão: `user:read` (ADMIN).",
+        "x-permission": "user:read",
         "tags": [
           "Usuários"
         ],
@@ -805,6 +884,42 @@
             },
             "required": false,
             "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "description": "Busca por nome ou e-mail"
+            },
+            "required": false,
+            "description": "Busca por nome ou e-mail",
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ADMIN",
+                "MANAGER",
+                "SELLER"
+              ]
+            },
+            "required": false,
+            "name": "role",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "inactive"
+              ]
+            },
+            "required": false,
+            "name": "status",
             "in": "query"
           }
         ],
@@ -874,6 +989,341 @@
               }
             }
           },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "operationId": "showUser",
+        "summary": "Mostra um usuário",
+        "description": "Permissão: `user:read` (ADMIN).",
+        "x-permission": "user:read",
+        "tags": [
+          "Usuários"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateUser",
+        "summary": "Edita nome e papel",
+        "description": "409 ao mudar o próprio papel ou rebaixar o último ADMIN ativo.\n\nPermissão: `user:update` (ADMIN).",
+        "x-permission": "user:update",
+        "tags": [
+          "Usuários"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito com o estado atual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload grande demais",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{id}/status": {
+      "patch": {
+        "operationId": "updateUserStatus",
+        "summary": "Ativa ou desativa um usuário",
+        "description": "Desativado não entra e perde as sessões abertas. 409 ao desativar a si mesmo ou o último ADMIN ativo.\n\nPermissão: `user:update` (ADMIN).",
+        "x-permission": "user:update",
+        "tags": [
+          "Usuários"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserStatusBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito com o estado atual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload grande demais",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Erro interno",
             "content": {
@@ -891,6 +1341,7 @@
       "patch": {
         "operationId": "updateUserAvatar",
         "summary": "Envia o avatar (jpeg, png ou webp, até 2 MB)",
+        "description": "Qualquer usuário autenticado.",
         "tags": [
           "Usuários"
         ],
@@ -1002,6 +1453,16 @@
               }
             }
           },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
           "413": {
             "description": "Payload grande demais",
             "content": {
@@ -1039,6 +1500,7 @@
       "get": {
         "operationId": "showProfile",
         "summary": "Mostra o perfil do usuário autenticado",
+        "description": "Qualquer usuário autenticado.",
         "tags": [
           "Perfil"
         ],
@@ -1092,7 +1554,8 @@
       },
       "put": {
         "operationId": "updateProfile",
-        "summary": "Atualiza o perfil (trocar a senha exige old_password)",
+        "summary": "Atualiza o próprio nome",
+        "description": "Qualquer usuário autenticado.",
         "tags": [
           "Perfil"
         ],
@@ -1152,8 +1615,85 @@
               }
             }
           },
-          "409": {
-            "description": "Conflito com o estado atual",
+          "413": {
+            "description": "Payload grande demais",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/profile/password": {
+      "put": {
+        "operationId": "changePassword",
+        "summary": "Troca a própria senha (exige a senha atual)",
+        "description": "Encerra as outras sessões e devolve um token novo para a sessão atual. Senha atual incorreta: 400 com o issue em `current_password`.\n\nQualquer usuário autenticado.",
+        "tags": [
+          "Perfil"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso não encontrado",
             "content": {
               "application/json": {
                 "schema": {
@@ -1320,11 +1860,17 @@
     "/products": {
       "get": {
         "operationId": "listProducts",
-        "summary": "Lista produtos (público), com busca e ordenação",
+        "summary": "Lista produtos, com busca e ordenação",
+        "description": "Permissão: `product:read` (ADMIN, MANAGER, SELLER).",
+        "x-permission": "product:read",
         "tags": [
           "Produtos"
         ],
-        "security": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "schema": {
@@ -1445,6 +1991,26 @@
               }
             }
           },
+          "401": {
+            "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Erro interno",
             "content": {
@@ -1460,6 +2026,8 @@
       "post": {
         "operationId": "createProduct",
         "summary": "Cria um produto",
+        "description": "Permissão: `product:create` (ADMIN, MANAGER).",
+        "x-permission": "product:create",
         "tags": [
           "Produtos"
         ],
@@ -1509,6 +2077,16 @@
               }
             }
           },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Conflito com o estado atual",
             "content": {
@@ -1545,11 +2123,17 @@
     "/products/{id}": {
       "get": {
         "operationId": "showProduct",
-        "summary": "Mostra um produto (público)",
+        "summary": "Mostra um produto",
+        "description": "Permissão: `product:read` (ADMIN, MANAGER, SELLER).",
+        "x-permission": "product:read",
         "tags": [
           "Produtos"
         ],
-        "security": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "schema": {
@@ -1574,6 +2158,26 @@
           },
           "400": {
             "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
             "content": {
               "application/json": {
                 "schema": {
@@ -1607,6 +2211,8 @@
       "put": {
         "operationId": "updateProduct",
         "summary": "Atualiza um produto",
+        "description": "Permissão: `product:update` (ADMIN, MANAGER).",
+        "x-permission": "product:update",
         "tags": [
           "Produtos"
         ],
@@ -1659,6 +2265,16 @@
           },
           "401": {
             "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
             "content": {
               "application/json": {
                 "schema": {
@@ -1712,7 +2328,8 @@
       "delete": {
         "operationId": "deleteProduct",
         "summary": "Remove um produto",
-        "description": "409 se houver pedidos com o produto.",
+        "description": "409 se houver pedidos com o produto.\n\nPermissão: `product:delete` (ADMIN, MANAGER).",
+        "x-permission": "product:delete",
         "tags": [
           "Produtos"
         ],
@@ -1748,6 +2365,16 @@
           },
           "401": {
             "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
             "content": {
               "application/json": {
                 "schema": {
@@ -1793,6 +2420,8 @@
       "patch": {
         "operationId": "updateProductImage",
         "summary": "Envia ou substitui a imagem (jpeg, png ou webp, até 2 MB)",
+        "description": "Permissão: `product:update` (ADMIN, MANAGER).",
+        "x-permission": "product:update",
         "tags": [
           "Produtos"
         ],
@@ -1853,6 +2482,16 @@
               }
             }
           },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Recurso não encontrado",
             "content": {
@@ -1878,6 +2517,8 @@
       "delete": {
         "operationId": "deleteProductImage",
         "summary": "Remove a imagem do produto",
+        "description": "Permissão: `product:update` (ADMIN, MANAGER).",
+        "x-permission": "product:update",
         "tags": [
           "Produtos"
         ],
@@ -1928,6 +2569,16 @@
               }
             }
           },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Recurso não encontrado",
             "content": {
@@ -1955,6 +2606,8 @@
       "get": {
         "operationId": "listCustomers",
         "summary": "Lista clientes, com busca e ordenação",
+        "description": "Permissão: `customer:read` (ADMIN, MANAGER, SELLER).",
+        "x-permission": "customer:read",
         "tags": [
           "Clientes"
         ],
@@ -2092,6 +2745,16 @@
               }
             }
           },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Erro interno",
             "content": {
@@ -2107,6 +2770,8 @@
       "post": {
         "operationId": "createCustomer",
         "summary": "Cria um cliente",
+        "description": "Permissão: `customer:create` (ADMIN, MANAGER, SELLER).",
+        "x-permission": "customer:create",
         "tags": [
           "Clientes"
         ],
@@ -2156,6 +2821,16 @@
               }
             }
           },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Conflito com o estado atual",
             "content": {
@@ -2193,6 +2868,8 @@
       "get": {
         "operationId": "showCustomer",
         "summary": "Mostra um cliente",
+        "description": "Permissão: `customer:read` (ADMIN, MANAGER, SELLER).",
+        "x-permission": "customer:read",
         "tags": [
           "Clientes"
         ],
@@ -2243,6 +2920,16 @@
               }
             }
           },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Recurso não encontrado",
             "content": {
@@ -2268,6 +2955,8 @@
       "put": {
         "operationId": "updateCustomer",
         "summary": "Atualiza um cliente",
+        "description": "Permissão: `customer:update` (ADMIN, MANAGER).",
+        "x-permission": "customer:update",
         "tags": [
           "Clientes"
         ],
@@ -2320,6 +3009,16 @@
           },
           "401": {
             "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
             "content": {
               "application/json": {
                 "schema": {
@@ -2373,7 +3072,8 @@
       "delete": {
         "operationId": "deleteCustomer",
         "summary": "Remove um cliente",
-        "description": "409 se houver pedidos do cliente.",
+        "description": "409 se houver pedidos do cliente.\n\nPermissão: `customer:delete` (ADMIN, MANAGER).",
+        "x-permission": "customer:delete",
         "tags": [
           "Clientes"
         ],
@@ -2409,6 +3109,16 @@
           },
           "401": {
             "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
             "content": {
               "application/json": {
                 "schema": {
@@ -2454,6 +3164,8 @@
       "get": {
         "operationId": "listOrders",
         "summary": "Lista pedidos (mais recentes primeiro), por cliente e período",
+        "description": "Permissão: `order:read` (ADMIN, MANAGER, SELLER).",
+        "x-permission": "order:read",
         "tags": [
           "Pedidos"
         ],
@@ -2582,6 +3294,16 @@
               }
             }
           },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Erro interno",
             "content": {
@@ -2597,7 +3319,8 @@
       "post": {
         "operationId": "createOrder",
         "summary": "Cria um pedido",
-        "description": "Em uma transação: trava os produtos, checa o estoque, copia o preço atual de cada produto, calcula o total e baixa o estoque. 409 se faltar estoque.",
+        "description": "Em uma transação: trava os produtos, checa o estoque, copia o preço atual de cada produto, calcula o total e baixa o estoque. 409 se faltar estoque.\n\nPermissão: `order:create` (ADMIN, MANAGER, SELLER).",
+        "x-permission": "order:create",
         "tags": [
           "Pedidos"
         ],
@@ -2639,6 +3362,16 @@
           },
           "401": {
             "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
             "content": {
               "application/json": {
                 "schema": {
@@ -2694,6 +3427,8 @@
       "get": {
         "operationId": "showOrder",
         "summary": "Mostra um pedido com os itens",
+        "description": "Permissão: `order:read` (ADMIN, MANAGER, SELLER).",
+        "x-permission": "order:read",
         "tags": [
           "Pedidos"
         ],
@@ -2736,6 +3471,16 @@
           },
           "401": {
             "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
             "content": {
               "application/json": {
                 "schema": {
@@ -2767,11 +3512,12 @@
         }
       }
     },
-    "/orders/{id}/status": {
+    "/orders/{id}/complete": {
       "patch": {
-        "operationId": "updateOrderStatus",
-        "summary": "Conclui ou cancela um pedido pendente",
-        "description": "Cancelar devolve os itens ao estoque.",
+        "operationId": "completeOrder",
+        "summary": "Conclui um pedido pendente",
+        "description": "409 se o pedido já foi concluído ou cancelado.\n\nPermissão: `order:complete` (ADMIN, MANAGER, SELLER).",
+        "x-permission": "order:complete",
         "tags": [
           "Pedidos"
         ],
@@ -2791,16 +3537,6 @@
             "in": "path"
           }
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateOrderStatusBody"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "OK",
@@ -2832,6 +3568,16 @@
               }
             }
           },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Recurso não encontrado",
             "content": {
@@ -2852,8 +3598,97 @@
               }
             }
           },
-          "413": {
-            "description": "Payload grande demais",
+          "500": {
+            "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders/{id}/cancel": {
+      "patch": {
+        "operationId": "cancelOrder",
+        "summary": "Cancela um pedido pendente",
+        "description": "Devolve os itens ao estoque. 409 se o pedido já foi concluído ou cancelado.\n\nPermissão: `order:cancel` (ADMIN, MANAGER).",
+        "x-permission": "order:cancel",
+        "tags": [
+          "Pedidos"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito com o estado atual",
             "content": {
               "application/json": {
                 "schema": {

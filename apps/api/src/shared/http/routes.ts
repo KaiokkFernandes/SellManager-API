@@ -14,7 +14,10 @@ export function createRoutes(container: Container): Router {
 
   // Todas as rotas vêm do contrato de @sellmanager/shared.
   const mount = createRouteMounter(router, {
-    authenticated: ensureAuthenticated(container.providers.token),
+    authenticated: ensureAuthenticated(
+      container.providers.token,
+      container.repositories.users,
+    ),
     rateLimiter: authRateLimiter,
     responseValidation: responseValidationMode,
   });

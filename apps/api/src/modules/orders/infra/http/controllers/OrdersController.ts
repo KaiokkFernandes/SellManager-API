@@ -41,13 +41,21 @@ export class OrdersController {
     reply(201, toOrderResponse(order));
   };
 
-  public updateStatus: RouteHandler<Routes['updateStatus']> = async ({
+  public complete: RouteHandler<Routes['complete']> = async ({
     input,
     reply,
   }) => {
     const order = await this.services.updateStatus.execute({
       id: input.params.id,
-      status: input.body.status,
+      status: 'completed',
+    });
+    reply(200, toOrderResponse(order));
+  };
+
+  public cancel: RouteHandler<Routes['cancel']> = async ({ input, reply }) => {
+    const order = await this.services.updateStatus.execute({
+      id: input.params.id,
+      status: 'canceled',
     });
     reply(200, toOrderResponse(order));
   };

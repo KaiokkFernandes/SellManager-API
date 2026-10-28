@@ -4,17 +4,41 @@ import {
   PaginationParams,
   slicePage,
 } from '@shared/domain/pagination';
+import { matchesSearch, sortInMemory } from '@shared/domain/listing';
 import { User } from '../domain/entities/User';
 import {
   ICreateUserDTO,
+  IFindUsersFilter,
   IUsersRepository,
 } from '../domain/repositories/IUsersRepository';
 
 export class FakeUsersRepository implements IUsersRepository {
   public readonly users: User[] = [];
 
-  public findAll(pagination: PaginationParams): Promise<PageResult<User>> {
-    return Promise.resolve(slicePage([...this.users], pagination));
+  public findAll(
+    { search, role, active }: IFindUsersFilter,
+    pagination: PaginationParams,
+  ): Promise<PageResult<User>> {
+    const found = this.users.filter(
+      user =>
+        matchesSearch(search, user.name, user.email) &&
+        (!role || user.role === role) &&
+        (active === undefined || user.active === active),
+    );
+    return Promise.resolve(
+      slicePage(
+        sortInMemory(found, user => user.name),
+        pagination,
+      ),
+    );
+  }
+
+  public lockActiveAdmins(): Promise<string[]> {
+    return Promise.resolve(
+      this.users
+        .filter(user => user.role === 'ADMIN' && user.active)
+        .map(user => user.id),
+    );
   }
 
   public findById(id: string): Promise<User | null> {
@@ -32,6 +56,8 @@ export class FakeUsersRepository implements IUsersRepository {
     const user: User = {
       id: randomUUID(),
       avatar: null,
+      active: true,
+      password_changed_at: null,
       created_at: now,
       updated_at: now,
       ...data,

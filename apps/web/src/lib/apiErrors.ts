@@ -12,6 +12,8 @@ const MESSAGES: Record<
   BAD_REQUEST: 'A requisição é inválida.',
   INVALID_UPLOAD: 'O arquivo enviado não é válido.',
   UNAUTHORIZED: 'Sessão inválida ou expirada. Entre novamente.',
+  FORBIDDEN: 'Você não tem permissão para fazer isso.',
+  ACCOUNT_DISABLED: 'Esta conta está desativada. Fale com um administrador.',
   NOT_FOUND: 'O item não foi encontrado.',
   CONFLICT: 'Essa operação conflita com o estado atual dos dados.',
   ALREADY_EXISTS: 'Já existe um registro com esses dados.',
@@ -63,4 +65,18 @@ export function getInUseOrdersCount(error: unknown): number | undefined {
 /** True se o erro é um ApiClientError com esse `code`. */
 export function isApiErrorCode(error: unknown, code: ApiErrorCode): boolean {
   return error instanceof ApiClientError && error.code === code;
+}
+
+const ADMIN_GUARD_MESSAGES: Record<string, string> = {
+  SELF: 'Você não pode alterar o próprio papel nem desativar a si mesmo.',
+  LAST_ADMIN:
+    'Este é o último administrador ativo: promova outra pessoa antes de rebaixá-lo ou desativá-lo.',
+};
+
+/** Mensagem das regras de governança de usuários (409 com `details.reason`). */
+export function getAdminGuardMessage(error: unknown): string | undefined {
+  if (!(error instanceof ApiClientError) || error.code !== 'CONFLICT')
+    return undefined;
+  const reason = (error.details as { reason?: unknown } | undefined)?.reason;
+  return typeof reason === 'string' ? ADMIN_GUARD_MESSAGES[reason] : undefined;
 }

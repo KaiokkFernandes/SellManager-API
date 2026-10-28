@@ -5,6 +5,7 @@ import type {
   RouteResponseBody,
   RouteSuccessStatus,
 } from '@sellmanager/shared';
+import { authorize } from '../middlewares/authorize';
 import { validate } from '../middlewares/validate';
 import { checkResponse, ResponseValidationMode } from './responseValidation';
 
@@ -50,6 +51,7 @@ export function toExpressPath(path: string): string {
 
 /**
  * Registra no router uma rota do contrato: método, path, rate limit, auth,
+ * permissão,
  * validação da entrada e (fora de produção) da resposta, tudo derivado da
  * definição. Os middlewares extras (ex.: multer) rodam antes da validação.
  */
@@ -61,6 +63,10 @@ export function createRouteMounter(
     const chain: RequestHandler[] = [];
     if (route.rateLimited) chain.push(rateLimiter);
     if (route.auth) chain.push(authenticated);
+    // permissão antes do upload e da validação: quem não pode não descobre nada
+    if (route.auth && route.permission !== 'authenticated') {
+      chain.push(authorize(route.permission));
+    }
     chain.push(...middlewares, validate(route.request));
 
     router[route.method](

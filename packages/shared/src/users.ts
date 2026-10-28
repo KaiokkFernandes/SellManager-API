@@ -1,6 +1,13 @@
 import { z } from 'zod';
 import { imageFileSchema } from './uploads';
-import { examples, isoDateSchema } from './common';
+import {
+  examples,
+  isoDateSchema,
+  paginationQuerySchema,
+  searchSchema,
+} from './common';
+import { roleSchema } from './permissions';
+import { because } from './validation';
 
 const email = z.string().trim().toLowerCase().pipe(z.email());
 
@@ -9,20 +16,42 @@ const newPassword = z.string().min(8).max(72);
 
 // ---- Entradas
 
+const name = z.string().trim().min(1).max(120);
+
+/** Cadastro feito por um ADMIN, com a senha inicial que ele repassa ao usuário. */
 export const createUserBodySchema = z
   .object({
-    name: z.string().trim().min(1),
+    name,
     email,
     password: newPassword,
+    role: roleSchema,
   })
   .meta({
     id: 'CreateUserBody',
     example: {
       name: 'Kaio',
       email: 'kaio@example.com',
-      password: 'senha-segura-123',
+      password: 'senha-inicial-123',
+      role: 'SELLER',
     },
   });
+
+/** Edição por um ADMIN: nome e papel (e-mail é o login e não muda aqui). */
+export const updateUserBodySchema = z.object({ name, role: roleSchema }).meta({
+  id: 'UpdateUserBody',
+  example: { name: 'Kaio Fernandes', role: 'MANAGER' },
+});
+
+/** Ativar/desativar. Usuários nunca são excluídos (têm histórico). */
+export const updateUserStatusBodySchema = z
+  .object({ active: z.boolean() })
+  .meta({ id: 'UpdateUserStatusBody', example: { active: false } });
+
+export const listUsersQuerySchema = paginationQuerySchema.extend({
+  q: searchSchema.meta({ description: 'Busca por nome ou e-mail' }),
+  role: roleSchema.optional(),
+  status: z.enum(['active', 'inactive']).optional(),
+});
 
 export const sessionBodySchema = z
   .object({
@@ -46,10 +75,10 @@ export const resetPasswordBodySchema = z
     password: newPassword,
     password_confirmation: z.string(),
   })
-  .refine(data => data.password === data.password_confirmation, {
-    message: 'Passwords do not match',
-    path: ['password_confirmation'],
-  })
+  .refine(
+    data => data.password === data.password_confirmation,
+    because('password_mismatch', 'password_confirmation'),
+  )
   .meta({
     id: 'ResetPasswordBody',
     example: {
@@ -59,37 +88,44 @@ export const resetPasswordBodySchema = z
     },
   });
 
+/** Perfil próprio: só o nome (e-mail é o login; papel só um ADMIN muda). */
 export const updateProfileBodySchema = z
+  .object({ name })
+  .meta({ id: 'UpdateProfileBody', example: { name: 'Kaio F' } });
+
+/** Troca da própria senha: exige a atual; as outras sessões são encerradas. */
+export const changePasswordBodySchema = z
   .object({
-    name: z.string().trim().min(1),
-    email,
-    old_password: z.string().optional(),
-    password: newPassword.optional(),
-    password_confirmation: z.string().optional(),
+    current_password: z.string().min(1),
+    password: newPassword,
+    password_confirmation: z.string(),
   })
   .refine(
-    data => !data.password || data.password === data.password_confirmation,
-    {
-      message: 'Passwords do not match',
-      path: ['password_confirmation'],
-    },
+    data => data.password === data.password_confirmation,
+    because('password_mismatch', 'password_confirmation'),
+  )
+  .refine(
+    data => data.password !== data.current_password,
+    because('same_password', 'password'),
   )
   .meta({
-    id: 'UpdateProfileBody',
+    id: 'ChangePasswordBody',
     example: {
-      name: 'Kaio F',
-      email: 'kaio@example.com',
-      old_password: 'senha-segura-123',
+      current_password: 'senha-segura-123',
       password: 'nova-senha-123',
       password_confirmation: 'nova-senha-123',
     },
   });
 
 export type CreateUserBody = z.infer<typeof createUserBodySchema>;
+export type UpdateUserBody = z.infer<typeof updateUserBodySchema>;
+export type UpdateUserStatusBody = z.infer<typeof updateUserStatusBodySchema>;
+export type ListUsersQuery = z.infer<typeof listUsersQuerySchema>;
 export type SessionBody = z.infer<typeof sessionBodySchema>;
 export type ForgotPasswordBody = z.infer<typeof forgotPasswordBodySchema>;
 export type ResetPasswordBody = z.infer<typeof resetPasswordBodySchema>;
 export type UpdateProfileBody = z.infer<typeof updateProfileBodySchema>;
+export type ChangePasswordBody = z.infer<typeof changePasswordBodySchema>;
 
 // ---- Respostas
 
@@ -100,6 +136,8 @@ export const userSchema = z
     email: z.email(),
     avatar: z.string().nullable(),
     avatar_url: z.url().nullable(),
+    role: roleSchema,
+    active: z.boolean(),
     created_at: isoDateSchema,
     updated_at: isoDateSchema,
   })
@@ -111,6 +149,8 @@ export const userSchema = z
       email: 'kaio@example.com',
       avatar: null,
       avatar_url: null,
+      role: 'ADMIN',
+      active: true,
       created_at: examples.date,
       updated_at: examples.date,
     },
@@ -130,6 +170,8 @@ export const sessionSchema = z
         email: 'kaio@example.com',
         avatar: null,
         avatar_url: null,
+        role: 'ADMIN',
+        active: true,
         created_at: examples.date,
         updated_at: examples.date,
       },

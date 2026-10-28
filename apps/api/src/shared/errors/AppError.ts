@@ -3,6 +3,7 @@ import type { ApiErrorCode, ValidationIssue } from '@sellmanager/shared';
 const DEFAULT_CODES: Record<number, ApiErrorCode> = {
   400: 'BAD_REQUEST',
   401: 'UNAUTHORIZED',
+  403: 'FORBIDDEN',
   404: 'NOT_FOUND',
   409: 'CONFLICT',
   413: 'PAYLOAD_TOO_LARGE',

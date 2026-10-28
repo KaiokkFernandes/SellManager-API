@@ -13,6 +13,8 @@ export function toUserResponse(
     name: user.name,
     email: user.email,
     avatar: user.avatar,
+    role: user.role,
+    active: user.active,
     avatar_url: user.avatar ? `${apiUrl}/files/${user.avatar}` : null,
     // mesmo valor que o JSON.stringify de Date já produzia
     created_at: user.created_at.toISOString(),

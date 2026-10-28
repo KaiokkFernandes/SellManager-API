@@ -6,6 +6,8 @@ import {
   redirect,
   type RouterHistory,
 } from '@tanstack/react-router';
+import { can, type Permission } from '@sellmanager/shared';
+import type { QueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { NotFoundPage } from '@/components/feedback/NotFoundPage';
 import { RouteError } from '@/components/feedback/RouteError';
@@ -17,7 +19,11 @@ import {
   NewCustomerPage,
 } from '@/features/customers';
 import { DashboardPage } from '@/features/dashboard';
-import { LoginPage, type AuthContextValue } from '@/features/auth';
+import {
+  LoginPage,
+  profileQueryOptions,
+  type AuthContextValue,
+} from '@/features/auth';
 import {
   NewOrderPage,
   newOrderSearchSchema,
@@ -31,11 +37,33 @@ import {
   ProductsListPage,
   productsSearchSchema,
 } from '@/features/products';
+import { ForbiddenError } from '@/lib/forbidden';
+import { ProfilePage } from '@/features/profile';
+import {
+  EditUserPage,
+  NewUserPage,
+  UsersListPage,
+  usersSearchSchema,
+} from '@/features/users';
 import { safeRedirect } from '@/lib/safeRedirect';
 import { AuthenticatedLayout } from './AuthenticatedLayout';
 
 export interface RouterContext {
   auth: AuthContextValue;
+  queryClient: QueryClient;
+}
+
+/**
+ * Exige a permissão do mapa do shared para abrir a rota; sem ela, a página 403
+ * (via errorComponent) aparece dentro do layout. A API valida de novo.
+ */
+function requires(permission: Permission) {
+  return ({ context }: { context: RouterContext }) => {
+    // o layout autenticado já garantiu o perfil no cache (ensureQueryData)
+    const user = context.queryClient.getQueryData(profileQueryOptions.queryKey);
+    if (!user || !can(user.role, permission))
+      throw new ForbiddenError(permission);
+  };
 }
 
 const rootRoute = createRootRouteWithContext<RouterContext>()({
@@ -59,7 +87,7 @@ const loginRoute = createRoute({
 const authenticatedRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'authenticated',
-  beforeLoad: ({ context, location }) => {
+  beforeLoad: async ({ context, location }) => {
     if (!context.auth.isAuthenticated) {
       // logout manual não precisa voltar à página onde estava
       const manual = context.auth.endedBy === 'manual';
@@ -68,6 +96,8 @@ const authenticatedRoute = createRoute({
         search: manual ? {} : { redirect: location.href },
       });
     }
+    // perfil (papel) garantido antes das rotas filhas checarem permissão
+    await context.queryClient.ensureQueryData(profileQueryOptions);
   },
   component: AuthenticatedLayout,
 });
@@ -77,6 +107,13 @@ const dashboardRoute = createRoute({
   path: '/',
   component: DashboardPage,
 });
+// ---- Perfil (qualquer usuário logado)
+const profileRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/profile',
+  component: ProfilePage,
+});
+
 // ---- Clientes
 const customersRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
@@ -86,17 +123,20 @@ const customersRoute = createRoute({
 const customersListRoute = createRoute({
   getParentRoute: () => customersRoute,
   path: '/',
+  beforeLoad: requires('customer:read'),
   validateSearch: customersSearchSchema,
   component: CustomersListPage,
 });
 const newCustomerRoute = createRoute({
   getParentRoute: () => customersRoute,
   path: '/new',
+  beforeLoad: requires('customer:create'),
   component: NewCustomerPage,
 });
 const customerRoute = createRoute({
   getParentRoute: () => customersRoute,
   path: '/$customerId',
+  beforeLoad: requires('customer:read'),
   component: Outlet,
 });
 const customerDetailRoute = createRoute({
@@ -107,6 +147,7 @@ const customerDetailRoute = createRoute({
 const editCustomerRoute = createRoute({
   getParentRoute: () => customerRoute,
   path: '/edit',
+  beforeLoad: requires('customer:update'),
   component: EditCustomerPage,
 });
 
@@ -119,17 +160,20 @@ const productsRoute = createRoute({
 const productsListRoute = createRoute({
   getParentRoute: () => productsRoute,
   path: '/',
+  beforeLoad: requires('product:read'),
   validateSearch: productsSearchSchema,
   component: ProductsListPage,
 });
 const newProductRoute = createRoute({
   getParentRoute: () => productsRoute,
   path: '/new',
+  beforeLoad: requires('product:create'),
   component: NewProductPage,
 });
 const editProductRoute = createRoute({
   getParentRoute: () => productsRoute,
   path: '/$productId/edit',
+  beforeLoad: requires('product:update'),
   component: EditProductPage,
 });
 
@@ -142,25 +186,55 @@ const ordersRoute = createRoute({
 const ordersListRoute = createRoute({
   getParentRoute: () => ordersRoute,
   path: '/',
+  beforeLoad: requires('order:read'),
   validateSearch: ordersSearchSchema,
   component: OrdersListPage,
 });
 const newOrderRoute = createRoute({
   getParentRoute: () => ordersRoute,
   path: '/new',
+  beforeLoad: requires('order:create'),
   validateSearch: newOrderSearchSchema,
   component: NewOrderPage,
 });
 const orderDetailRoute = createRoute({
   getParentRoute: () => ordersRoute,
   path: '/$orderId',
+  beforeLoad: requires('order:read'),
   component: OrderDetailPage,
+});
+
+// ---- Usuários (só ADMIN, pelo mapa)
+const usersRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/users',
+  component: Outlet,
+});
+const usersListRoute = createRoute({
+  getParentRoute: () => usersRoute,
+  path: '/',
+  beforeLoad: requires('user:read'),
+  validateSearch: usersSearchSchema,
+  component: UsersListPage,
+});
+const newUserRoute = createRoute({
+  getParentRoute: () => usersRoute,
+  path: '/new',
+  beforeLoad: requires('user:create'),
+  component: NewUserPage,
+});
+const editUserRoute = createRoute({
+  getParentRoute: () => usersRoute,
+  path: '/$userId/edit',
+  beforeLoad: requires('user:update'),
+  component: EditUserPage,
 });
 
 const routeTree = rootRoute.addChildren([
   loginRoute,
   authenticatedRoute.addChildren([
     dashboardRoute,
+    profileRoute,
     customersRoute.addChildren([
       customersListRoute,
       newCustomerRoute,
@@ -172,6 +246,7 @@ const routeTree = rootRoute.addChildren([
       editProductRoute,
     ]),
     ordersRoute.addChildren([ordersListRoute, newOrderRoute, orderDetailRoute]),
+    usersRoute.addChildren([usersListRoute, newUserRoute, editUserRoute]),
   ]),
 ]);
 
@@ -180,7 +255,10 @@ export function createAppRouter(options: { history?: RouterHistory } = {}) {
     routeTree,
     history: options.history,
     // o contexto real é injetado pelo <RouterProvider context={...}> em runtime
-    context: { auth: undefined as unknown as AuthContextValue },
+    context: {
+      auth: undefined as unknown as AuthContextValue,
+      queryClient: undefined as unknown as QueryClient,
+    },
     defaultErrorComponent: RouteError,
     defaultNotFoundComponent: NotFoundPage,
     defaultPreload: 'intent',

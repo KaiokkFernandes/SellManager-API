@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getErrorMessage } from '@/lib/apiErrors';
 import { formatCents, formatDate, formatDateTime } from '@/lib/format';
+import { useCan } from '@/features/auth';
 import { DeleteCustomerDialog } from './DeleteCustomerDialog';
 import { useCustomer, useCustomerOrders } from './queries';
 
@@ -50,6 +51,7 @@ export function CustomerDetailPage() {
   const [ordersPage, setOrdersPage] = useState(1);
   const orders = useCustomerOrders(customerId, ordersPage);
   const [deleting, setDeleting] = useState(false);
+  const can = useCan();
 
   if (customer.isPending) {
     return (
@@ -84,18 +86,22 @@ export function CustomerDetailPage() {
         description={data.email}
         actions={
           <div className="flex gap-2">
-            <Link
-              to="/customers/$customerId/edit"
-              params={{ customerId }}
-              className={buttonVariants({ variant: 'outline' })}
-            >
-              <Pencil aria-hidden="true" />
-              Editar
-            </Link>
-            <Button variant="outline" onClick={() => setDeleting(true)}>
-              <Trash2 aria-hidden="true" />
-              Excluir
-            </Button>
+            {can('customer:update') ? (
+              <Link
+                to="/customers/$customerId/edit"
+                params={{ customerId }}
+                className={buttonVariants({ variant: 'outline' })}
+              >
+                <Pencil aria-hidden="true" />
+                Editar
+              </Link>
+            ) : null}
+            {can('customer:delete') ? (
+              <Button variant="outline" onClick={() => setDeleting(true)}>
+                <Trash2 aria-hidden="true" />
+                Excluir
+              </Button>
+            ) : null}
           </div>
         }
       />
@@ -106,14 +112,16 @@ export function CustomerDetailPage() {
       <Card>
         <CardHeader className="flex-row items-center justify-between">
           <CardTitle>Pedidos</CardTitle>
-          <Link
-            to="/orders/new"
-            search={{ customer_id: customerId }}
-            className={buttonVariants({ size: 'sm' })}
-          >
-            <Plus aria-hidden="true" />
-            Novo pedido
-          </Link>
+          {can('order:create') ? (
+            <Link
+              to="/orders/new"
+              search={{ customer_id: customerId }}
+              className={buttonVariants({ size: 'sm' })}
+            >
+              <Plus aria-hidden="true" />
+              Novo pedido
+            </Link>
+          ) : null}
         </CardHeader>
         <CardContent>
           <DataTable

@@ -4,13 +4,17 @@ import uploadConfig from '@config/upload';
 import { Container } from '@shared/container';
 import type { MountRoute } from '@shared/http/contract/mountRoute';
 import { AuthenticateUserService } from '../../../services/AuthenticateUserService';
+import { ChangePasswordService } from '../../../services/ChangePasswordService';
 import { CreateUserService } from '../../../services/CreateUserService';
 import { ListUsersService } from '../../../services/ListUsersService';
 import { ResetPasswordService } from '../../../services/ResetPasswordService';
 import { SendForgotPasswordEmailService } from '../../../services/SendForgotPasswordEmailService';
 import { ShowProfileService } from '../../../services/ShowProfileService';
 import { UpdateProfileService } from '../../../services/UpdateProfileService';
+import { ShowUserService } from '../../../services/ShowUserService';
 import { UpdateUserAvatarService } from '../../../services/UpdateUserAvatarService';
+import { UpdateUserService } from '../../../services/UpdateUserService';
+import { UpdateUserStatusService } from '../../../services/UpdateUserStatusService';
 import { UsersController } from '../controllers/UsersController';
 
 export function registerUsersRoutes(
@@ -23,11 +27,15 @@ export function registerUsersRoutes(
   const controller = new UsersController(
     {
       list: new ListUsersService(users),
+      show: new ShowUserService(users),
       create: new CreateUserService(users, hash),
+      update: new UpdateUserService(container.usersUnitOfWork),
+      updateStatus: new UpdateUserStatusService(container.usersUnitOfWork),
       updateAvatar: new UpdateUserAvatarService(users, storage),
       authenticate: new AuthenticateUserService(users, hash, token),
       showProfile: new ShowProfileService(users),
-      updateProfile: new UpdateProfileService(users, hash),
+      updateProfile: new UpdateProfileService(users),
+      changePassword: new ChangePasswordService(users, hash, token),
       sendForgotPasswordEmail: new SendForgotPasswordEmailService(
         users,
         userTokens,
@@ -43,6 +51,9 @@ export function registerUsersRoutes(
 
   mount(routes.users.create, controller.create);
   mount(routes.users.list, controller.list);
+  mount(routes.users.show, controller.show);
+  mount(routes.users.update, controller.update);
+  mount(routes.users.updateStatus, controller.updateStatus);
   mount(
     routes.users.updateAvatar,
     controller.updateAvatar,
@@ -51,6 +62,7 @@ export function registerUsersRoutes(
   mount(routes.sessions.create, controller.createSession);
   mount(routes.profile.show, controller.showProfile);
   mount(routes.profile.update, controller.updateProfile);
+  mount(routes.profile.changePassword, controller.changePassword);
   mount(routes.password.forgot, controller.forgotPassword);
   mount(routes.password.reset, controller.resetPassword);
 }

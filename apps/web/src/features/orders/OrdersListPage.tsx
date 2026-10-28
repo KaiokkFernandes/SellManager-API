@@ -10,6 +10,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatCents, formatDateTime } from '@/lib/format';
+import { usePermission } from '@/features/auth';
 import { useCustomerById, useCustomerOptions, useOrdersList } from './queries';
 
 const route = getRouteApi('/authenticated/orders/');
@@ -61,6 +62,7 @@ export function OrdersListPage() {
   );
   const list = useOrdersList(search, !invalidRange);
   const filtered = Boolean(search.customer_id || search.from || search.to);
+  const canCreate = usePermission('order:create');
 
   return (
     <>
@@ -68,10 +70,12 @@ export function OrdersListPage() {
         title="Pedidos"
         description="Vendas, das mais recentes para as mais antigas."
         actions={
-          <Link to="/orders/new" className={buttonVariants()}>
-            <Plus aria-hidden="true" />
-            Novo pedido
-          </Link>
+          canCreate ? (
+            <Link to="/orders/new" className={buttonVariants()}>
+              <Plus aria-hidden="true" />
+              Novo pedido
+            </Link>
+          ) : undefined
         }
       />
       <Filters
@@ -102,7 +106,7 @@ export function OrdersListPage() {
           filtered ? 'Nenhum pedido com esses filtros.' : 'Nenhum pedido ainda.'
         }
         emptyAction={
-          filtered ? null : (
+          filtered || !canCreate ? null : (
             <Link to="/orders/new" className={buttonVariants({ size: 'sm' })}>
               <Plus aria-hidden="true" />
               Criar o primeiro pedido

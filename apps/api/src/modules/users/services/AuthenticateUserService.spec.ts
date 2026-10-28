@@ -16,6 +16,7 @@ describe('AuthenticateUserService', () => {
       new FakeTokenProvider(),
     );
     await usersRepository.create({
+      role: 'SELLER',
       name: 'Kaio',
       email: 'kaio@test.com',
       password: 'hashed:123456',
@@ -28,7 +29,7 @@ describe('AuthenticateUserService', () => {
       password: '123456',
     });
 
-    expect(token).toBe(`token:${user.id}`);
+    expect(token).toMatch(new RegExp(`^token:${user.id}:\\d+$`));
   });
 
   it('rejeita e-mail inexistente com 401', async () => {

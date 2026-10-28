@@ -1,10 +1,13 @@
 import { useRouter, type ErrorComponentProps } from '@tanstack/react-router';
 import { getErrorMessage } from '@/lib/apiErrors';
+import { ForbiddenError } from '@/lib/forbidden';
+import { ForbiddenPage } from './ForbiddenPage';
 import { Button } from '@/components/ui/button';
 
 /** Error boundary de rota: mensagem amigável e botão para tentar de novo. */
 export function RouteError({ error, reset }: ErrorComponentProps) {
   const router = useRouter();
+  if (error instanceof ForbiddenError) return <ForbiddenPage />;
   return (
     <div
       role="alert"

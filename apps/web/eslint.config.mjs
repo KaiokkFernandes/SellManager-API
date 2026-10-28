@@ -9,7 +9,14 @@ import reactRefresh from 'eslint-plugin-react-refresh';
  * Camadas internas nunca importam das externas; features não se importam entre
  * si (exceto `auth`, transversal); `test/` e `*.spec.*` ficam livres.
  */
-const FEATURES = ['dashboard', 'customers', 'products', 'orders'];
+const FEATURES = [
+  'dashboard',
+  'customers',
+  'products',
+  'orders',
+  'users',
+  'profile',
+];
 
 function restrict(files, groups, message) {
   return {

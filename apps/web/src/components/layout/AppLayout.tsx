@@ -28,6 +28,10 @@ interface AppLayoutProps {
   navItems: readonly NavItem[];
   /** Nome exibido no header; undefined enquanto o perfil carrega. */
   userName: string | undefined;
+  /** Papel exibido abaixo do nome (ex.: "Vendedor"). */
+  userRole?: string;
+  /** Destino do link no nome do usuário (página de perfil). */
+  profileTo: LinkProps['to'];
   onLogout: () => void;
 }
 
@@ -68,7 +72,13 @@ function NavLinks({
 }
 
 /** Estrutura do app autenticado: sidebar recolhível (drawer no mobile) + header. */
-export function AppLayout({ navItems, userName, onLogout }: AppLayoutProps) {
+export function AppLayout({
+  navItems,
+  userName,
+  userRole,
+  profileTo,
+  onLogout,
+}: AppLayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -146,9 +156,20 @@ export function AppLayout({ navItems, userName, onLogout }: AppLayoutProps) {
             {userName === undefined ? (
               <Skeleton className="h-4 w-24" />
             ) : (
-              <span className="max-w-[10rem] truncate text-sm font-medium sm:max-w-xs">
-                {userName}
-              </span>
+              <Link
+                to={profileTo}
+                className="flex max-w-[10rem] flex-col items-end rounded-sm px-1 text-right leading-tight hover:underline sm:max-w-xs"
+                title="Meu perfil"
+              >
+                <span className="max-w-full truncate text-sm font-medium">
+                  {userName}
+                </span>
+                {userRole ? (
+                  <span className="text-xs text-muted-foreground">
+                    {userRole}
+                  </span>
+                ) : null}
+              </Link>
             )}
             <ThemeToggle />
             <Button variant="outline" size="sm" onClick={onLogout}>

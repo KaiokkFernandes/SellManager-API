@@ -1,8 +1,9 @@
 import type { z } from 'zod';
+import type { Permission } from '../permissions';
 
 export type HttpMethod = 'get' | 'post' | 'put' | 'patch' | 'delete';
 export type SuccessStatus = 200 | 201 | 204;
-export type ErrorStatus = 400 | 401 | 404 | 409 | 413 | 429 | 500;
+export type ErrorStatus = 400 | 401 | 403 | 404 | 409 | 413 | 429 | 500;
 
 export interface RouteRequest {
   params?: z.ZodType;
@@ -12,7 +13,16 @@ export interface RouteRequest {
   bodyType?: 'json' | 'multipart';
 }
 
-export interface RouteConfig {
+/**
+ * Acesso da rota. Rota autenticada PRECISA declarar a permissão (do mapa em
+ * permissions.ts) ou `'authenticated'` (qualquer usuário logado, ex.: o próprio
+ * perfil): sem isso a rota não compila.
+ */
+export type RouteAccess =
+  | { auth: false; permission?: never }
+  | { auth: true; permission: Permission | 'authenticated' };
+
+interface RouteBase {
   method: HttpMethod;
   /** Path no formato OpenAPI: `/products/{id}`. */
   path: `/${string}`;
@@ -20,8 +30,6 @@ export interface RouteConfig {
   summary: string;
   description?: string;
   tags: readonly string[];
-  /** Exige `Authorization: Bearer <token>`. */
-  auth: boolean;
   /** Sujeita ao rate limit das rotas de autenticação. */
   rateLimited?: boolean;
   request?: RouteRequest;
@@ -31,6 +39,8 @@ export interface RouteConfig {
   errors?: readonly ErrorStatus[];
 }
 
+export type RouteConfig = RouteBase & RouteAccess;
+
 export type RouteDefinition<C extends RouteConfig = RouteConfig> = C & {
   /** Todos os status de erro possíveis da rota, já deduzidos. */
   readonly errorStatuses: readonly ErrorStatus[];
@@ -39,6 +49,7 @@ export type RouteDefinition<C extends RouteConfig = RouteConfig> = C & {
 /**
  * Declara uma rota do contrato. Os erros automáticos saem da própria
  * configuração: 400 se há entrada, 413 se há corpo JSON, 401 se exige auth,
+ * 403 se exige uma permissão,
  * 429 se tem rate limit e 500 sempre.
  */
 export function defineRoute<const C extends RouteConfig>(
@@ -50,6 +61,7 @@ export function defineRoute<const C extends RouteConfig>(
   if (params || query || body) errors.add(400);
   if (body && config.request?.bodyType !== 'multipart') errors.add(413);
   if (config.auth) errors.add(401);
+  if (config.auth && config.permission !== 'authenticated') errors.add(403);
   if (config.rateLimited) errors.add(429);
   errors.add(500);
 
@@ -59,6 +71,7 @@ export function defineRoute<const C extends RouteConfig>(
 export const ERROR_DESCRIPTIONS: Record<ErrorStatus, string> = {
   400: 'Dados inválidos',
   401: 'Não autenticado ou credenciais inválidas',
+  403: 'Sem permissão para esta ação',
   404: 'Recurso não encontrado',
   409: 'Conflito com o estado atual',
   413: 'Payload grande demais',

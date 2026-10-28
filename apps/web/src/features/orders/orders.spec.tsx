@@ -232,8 +232,8 @@ describe('Pedidos', () => {
       http.get(`${API}/orders/:id`, () =>
         HttpResponse.json({ ...order, status }),
       ),
-      http.patch(`${API}/orders/:id/status`, async ({ request }) => {
-        status = ((await request.json()) as { status: string }).status;
+      http.patch(`${API}/orders/:id/cancel`, () => {
+        status = 'canceled';
         return HttpResponse.json({ ...order, status });
       }),
     );

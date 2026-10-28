@@ -19,8 +19,9 @@ export class SendForgotPasswordEmailService {
   public async execute({ email }: IRequest): Promise<void> {
     const user = await this.usersRepository.findByEmail(email);
 
-    // Responde igual para e-mails inexistentes, para não permitir enumeração.
-    if (!user) {
+    // Responde igual para e-mails inexistentes ou contas desativadas, para não
+    // permitir enumeração (e desativado não recupera acesso por e-mail).
+    if (!user?.active) {
       return;
     }
 

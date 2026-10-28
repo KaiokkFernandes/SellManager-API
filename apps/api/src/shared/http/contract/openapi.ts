@@ -6,7 +6,9 @@ import {
 import {
   allRoutes,
   apiErrorSchema,
+  can,
   ERROR_DESCRIPTIONS,
+  ROLES,
   type RouteDefinition,
 } from '@sellmanager/shared';
 
@@ -15,6 +17,24 @@ const SUCCESS_DESCRIPTIONS: Record<number, string> = {
   201: 'Criado',
   204: 'Sem conteúdo',
 };
+
+/** Quem pode chamar a rota, a partir do mapa de permissões do shared. */
+function describeAccess(route: RouteDefinition): string | undefined {
+  if (!route.auth) return route.description;
+  if (route.permission === 'authenticated') {
+    return [route.description, 'Qualquer usuário autenticado.']
+      .filter(Boolean)
+      .join('\n\n');
+  }
+  const { permission } = route;
+  const roles = ROLES.filter(role => can(role, permission));
+  return [
+    route.description,
+    `Permissão: \`${permission}\` (${roles.join(', ')}).`,
+  ]
+    .filter(Boolean)
+    .join('\n\n');
+}
 
 function toOpenApiRoute(route: RouteDefinition): OpenApiRouteConfig {
   const { params, query, body, bodyType } = route.request ?? {};
@@ -40,7 +60,11 @@ function toOpenApiRoute(route: RouteDefinition): OpenApiRouteConfig {
     path: route.path,
     operationId: route.operationId,
     summary: route.summary,
-    ...(route.description && { description: route.description }),
+    ...(describeAccess(route) && { description: describeAccess(route) }),
+    ...(route.auth &&
+      route.permission !== 'authenticated' && {
+        'x-permission': route.permission,
+      }),
     tags: [...route.tags],
     security: route.auth ? [{ bearerAuth: [] }] : [],
     request: {

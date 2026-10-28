@@ -34,7 +34,8 @@
 - `pnpm dev` (shared em watch + api + web), `pnpm build`, `pnpm typecheck`,
   `pnpm lint`, `pnpm format:check` (todos via Turborepo)
 - `pnpm test:unit` (sem banco) e `pnpm test:integration` (postgres-test, porta 5434)
-- Dados de dev: `pnpm --filter api seed` (admin@sellmanager.dev / admin12345)
+- Dados de dev: `pnpm --filter api seed` (um usuário por papel; credenciais no README raiz)
+- Matriz de permissões no README: `pnpm --filter api docs:permissions` (um teste falha se desatualizada)
 - E2E: `pnpm --filter web e2e` (Playwright contra a API real; gera `apps/web/docs/screenshots`)
 - Um app só: `pnpm --filter api <script>` / `pnpm --filter web <script>`
 - Migrations: `pnpm --filter api migration:run` / `migration:revert`; novas migrations
@@ -50,6 +51,9 @@
   `packages/shared`; a api monta rotas com `mount(routes.x.y, handler)` e responde
   com `reply()` tipado. Nunca registrar rota/validação/doc à mão na api.
 - Mudou o contrato? Rodar `pnpm openapi:generate` e commitar `apps/api/openapi.json`.
+- Permissões: mapa único em `packages/shared/src/permissions.ts`. Toda rota autenticada declara
+  `permission` no contrato (a API aplica `authorize`); no front use `usePermission`/`useCan` e
+  `requires(...)` na rota. Nunca checar papel "na mão" (`role === 'ADMIN'`).
 - Dinheiro em centavos inteiros (`*_cents`); erros `{ status, code, message, issues?, details? }`.
 - Cada módulo da api (`apps/api/src/modules/<m>`) tem `domain/` (interfaces puras),
   `services/` (casos de uso), `fakes/` (repositórios em memória) e `infra/{typeorm,http}`.

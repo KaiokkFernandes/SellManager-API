@@ -1,8 +1,5 @@
 import { unwrap } from '@sellmanager/api-client';
-import type {
-  CreateOrderBody,
-  UpdateOrderStatusBody,
-} from '@sellmanager/shared';
+import type { CreateOrderBody } from '@sellmanager/shared';
 import {
   keepPreviousData,
   useMutation,
@@ -115,12 +112,11 @@ const STATUS_MESSAGE = {
 export function useUpdateOrderStatus(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (status: UpdateOrderStatusBody['status']) =>
+    mutationFn: (action: 'complete' | 'cancel') =>
       unwrap(
-        api.PATCH('/orders/{id}/status', {
-          params: { path: { id } },
-          body: { status },
-        }),
+        action === 'complete'
+          ? api.PATCH('/orders/{id}/complete', { params: { path: { id } } })
+          : api.PATCH('/orders/{id}/cancel', { params: { path: { id } } }),
       ),
     onSuccess: async order => {
       queryClient.setQueryData(queryKeys.orders.detail(id), order);

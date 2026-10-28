@@ -12,6 +12,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import {
   closeDatabase,
+  createUser,
   createTestContext,
   defaultUser,
   resetDatabase,
@@ -38,18 +39,20 @@ describe('Contratos de resposta (@sellmanager/shared)', () => {
   afterAll(closeDatabase);
 
   it('usuários, sessão, produtos, clientes, pedidos e erros', async () => {
-    const created = await request(ctx.app)
-      .post('/users')
-      .send(defaultUser)
-      .expect(201);
-    expectContract(userSchema, created.body);
-
+    const admin = await createUser(ctx, { email: 'admin@test.com' });
     const session = await request(ctx.app)
       .post('/sessions')
-      .send({ email: defaultUser.email, password: defaultUser.password })
+      .send({ email: admin.email, password: admin.password })
       .expect(200);
     expectContract(sessionSchema, session.body);
     const auth = `Bearer ${session.body.token as string}`;
+
+    const created = await request(ctx.app)
+      .post('/users')
+      .set('Authorization', auth)
+      .send({ ...defaultUser, role: 'SELLER' })
+      .expect(201);
+    expectContract(userSchema, created.body);
 
     const users = await request(ctx.app)
       .get('/users')
@@ -65,7 +68,7 @@ describe('Contratos de resposta (@sellmanager/shared)', () => {
     expectContract(productSchema, product.body);
     expectContract(
       paginatedSchema(productSchema),
-      (await request(ctx.app).get('/products')).body,
+      (await request(ctx.app).get('/products').set('Authorization', auth)).body,
     );
 
     const customer = await request(ctx.app)

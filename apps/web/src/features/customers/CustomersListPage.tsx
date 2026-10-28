@@ -9,6 +9,7 @@ import { formatDate } from '@/lib/format';
 import type { Customer } from '@sellmanager/api-client';
 import { CUSTOMER_SORTS } from '@sellmanager/shared';
 import { toSort } from '@/lib/listSearch';
+import { useCan } from '@/features/auth';
 import { DeleteCustomerDialog } from './DeleteCustomerDialog';
 import { useCustomersList } from './queries';
 
@@ -19,6 +20,8 @@ export function CustomersListPage() {
   const navigate = route.useNavigate();
   const list = useCustomersList(search);
   const [deleting, setDeleting] = useState<Customer | null>(null);
+  const can = useCan();
+  const hasRowActions = can('customer:update') || can('customer:delete');
 
   const columns: Column<Customer>[] = [
     {
@@ -47,14 +50,18 @@ export function CustomersListPage() {
       sortKey: 'created_at',
       cell: customer => formatDate(customer.created_at),
     },
-    {
-      id: 'actions',
-      header: 'Ações',
-      className: 'w-24 text-right',
-      cell: customer => (
-        <RowActions customer={customer} onDelete={setDeleting} />
-      ),
-    },
+    ...(hasRowActions
+      ? [
+          {
+            id: 'actions',
+            header: 'Ações',
+            className: 'w-24 text-right',
+            cell: (customer: Customer) => (
+              <RowActions customer={customer} onDelete={setDeleting} />
+            ),
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -63,10 +70,12 @@ export function CustomersListPage() {
         title="Clientes"
         description="Quem compra de você."
         actions={
-          <Link to="/customers/new" className={buttonVariants()}>
-            <Plus aria-hidden="true" />
-            Novo cliente
-          </Link>
+          can('customer:create') ? (
+            <Link to="/customers/new" className={buttonVariants()}>
+              <Plus aria-hidden="true" />
+              Novo cliente
+            </Link>
+          ) : undefined
         }
       />
       <div className="mb-4">
@@ -109,7 +118,7 @@ export function CustomersListPage() {
             : 'Nenhum cliente cadastrado ainda.'
         }
         emptyAction={
-          search.q ? null : (
+          search.q || !can('customer:create') ? null : (
             <Link
               to="/customers/new"
               className={buttonVariants({ size: 'sm' })}
@@ -152,24 +161,29 @@ function RowActions({
   customer: Customer;
   onDelete: (customer: Customer) => void;
 }) {
+  const can = useCan();
   return (
     <div className="flex justify-end gap-1">
-      <Link
-        to="/customers/$customerId/edit"
-        params={{ customerId: customer.id }}
-        className={buttonVariants({ variant: 'ghost', size: 'icon' })}
-        aria-label={`Editar ${customer.name}`}
-      >
-        <Pencil aria-hidden="true" />
-      </Link>
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label={`Excluir ${customer.name}`}
-        onClick={() => onDelete(customer)}
-      >
-        <Trash2 aria-hidden="true" />
-      </Button>
+      {can('customer:update') ? (
+        <Link
+          to="/customers/$customerId/edit"
+          params={{ customerId: customer.id }}
+          className={buttonVariants({ variant: 'ghost', size: 'icon' })}
+          aria-label={`Editar ${customer.name}`}
+        >
+          <Pencil aria-hidden="true" />
+        </Link>
+      ) : null}
+      {can('customer:delete') ? (
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={`Excluir ${customer.name}`}
+          onClick={() => onDelete(customer)}
+        >
+          <Trash2 aria-hidden="true" />
+        </Button>
+      ) : null}
     </div>
   );
 }

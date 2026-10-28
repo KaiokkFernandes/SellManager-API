@@ -9,6 +9,7 @@ import { SearchInput } from '@/components/search';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { formatCents } from '@/lib/format';
 import { toSort } from '@/lib/listSearch';
+import { useCan } from '@/features/auth';
 import { DeleteProductDialog } from './DeleteProductDialog';
 import { ProductThumbnail } from './ProductThumbnail';
 import { useProductsList } from './queries';
@@ -21,6 +22,8 @@ export function ProductsListPage() {
   const navigate = route.useNavigate();
   const list = useProductsList(search);
   const [deleting, setDeleting] = useState<Product | null>(null);
+  const can = useCan();
+  const hasRowActions = can('product:update') || can('product:delete');
 
   const columns: Column<Product>[] = [
     {
@@ -30,13 +33,7 @@ export function ProductsListPage() {
       cell: product => (
         <div className="flex items-center gap-3">
           <ProductThumbnail url={product.image_url} />
-          <Link
-            to="/products/$productId/edit"
-            params={{ productId: product.id }}
-            className="font-medium hover:underline"
-          >
-            {product.name}
-          </Link>
+          <ProductName product={product} className="font-medium" />
         </div>
       ),
     },
@@ -53,12 +50,18 @@ export function ProductsListPage() {
       sortKey: 'quantity',
       cell: product => <StockBadge quantity={product.quantity} />,
     },
-    {
-      id: 'actions',
-      header: 'Ações',
-      className: 'w-24 text-right',
-      cell: product => <RowActions product={product} onDelete={setDeleting} />,
-    },
+    ...(hasRowActions
+      ? [
+          {
+            id: 'actions',
+            header: 'Ações',
+            className: 'w-24 text-right',
+            cell: (product: Product) => (
+              <RowActions product={product} onDelete={setDeleting} />
+            ),
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -67,10 +70,12 @@ export function ProductsListPage() {
         title="Produtos"
         description="Catálogo, preços e estoque."
         actions={
-          <Link to="/products/new" className={buttonVariants()}>
-            <Plus aria-hidden="true" />
-            Novo produto
-          </Link>
+          can('product:create') ? (
+            <Link to="/products/new" className={buttonVariants()}>
+              <Plus aria-hidden="true" />
+              Novo produto
+            </Link>
+          ) : undefined
         }
       />
       <div className="mb-4">
@@ -113,7 +118,7 @@ export function ProductsListPage() {
             : 'Nenhum produto cadastrado ainda.'
         }
         emptyAction={
-          search.q ? null : (
+          search.q || !can('product:create') ? null : (
             <Link to="/products/new" className={buttonVariants({ size: 'sm' })}>
               <Plus aria-hidden="true" />
               Cadastrar o primeiro produto
@@ -124,13 +129,10 @@ export function ProductsListPage() {
           <div className="flex items-center gap-3">
             <ProductThumbnail url={product.image_url} className="size-12" />
             <div className="min-w-0 flex-1">
-              <Link
-                to="/products/$productId/edit"
-                params={{ productId: product.id }}
-                className="block truncate font-medium hover:underline"
-              >
-                {product.name}
-              </Link>
+              <ProductName
+                product={product}
+                className="block truncate font-medium"
+              />
               <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                 <span className="tabular-nums">
                   {formatCents(product.price_cents)}
@@ -157,24 +159,50 @@ function RowActions({
   product: Product;
   onDelete: (product: Product) => void;
 }) {
+  const can = useCan();
   return (
     <div className="flex justify-end gap-1">
-      <Link
-        to="/products/$productId/edit"
-        params={{ productId: product.id }}
-        className={buttonVariants({ variant: 'ghost', size: 'icon' })}
-        aria-label={`Editar ${product.name}`}
-      >
-        <Pencil aria-hidden="true" />
-      </Link>
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label={`Excluir ${product.name}`}
-        onClick={() => onDelete(product)}
-      >
-        <Trash2 aria-hidden="true" />
-      </Button>
+      {can('product:update') ? (
+        <Link
+          to="/products/$productId/edit"
+          params={{ productId: product.id }}
+          className={buttonVariants({ variant: 'ghost', size: 'icon' })}
+          aria-label={`Editar ${product.name}`}
+        >
+          <Pencil aria-hidden="true" />
+        </Link>
+      ) : null}
+      {can('product:delete') ? (
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={`Excluir ${product.name}`}
+          onClick={() => onDelete(product)}
+        >
+          <Trash2 aria-hidden="true" />
+        </Button>
+      ) : null}
     </div>
+  );
+}
+
+/** Nome do produto: link para a edição só para quem pode editar. */
+function ProductName({
+  product,
+  className,
+}: {
+  product: Product;
+  className: string;
+}) {
+  const canEdit = useCan()('product:update');
+  if (!canEdit) return <span className={className}>{product.name}</span>;
+  return (
+    <Link
+      to="/products/$productId/edit"
+      params={{ productId: product.id }}
+      className={`${className} hover:underline`}
+    >
+      {product.name}
+    </Link>
   );
 }
