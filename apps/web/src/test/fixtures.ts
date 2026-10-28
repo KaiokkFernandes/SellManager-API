@@ -18,6 +18,8 @@ export const user = {
   email: 'kaio@example.com',
   avatar: null,
   avatar_url: null,
+  role: 'ADMIN',
+  active: true,
   created_at: '2026-01-01T00:00:00.000Z',
   updated_at: '2026-01-01T00:00:00.000Z',
 } satisfies User;

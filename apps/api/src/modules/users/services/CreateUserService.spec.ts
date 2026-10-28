@@ -15,6 +15,7 @@ describe('CreateUserService', () => {
 
   it('cria o usuário com a senha em hash', async () => {
     const user = await createUser.execute({
+      role: 'SELLER',
       name: 'Kaio',
       email: 'kaio@test.com',
       password: '123456',
@@ -26,6 +27,7 @@ describe('CreateUserService', () => {
 
   it('não permite e-mail duplicado', async () => {
     await createUser.execute({
+      role: 'SELLER',
       name: 'Kaio',
       email: 'kaio@test.com',
       password: '123456',
@@ -33,6 +35,7 @@ describe('CreateUserService', () => {
 
     await expect(
       createUser.execute({
+        role: 'SELLER',
         name: 'Outro',
         email: 'kaio@test.com',
         password: '654321',
@@ -40,6 +43,7 @@ describe('CreateUserService', () => {
     ).rejects.toMatchObject({ statusCode: 409 });
     await expect(
       createUser.execute({
+        role: 'SELLER',
         name: 'Outro',
         email: 'kaio@test.com',
         password: '654321',

@@ -17,6 +17,7 @@ describe('ShowProfileService / UpdateProfileService', () => {
       new FakeHashProvider(),
     );
     user = await usersRepository.create({
+      role: 'SELLER',
       name: 'Kaio',
       email: 'kaio@test.com',
       password: 'hashed:old',
@@ -47,6 +48,7 @@ describe('ShowProfileService / UpdateProfileService', () => {
 
   it('não permite usar o e-mail de outro usuário', async () => {
     await usersRepository.create({
+      role: 'SELLER',
       name: 'Ana',
       email: 'ana@test.com',
       password: 'x',

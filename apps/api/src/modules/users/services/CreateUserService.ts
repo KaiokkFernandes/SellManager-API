@@ -1,12 +1,13 @@
 import AppError from '@shared/errors/AppError';
 import { IHashProvider } from '@shared/providers/HashProvider/IHashProvider';
-import { User } from '../domain/entities/User';
+import { Role, User } from '../domain/entities/User';
 import { IUsersRepository } from '../domain/repositories/IUsersRepository';
 
 interface IRequest {
   name: string;
   email: string;
   password: string;
+  role: Role;
 }
 
 export class CreateUserService {
@@ -15,7 +16,12 @@ export class CreateUserService {
     private readonly hashProvider: IHashProvider,
   ) {}
 
-  public async execute({ name, email, password }: IRequest): Promise<User> {
+  public async execute({
+    name,
+    email,
+    password,
+    role,
+  }: IRequest): Promise<User> {
     const emailExists = await this.usersRepository.findByEmail(email);
 
     if (emailExists) {
@@ -26,6 +32,7 @@ export class CreateUserService {
       name,
       email,
       password: await this.hashProvider.generateHash(password),
+      role,
     });
   }
 }

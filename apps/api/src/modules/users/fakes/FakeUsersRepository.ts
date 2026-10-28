@@ -32,6 +32,8 @@ export class FakeUsersRepository implements IUsersRepository {
     const user: User = {
       id: randomUUID(),
       avatar: null,
+      active: true,
+      password_changed_at: null,
       created_at: now,
       updated_at: now,
       ...data,

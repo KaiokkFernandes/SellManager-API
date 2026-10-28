@@ -16,6 +16,7 @@ describe('AuthenticateUserService', () => {
       new FakeTokenProvider(),
     );
     await usersRepository.create({
+      role: 'SELLER',
       name: 'Kaio',
       email: 'kaio@test.com',
       password: 'hashed:123456',

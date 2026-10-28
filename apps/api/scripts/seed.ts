@@ -152,7 +152,10 @@ async function main(): Promise<void> {
   await cleanPreviousSeed();
 
   if (!(await users.findByEmail(ADMIN.email))) {
-    await new CreateUserService(users, container.providers.hash).execute(ADMIN);
+    await new CreateUserService(users, container.providers.hash).execute({
+      ...ADMIN,
+      role: 'ADMIN',
+    });
   }
 
   const createdCustomers = [];

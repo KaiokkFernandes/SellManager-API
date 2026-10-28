@@ -16,6 +16,7 @@ describe('UpdateUserAvatarService', () => {
 
   it('salva o avatar e remove o anterior', async () => {
     const user = await usersRepository.create({
+      role: 'SELLER',
       name: 'Kaio',
       email: 'k@test.com',
       password: 'x',

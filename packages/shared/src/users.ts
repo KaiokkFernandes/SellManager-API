@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { imageFileSchema } from './uploads';
 import { examples, isoDateSchema } from './common';
+import { roleSchema } from './permissions';
 
 const email = z.string().trim().toLowerCase().pipe(z.email());
 
@@ -100,6 +101,8 @@ export const userSchema = z
     email: z.email(),
     avatar: z.string().nullable(),
     avatar_url: z.url().nullable(),
+    role: roleSchema,
+    active: z.boolean(),
     created_at: isoDateSchema,
     updated_at: isoDateSchema,
   })
@@ -111,6 +114,8 @@ export const userSchema = z
       email: 'kaio@example.com',
       avatar: null,
       avatar_url: null,
+      role: 'ADMIN',
+      active: true,
       created_at: examples.date,
       updated_at: examples.date,
     },
@@ -130,6 +135,8 @@ export const sessionSchema = z
         email: 'kaio@example.com',
         avatar: null,
         avatar_url: null,
+        role: 'ADMIN',
+        active: true,
         created_at: examples.date,
         updated_at: examples.date,
       },

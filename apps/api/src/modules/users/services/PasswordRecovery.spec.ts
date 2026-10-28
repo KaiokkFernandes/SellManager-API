@@ -40,6 +40,7 @@ describe('Recuperação de senha', () => {
       new FakeHashProvider(),
     );
     user = await usersRepository.create({
+      role: 'SELLER',
       name: 'Kaio',
       email: 'kaio@test.com',
       password: 'hashed:old',

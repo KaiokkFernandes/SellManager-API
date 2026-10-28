@@ -37,7 +37,13 @@ export class UsersRepository implements IUsersRepository {
   }
 
   public create(data: ICreateUserDTO): Promise<User> {
-    return this.ormRepository.save(this.ormRepository.create(data));
+    return this.ormRepository.save(
+      this.ormRepository.create({
+        ...data,
+        active: true,
+        password_changed_at: null,
+      }),
+    );
   }
 
   public save(user: User): Promise<User> {

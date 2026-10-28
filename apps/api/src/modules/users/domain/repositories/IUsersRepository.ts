@@ -1,10 +1,11 @@
-import { User } from '../entities/User';
+import { Role, User } from '../entities/User';
 import { PageResult, PaginationParams } from '@shared/domain/pagination';
 
 export interface ICreateUserDTO {
   name: string;
   email: string;
   password: string;
+  role: Role;
 }
 
 export interface IUsersRepository {

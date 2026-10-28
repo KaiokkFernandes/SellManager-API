@@ -37,7 +37,11 @@ export class UsersController {
     input,
     reply,
   }) => {
-    const user = await this.services.create.execute(input.body);
+    // provisório: o cadastro deixa de ser público quando o CRUD de usuários entrar
+    const user = await this.services.create.execute({
+      ...input.body,
+      role: 'SELLER',
+    });
     reply(201, this.toResponse(user));
   };
 
