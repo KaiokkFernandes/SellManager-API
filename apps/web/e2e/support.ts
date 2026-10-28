@@ -1,12 +1,20 @@
 import { expect, type Page } from '@playwright/test';
 
-/** Credenciais criadas pelo seed da API. */
-export const ADMIN = { email: 'admin@sellmanager.dev', password: 'admin12345' };
+/** Credenciais criadas pelo seed da API (só dev). */
+export const SEED_USERS = {
+  ADMIN: { email: 'admin@sellmanager.dev', password: 'admin12345' },
+  MANAGER: { email: 'gerente@sellmanager.dev', password: 'gerente12345' },
+  SELLER: { email: 'vendedor@sellmanager.dev', password: 'vendedor12345' },
+} as const;
 
-export async function login(page: Page) {
+export async function login(
+  page: Page,
+  role: keyof typeof SEED_USERS = 'ADMIN',
+) {
+  const { email, password } = SEED_USERS[role];
   await page.goto('/login');
-  await page.getByLabel('E-mail').fill(ADMIN.email);
-  await page.getByLabel('Senha').fill(ADMIN.password);
+  await page.getByLabel('E-mail').fill(email);
+  await page.getByLabel('Senha').fill(password);
   await page.getByRole('button', { name: 'Entrar' }).click();
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
 }
