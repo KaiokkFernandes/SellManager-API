@@ -6,6 +6,7 @@ import type {
   Session,
   User,
 } from '@sellmanager/api-client';
+import type { Role } from '@sellmanager/shared';
 import { http, HttpResponse } from 'msw';
 import { tokenStorage } from '@/lib/tokenStorage';
 import { server } from './server';
@@ -109,10 +110,12 @@ export function page<T>(data: T[], total = data.length) {
   };
 }
 
-/** Sessão válida + GET /profile: o app abre direto nas telas autenticadas. */
-export function signIn() {
+/** Sessão válida + GET /profile com o papel pedido (ADMIN por padrão). */
+export function signIn(role: Role = 'ADMIN') {
+  const profile = { ...user, role };
   tokenStorage.set(makeToken(inOneHour()));
   server.use(
-    http.get('http://api.test/profile', () => HttpResponse.json(user)),
+    http.get('http://api.test/profile', () => HttpResponse.json(profile)),
   );
+  return profile;
 }
