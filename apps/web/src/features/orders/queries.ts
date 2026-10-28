@@ -3,6 +3,7 @@ import type {
   CancelOrderBody,
   CreateOrderBody,
   OrderAction,
+  OrderStatus,
 } from '@sellmanager/shared';
 import {
   keepPreviousData,
@@ -18,6 +19,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { useDebouncedValue } from '@/lib/useDebouncedValue';
 
 export interface OrdersListParams {
+  status?: OrderStatus;
   customer_id?: string;
   /** Dias locais (AAAA-MM-DD), inclusivos. */
   from?: string;
@@ -33,6 +35,7 @@ export function useOrdersList(params: OrdersListParams, enabled = true) {
         api.GET('/orders', {
           params: {
             query: {
+              status: params.status,
               customer_id: params.customer_id,
               from: params.from ? startOfLocalDay(params.from) : undefined,
               to: params.to ? startOfNextLocalDay(params.to) : undefined,

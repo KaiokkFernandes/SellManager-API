@@ -104,6 +104,38 @@ describe('Pedidos', () => {
     await waitFor(() => expect(router.state.location.search).toEqual({}));
   });
 
+  it('filtra por status (URL ↔ API) e mostra o badge de cada status', async () => {
+    signIn();
+    mockCatalog();
+    const requests: URLSearchParams[] = [];
+    server.use(
+      http.get(`${API}/orders`, ({ request }) => {
+        const params = new URL(request.url).searchParams;
+        requests.push(params);
+        const status = params.get('status') ?? 'shipped';
+        return HttpResponse.json(page([{ ...order, status }]));
+      }),
+    );
+    const { router } = renderApp('/orders?status=paid');
+    const typing = userEvent.setup();
+
+    const table = await screen.findByRole('table', { name: 'Pedidos' });
+    expect(await within(table).findByText('Pago')).toBeInTheDocument();
+    expect(requests.at(-1)?.get('status')).toBe('paid');
+
+    await typing.click(screen.getByRole('combobox', { name: 'Status' }));
+    await typing.click(await screen.findByRole('option', { name: 'Enviado' }));
+    await waitFor(() =>
+      expect(router.state.location.search).toEqual({ status: 'shipped' }),
+    );
+    expect(await within(table).findByText('Enviado')).toBeInTheDocument();
+    expect(requests.at(-1)?.get('status')).toBe('shipped');
+
+    // valor inválido na URL é ignorado
+    await router.navigate({ to: '/orders', search: { status: 'x' as never } });
+    await waitFor(() => expect(requests.at(-1)?.get('status')).toBeNull());
+  });
+
   it('monta o pedido: soma item repetido, remove linha, total ao vivo e envia o schema do shared', async () => {
     signIn();
     mockCatalog();
