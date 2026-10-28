@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { allRoutes } from '@sellmanager/shared';
 import { generateOpenApiDocument } from './openapi';
 
 type Operation = {
@@ -17,7 +18,8 @@ describe('OpenAPI gerado do contrato', () => {
   it('documenta todas as operações com operationId único', () => {
     const ids = operations.map(operation => operation.operationId);
 
-    expect(operations).toHaveLength(28);
+    // uma operação por rota do contrato
+    expect(operations).toHaveLength(allRoutes.length);
     expect(new Set(ids).size).toBe(ids.length);
   });
 

@@ -17,6 +17,7 @@ import {
 } from '../products';
 import {
   avatarUploadBodySchema,
+  changePasswordBodySchema,
   createUserBodySchema,
   forgotPasswordBodySchema,
   resetPasswordBodySchema,
@@ -144,13 +145,27 @@ export const routes = {
       method: 'put',
       path: '/profile',
       operationId: 'updateProfile',
-      summary: 'Atualiza o perfil (trocar a senha exige old_password)',
+      summary: 'Atualiza o próprio nome',
       tags: ['Perfil'],
       auth: true,
       permission: 'authenticated',
       request: { body: updateProfileBodySchema },
       responses: { 200: userSchema },
-      errors: [404, 409],
+      errors: [404],
+    }),
+    changePassword: defineRoute({
+      method: 'put',
+      path: '/profile/password',
+      operationId: 'changePassword',
+      summary: 'Troca a própria senha (exige a senha atual)',
+      description:
+        'Encerra as outras sessões e devolve um token novo para a sessão atual. Senha atual incorreta: 400 com o issue em `current_password`.',
+      tags: ['Perfil'],
+      auth: true,
+      permission: 'authenticated',
+      request: { body: changePasswordBodySchema },
+      responses: { 200: sessionSchema },
+      errors: [404],
     }),
   },
 

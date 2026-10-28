@@ -65,7 +65,7 @@ describe('contrato de rotas', () => {
     const ids = allRoutes.map(route => route.operationId);
     const keys = allRoutes.map(route => `${route.method} ${route.path}`);
 
-    expect(allRoutes).toHaveLength(28);
+    expect(allRoutes).toHaveLength(29);
     expect(new Set(ids).size).toBe(ids.length);
     expect(new Set(keys).size).toBe(keys.length);
   });

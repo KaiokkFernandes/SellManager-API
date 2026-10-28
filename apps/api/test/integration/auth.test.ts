@@ -4,6 +4,7 @@ import {
   authenticate,
   closeDatabase,
   createUser,
+  login,
   createTestContext,
   defaultUser,
   resetDatabase,
@@ -111,30 +112,62 @@ describe('Usuários, sessão, perfil e senha', () => {
     });
   });
 
-  it('atualiza o perfil e troca a senha exigindo a senha antiga', async () => {
-    const auth = await authenticate(ctx);
-    const update = {
+  it('edita o próprio nome; e-mail e papel não mudam pelo perfil', async () => {
+    const auth = await authenticate(ctx, { role: 'SELLER' });
+
+    const updated = await request(ctx.app)
+      .put('/profile')
+      .set('Authorization', auth)
+      .send({ name: 'Kaio F', email: 'outro@test.com', role: 'ADMIN' })
+      .expect(200);
+    expect(updated.body).toMatchObject({
       name: 'Kaio F',
       email: defaultUser.email,
+      role: 'SELLER',
+    });
+  });
+
+  it('troca a senha exigindo a atual e encerra as outras sessões', async () => {
+    const other = await authenticate(ctx);
+    const current = await login(ctx, defaultUser);
+    const change = (body: object) =>
+      request(ctx.app)
+        .put('/profile/password')
+        .set('Authorization', current)
+        .send(body);
+
+    const wrong = await change({
+      current_password: 'errada-123',
       password: 'nova-senha-123',
       password_confirmation: 'nova-senha-123',
-    };
+    }).expect(400);
+    expect(wrong.body.issues).toEqual([
+      expect.objectContaining({ segment: 'body', path: 'current_password' }),
+    ]);
+    await change({
+      current_password: defaultUser.password,
+      password: 'nova-senha-123',
+      password_confirmation: 'outra',
+    }).expect(400);
 
-    await request(ctx.app)
-      .put('/profile')
-      .set('Authorization', auth)
-      .send(update)
-      .expect(400);
-    await request(ctx.app)
-      .put('/profile')
-      .set('Authorization', auth)
-      .send({ ...update, old_password: defaultUser.password })
-      .expect(200);
+    // o iat tem resolução de segundos: espera virar o segundo para o corte ser nítido
+    await new Promise(resolve => setTimeout(resolve, 1100));
+    const changed = await change({
+      current_password: defaultUser.password,
+      password: 'nova-senha-123',
+      password_confirmation: 'nova-senha-123',
+    }).expect(200);
 
+    // a outra sessão caiu; a atual segue com o token novo
     await request(ctx.app)
-      .post('/sessions')
-      .send({ email: defaultUser.email, password: 'nova-senha-123' })
+      .get('/profile')
+      .set('Authorization', other)
+      .expect(401);
+    await request(ctx.app)
+      .get('/profile')
+      .set('Authorization', `Bearer ${changed.body.token as string}`)
       .expect(200);
+    await login(ctx, { email: defaultUser.email, password: 'nova-senha-123' });
   });
 
   it('recupera a senha pelo link do e-mail; o token é de uso único', async () => {

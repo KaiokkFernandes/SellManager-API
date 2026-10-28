@@ -4,6 +4,7 @@ import uploadConfig from '@config/upload';
 import { Container } from '@shared/container';
 import type { MountRoute } from '@shared/http/contract/mountRoute';
 import { AuthenticateUserService } from '../../../services/AuthenticateUserService';
+import { ChangePasswordService } from '../../../services/ChangePasswordService';
 import { CreateUserService } from '../../../services/CreateUserService';
 import { ListUsersService } from '../../../services/ListUsersService';
 import { ResetPasswordService } from '../../../services/ResetPasswordService';
@@ -33,7 +34,8 @@ export function registerUsersRoutes(
       updateAvatar: new UpdateUserAvatarService(users, storage),
       authenticate: new AuthenticateUserService(users, hash, token),
       showProfile: new ShowProfileService(users),
-      updateProfile: new UpdateProfileService(users, hash),
+      updateProfile: new UpdateProfileService(users),
+      changePassword: new ChangePasswordService(users, hash, token),
       sendForgotPasswordEmail: new SendForgotPasswordEmailService(
         users,
         userTokens,
@@ -60,6 +62,7 @@ export function registerUsersRoutes(
   mount(routes.sessions.create, controller.createSession);
   mount(routes.profile.show, controller.showProfile);
   mount(routes.profile.update, controller.updateProfile);
+  mount(routes.profile.changePassword, controller.changePassword);
   mount(routes.password.forgot, controller.forgotPassword);
   mount(routes.password.reset, controller.resetPassword);
 }

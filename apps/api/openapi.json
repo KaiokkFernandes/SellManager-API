@@ -320,13 +320,23 @@
         "properties": {
           "name": {
             "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "example": {
+          "name": "Kaio F"
+        }
+      },
+      "ChangePasswordBody": {
+        "type": "object",
+        "properties": {
+          "current_password": {
+            "type": "string",
             "minLength": 1
-          },
-          "email": {
-            "type": "string"
-          },
-          "old_password": {
-            "type": "string"
           },
           "password": {
             "type": "string",
@@ -338,13 +348,12 @@
           }
         },
         "required": [
-          "name",
-          "email"
+          "current_password",
+          "password",
+          "password_confirmation"
         ],
         "example": {
-          "name": "Kaio F",
-          "email": "kaio@example.com",
-          "old_password": "senha-segura-123",
+          "current_password": "senha-segura-123",
           "password": "nova-senha-123",
           "password_confirmation": "nova-senha-123"
         }
@@ -1545,7 +1554,7 @@
       },
       "put": {
         "operationId": "updateProfile",
-        "summary": "Atualiza o perfil (trocar a senha exige old_password)",
+        "summary": "Atualiza o próprio nome",
         "description": "Qualquer usuário autenticado.",
         "tags": [
           "Perfil"
@@ -1606,8 +1615,85 @@
               }
             }
           },
-          "409": {
-            "description": "Conflito com o estado atual",
+          "413": {
+            "description": "Payload grande demais",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/profile/password": {
+      "put": {
+        "operationId": "changePassword",
+        "summary": "Troca a própria senha (exige a senha atual)",
+        "description": "Encerra as outras sessões e devolve um token novo para a sessão atual. Senha atual incorreta: 400 com o issue em `current_password`.\n\nQualquer usuário autenticado.",
+        "tags": [
+          "Perfil"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso não encontrado",
             "content": {
               "application/json": {
                 "schema": {

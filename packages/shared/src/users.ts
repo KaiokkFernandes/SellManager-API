@@ -87,27 +87,30 @@ export const resetPasswordBodySchema = z
     },
   });
 
+/** Perfil próprio: só o nome (e-mail é o login; papel só um ADMIN muda). */
 export const updateProfileBodySchema = z
+  .object({ name })
+  .meta({ id: 'UpdateProfileBody', example: { name: 'Kaio F' } });
+
+/** Troca da própria senha: exige a atual; as outras sessões são encerradas. */
+export const changePasswordBodySchema = z
   .object({
-    name: z.string().trim().min(1),
-    email,
-    old_password: z.string().optional(),
-    password: newPassword.optional(),
-    password_confirmation: z.string().optional(),
+    current_password: z.string().min(1),
+    password: newPassword,
+    password_confirmation: z.string(),
   })
-  .refine(
-    data => !data.password || data.password === data.password_confirmation,
-    {
-      message: 'Passwords do not match',
-      path: ['password_confirmation'],
-    },
-  )
+  .refine(data => data.password === data.password_confirmation, {
+    message: 'Passwords do not match',
+    path: ['password_confirmation'],
+  })
+  .refine(data => data.password !== data.current_password, {
+    message: 'The new password must be different from the current one',
+    path: ['password'],
+  })
   .meta({
-    id: 'UpdateProfileBody',
+    id: 'ChangePasswordBody',
     example: {
-      name: 'Kaio F',
-      email: 'kaio@example.com',
-      old_password: 'senha-segura-123',
+      current_password: 'senha-segura-123',
       password: 'nova-senha-123',
       password_confirmation: 'nova-senha-123',
     },
@@ -121,6 +124,7 @@ export type SessionBody = z.infer<typeof sessionBodySchema>;
 export type ForgotPasswordBody = z.infer<typeof forgotPasswordBodySchema>;
 export type ResetPasswordBody = z.infer<typeof resetPasswordBodySchema>;
 export type UpdateProfileBody = z.infer<typeof updateProfileBodySchema>;
+export type ChangePasswordBody = z.infer<typeof changePasswordBodySchema>;
 
 // ---- Respostas
 

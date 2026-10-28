@@ -2,6 +2,7 @@ import type { routes } from '@sellmanager/shared';
 import AppError from '@shared/errors/AppError';
 import type { RouteHandler } from '@shared/http/contract/mountRoute';
 import { AuthenticateUserService } from '../../../services/AuthenticateUserService';
+import { ChangePasswordService } from '../../../services/ChangePasswordService';
 import { CreateUserService } from '../../../services/CreateUserService';
 import { ListUsersService } from '../../../services/ListUsersService';
 import { ResetPasswordService } from '../../../services/ResetPasswordService';
@@ -24,6 +25,7 @@ interface UsersServices {
   authenticate: AuthenticateUserService;
   showProfile: ShowProfileService;
   updateProfile: UpdateProfileService;
+  changePassword: ChangePasswordService;
   sendForgotPasswordEmail: SendForgotPasswordEmailService;
   resetPassword: ResetPasswordService;
 }
@@ -139,16 +141,22 @@ export class UsersController {
     request,
     reply,
   }) => {
-    const { name, email, password: newPassword, old_password } = input.body;
     const user = await this.services.updateProfile.execute({
       user_id: request.user.id,
-      name,
-      email,
-      password: newPassword,
-      old_password,
+      name: input.body.name,
     });
     reply(200, this.toResponse(user));
   };
+
+  public changePassword: RouteHandler<Routes['profile']['changePassword']> =
+    async ({ input, request, reply }) => {
+      const { user, token } = await this.services.changePassword.execute({
+        user_id: request.user.id,
+        current_password: input.body.current_password,
+        password: input.body.password,
+      });
+      reply(200, { user: this.toResponse(user), token });
+    };
 
   public forgotPassword: RouteHandler<Routes['password']['forgot']> = async ({
     input,
