@@ -29,7 +29,7 @@ describe('AuthenticateUserService', () => {
       password: '123456',
     });
 
-    expect(token).toBe(`token:${user.id}`);
+    expect(token).toMatch(new RegExp(`^token:${user.id}:\\d+$`));
   });
 
   it('rejeita e-mail inexistente com 401', async () => {

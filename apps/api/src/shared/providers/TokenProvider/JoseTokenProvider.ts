@@ -1,5 +1,9 @@
 import { jwtVerify, SignJWT } from 'jose';
-import { ITokenPayload, ITokenProvider } from './ITokenProvider';
+import {
+  ITokenPayload,
+  ITokenProvider,
+  IVerifiedToken,
+} from './ITokenProvider';
 
 export class JoseTokenProvider implements ITokenProvider {
   private readonly secret: Uint8Array;
@@ -20,15 +24,15 @@ export class JoseTokenProvider implements ITokenProvider {
       .sign(this.secret);
   }
 
-  public async verify(token: string): Promise<ITokenPayload> {
+  public async verify(token: string): Promise<IVerifiedToken> {
     const { payload } = await jwtVerify(token, this.secret, {
       algorithms: ['HS256'],
     });
 
-    if (!payload.sub) {
-      throw new Error('Token without subject');
+    if (!payload.sub || payload.iat === undefined) {
+      throw new Error('Token without subject or issue date');
     }
 
-    return { subject: payload.sub };
+    return { subject: payload.sub, issuedAt: payload.iat };
   }
 }
