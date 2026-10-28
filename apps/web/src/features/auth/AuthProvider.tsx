@@ -1,4 +1,4 @@
-import { unwrap } from '@sellmanager/api-client';
+import { unwrap, type Session } from '@sellmanager/api-client';
 import type { SessionBody } from '@sellmanager/shared';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -120,6 +120,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => endSession('manual'), [endSession]);
 
+  const replaceSession = useCallback(
+    (session: Session) => {
+      tokenStorage.set(session.token);
+      queryClient.setQueryData(queryKeys.auth.profile, session.user);
+      setToken(session.token);
+    },
+    [queryClient],
+  );
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user: token ? (profile.data ?? null) : null,
@@ -127,8 +136,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       endedBy,
       login,
       logout,
+      replaceSession,
     }),
-    [token, profile.data, endedBy, login, logout],
+    [token, profile.data, endedBy, login, logout, replaceSession],
   );
 
   return <AuthContext value={value}>{children}</AuthContext>;

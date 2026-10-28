@@ -1,4 +1,4 @@
-import type { Permission } from '@sellmanager/shared';
+import { ROLE_LABELS, type Permission } from '@sellmanager/shared';
 import { LayoutDashboard, Package, ShoppingCart, Users } from 'lucide-react';
 import { AppLayout, type NavItem } from '@/components/layout/AppLayout';
 import { useAuth, useCan } from '@/features/auth';
@@ -33,6 +33,12 @@ export function AuthenticatedLayout() {
     item => !item.permission || can(item.permission),
   );
   return (
-    <AppLayout navItems={visible} userName={user?.name} onLogout={logout} />
+    <AppLayout
+      navItems={visible}
+      userName={user?.name}
+      userRole={user ? ROLE_LABELS[user.role] : undefined}
+      profileTo="/profile"
+      onLogout={logout}
+    />
   );
 }

@@ -38,6 +38,7 @@ import {
   productsSearchSchema,
 } from '@/features/products';
 import { ForbiddenError } from '@/lib/forbidden';
+import { ProfilePage } from '@/features/profile';
 import { safeRedirect } from '@/lib/safeRedirect';
 import { AuthenticatedLayout } from './AuthenticatedLayout';
 
@@ -100,6 +101,13 @@ const dashboardRoute = createRoute({
   path: '/',
   component: DashboardPage,
 });
+// ---- Perfil (qualquer usuário logado)
+const profileRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/profile',
+  component: ProfilePage,
+});
+
 // ---- Clientes
 const customersRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
@@ -194,6 +202,7 @@ const routeTree = rootRoute.addChildren([
   loginRoute,
   authenticatedRoute.addChildren([
     dashboardRoute,
+    profileRoute,
     customersRoute.addChildren([
       customersListRoute,
       newCustomerRoute,
