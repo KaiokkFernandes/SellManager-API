@@ -33,6 +33,7 @@ import {
 } from '@/features/orders';
 import {
   EditProductPage,
+  editProductSearchSchema,
   NewProductPage,
   ProductsListPage,
   productsSearchSchema,
@@ -174,6 +175,7 @@ const editProductRoute = createRoute({
   getParentRoute: () => productsRoute,
   path: '/$productId/edit',
   beforeLoad: requires('product:update'),
+  validateSearch: editProductSearchSchema,
   component: EditProductPage,
 });
 

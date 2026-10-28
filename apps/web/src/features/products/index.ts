@@ -1,3 +1,3 @@
 export { EditProductPage, NewProductPage } from './ProductFormPage';
 export { ProductsListPage } from './ProductsListPage';
-export { productsSearchSchema } from './search';
+export { editProductSearchSchema, productsSearchSchema } from './search';

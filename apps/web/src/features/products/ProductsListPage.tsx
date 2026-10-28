@@ -2,17 +2,25 @@ import type { Product } from '@sellmanager/api-client';
 import { PRODUCT_SORTS } from '@sellmanager/shared';
 import { getRouteApi, Link } from '@tanstack/react-router';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { DataTable, type Column } from '@/components/data-table';
 import { PageHeader } from '@/components/feedback/PageHeader';
 import { SearchInput } from '@/components/search';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { formatCents } from '@/lib/format';
 import { toSort } from '@/lib/listSearch';
 import { useCan } from '@/features/auth';
 import { DeleteProductDialog } from './DeleteProductDialog';
 import { ProductThumbnail } from './ProductThumbnail';
-import { useProductsList } from './queries';
+import { useCategoryOptions, useProductsList } from './queries';
 import { StockBadge } from './StockBadge';
 
 const route = getRouteApi('/authenticated/products/');
@@ -38,6 +46,11 @@ export function ProductsListPage() {
       ),
     },
     {
+      id: 'category',
+      header: 'Categoria',
+      cell: product => product.category?.name ?? '—',
+    },
+    {
       id: 'price',
       header: 'Preço',
       sortKey: 'price',
@@ -48,7 +61,7 @@ export function ProductsListPage() {
       id: 'quantity',
       header: 'Estoque',
       sortKey: 'quantity',
-      cell: product => <StockBadge quantity={product.quantity} />,
+      cell: product => <StockBadge product={product} />,
     },
     ...(hasRowActions
       ? [
@@ -78,13 +91,21 @@ export function ProductsListPage() {
           ) : undefined
         }
       />
-      <div className="mb-4">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end">
         <SearchInput
           label="Buscar produtos por nome"
           value={search.q ?? ''}
           onSearch={q =>
             void navigate({
               search: prev => ({ ...prev, q: q || undefined, page: undefined }),
+            })
+          }
+        />
+        <CategoryFilter
+          value={search.category_id}
+          onChange={category_id =>
+            void navigate({
+              search: prev => ({ ...prev, category_id, page: undefined }),
             })
           }
         />
@@ -115,10 +136,12 @@ export function ProductsListPage() {
         emptyMessage={
           search.q
             ? `Nenhum produto encontrado para “${search.q}”.`
-            : 'Nenhum produto cadastrado ainda.'
+            : search.category_id
+              ? 'Nenhum produto nesta categoria.'
+              : 'Nenhum produto cadastrado ainda.'
         }
         emptyAction={
-          search.q || !can('product:create') ? null : (
+          search.q || search.category_id || !can('product:create') ? null : (
             <Link to="/products/new" className={buttonVariants({ size: 'sm' })}>
               <Plus aria-hidden="true" />
               Cadastrar o primeiro produto
@@ -137,7 +160,7 @@ export function ProductsListPage() {
                 <span className="tabular-nums">
                   {formatCents(product.price_cents)}
                 </span>
-                <StockBadge quantity={product.quantity} />
+                <StockBadge product={product} />
               </p>
             </div>
             <RowActions product={product} onDelete={setDeleting} />
@@ -204,5 +227,39 @@ function ProductName({
     >
       {product.name}
     </Link>
+  );
+}
+
+const ALL = 'all';
+
+function CategoryFilter({
+  value,
+  onChange,
+}: {
+  value: string | undefined;
+  onChange: (categoryId: string | undefined) => void;
+}) {
+  const id = useId();
+  const categories = useCategoryOptions();
+  return (
+    <div className="flex flex-col gap-1.5 sm:w-56">
+      <Label htmlFor={id}>Categoria</Label>
+      <Select
+        value={value ?? ALL}
+        onValueChange={next => onChange(next === ALL ? undefined : next)}
+      >
+        <SelectTrigger id={id}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL}>Todas</SelectItem>
+          {categories.data?.data.map(category => (
+            <SelectItem key={category.id} value={category.id}>
+              {category.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }

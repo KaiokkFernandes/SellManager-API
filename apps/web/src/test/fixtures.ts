@@ -1,6 +1,7 @@
 import type {
   ApiError,
   Customer,
+  Category,
   Order,
   OrderDetails,
   Product,
@@ -38,6 +39,14 @@ export const product = {
   created_at: '2026-01-01T00:00:00.000Z',
   updated_at: '2026-01-01T00:00:00.000Z',
 } satisfies Product;
+
+export const category = {
+  id: '2f1d3c4b-5a69-4788-9a0b-1c2d3e4f5a6b',
+  name: 'Cabos',
+  products_count: 1,
+  created_at: '2026-01-01T00:00:00.000Z',
+  updated_at: '2026-01-01T00:00:00.000Z',
+} satisfies Category;
 
 export const customer = {
   id: '6e2ba4c6-96f5-4d7f-9303-6f6b91a1a960',

@@ -17,7 +17,7 @@ const MESSAGES: Record<
   NOT_FOUND: 'O item não foi encontrado.',
   CONFLICT: 'Essa operação conflita com o estado atual dos dados.',
   ALREADY_EXISTS: 'Já existe um registro com esses dados.',
-  INSUFFICIENT_STOCK: 'Estoque insuficiente para concluir o pedido.',
+  INSUFFICIENT_STOCK: 'Estoque insuficiente: o saldo não pode ficar negativo.',
   INVALID_TRANSITION:
     'O pedido mudou de situação. Recarregue para ver as ações possíveis.',
   RESOURCE_IN_USE: 'Este item está em uso e não pode ser removido.',

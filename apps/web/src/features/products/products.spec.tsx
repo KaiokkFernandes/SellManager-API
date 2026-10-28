@@ -2,7 +2,13 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
-import { errorResponse, page, product, signIn } from '@/test/fixtures';
+import {
+  category,
+  errorResponse,
+  page,
+  product,
+  signIn,
+} from '@/test/fixtures';
 import { renderApp } from '@/test/render';
 import { server } from '@/test/server';
 
@@ -18,6 +24,8 @@ const low = {
   id: '9f8c1a52-4d4e-4a1b-9d0c-2f6a7b8c9d03',
   name: 'Hub USB',
   quantity: 3,
+  min_stock: 5,
+  below_min_stock: true,
 };
 
 function mockProducts() {
@@ -36,6 +44,7 @@ function mockProducts() {
       );
     }),
     http.get(`${API}/products/:id`, () => HttpResponse.json(product)),
+    http.get(`${API}/categories`, () => HttpResponse.json(page([category]))),
   );
   return requests;
 }
@@ -257,12 +266,14 @@ describe('Produtos', () => {
         return HttpResponse.json(product);
       }),
       http.get(`${API}/products`, () => HttpResponse.json(page([product]))),
+      http.get(`${API}/categories`, () => HttpResponse.json(page([category]))),
     );
     renderApp(`/products/${product.id}/edit`);
     const typing = userEvent.setup();
 
     const name = await screen.findByLabelText('Nome');
-    expect(screen.queryByLabelText(/Estoque/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Estoque inicial')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Estoque mínimo')).toBeInTheDocument();
     await typing.type(name, ' 2m');
     await typing.click(
       screen.getByRole('button', { name: 'Salvar alterações' }),

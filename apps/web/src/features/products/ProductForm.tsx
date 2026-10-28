@@ -10,6 +10,7 @@ import {
   useZodForm,
 } from '@/components/form';
 import { Button } from '@/components/ui/button';
+import { CategoryField } from './CategoryField';
 
 interface ProductFormProps<T> {
   defaultValues?: ProductBody;
@@ -34,7 +35,11 @@ export function ProductForm<T>({
   withInitialStock = false,
 }: ProductFormProps<T>) {
   const form = useZodForm(productBodySchema, {
-    defaultValues: defaultValues ?? { name: '' },
+    defaultValues: defaultValues ?? {
+      name: '',
+      category_id: null,
+      min_stock: 0,
+    },
   });
   const guard = useUnsavedChangesGuard(form.formState.isDirty);
   const submitting = form.formState.isSubmitting;
@@ -60,6 +65,7 @@ export function ProductForm<T>({
         label="Nome"
         autoComplete="off"
       />
+      <CategoryField control={form.control} name="category_id" />
       <div className="grid gap-4 sm:grid-cols-2">
         <MoneyField control={form.control} name="price_cents" label="Preço" />
         {withInitialStock ? (
@@ -73,6 +79,15 @@ export function ProductForm<T>({
             description="Depois, só muda por entradas e ajustes"
           />
         ) : null}
+        <NumberField
+          control={form.control}
+          name="min_stock"
+          label="Estoque mínimo"
+          min={0}
+          step={1}
+          inputMode="numeric"
+          description="Abaixo disso, entra no alerta (0 desliga)"
+        />
       </div>
       <div className="flex flex-col-reverse gap-2 sm:flex-row">
         <Button
