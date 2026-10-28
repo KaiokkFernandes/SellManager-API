@@ -3,6 +3,7 @@ import { generateOpenApiDocument } from './openapi';
 
 type Operation = {
   operationId?: string;
+  description?: string;
   security?: unknown[];
   responses: Record<string, unknown>;
 };
@@ -16,7 +17,7 @@ describe('OpenAPI gerado do contrato', () => {
   it('documenta todas as operações com operationId único', () => {
     const ids = operations.map(operation => operation.operationId);
 
-    expect(operations).toHaveLength(24);
+    expect(operations).toHaveLength(25);
     expect(new Set(ids).size).toBe(ids.length);
   });
 
@@ -32,9 +33,15 @@ describe('OpenAPI gerado do contrato', () => {
     expect(Object.keys(showProduct.responses).sort()).toEqual([
       '200',
       '400',
+      '401',
+      '403',
       '404',
       '500',
     ]);
+    // quem pode chamar fica documentado
+    expect(showProduct.description).toContain(
+      'Permissão: `product:read` (ADMIN, MANAGER, SELLER).',
+    );
     expect(operations.every(operation => '500' in operation.responses)).toBe(
       true,
     );

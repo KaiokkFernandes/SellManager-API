@@ -34,8 +34,12 @@ describe('/orders', () => {
 
   const stockOf = async (product: Product) =>
     (
-      (await request(ctx.app).get(`/products/${product.id}`).expect(200))
-        .body as Product
+      (
+        await request(ctx.app)
+          .get(`/products/${product.id}`)
+          .set('Authorization', auth)
+          .expect(200)
+      ).body as Product
     ).quantity;
 
   const order = (products: { id: string; quantity: number }[]) =>
@@ -49,7 +53,7 @@ describe('/orders', () => {
   });
   beforeEach(async () => {
     await resetDatabase();
-    auth = await authenticate(ctx.app);
+    auth = await authenticate(ctx);
     customerId = (
       await request(ctx.app)
         .post('/customers')
@@ -132,25 +136,34 @@ describe('/orders', () => {
   it('cancelar devolve o estoque e pedidos finalizados não mudam mais', async () => {
     const cable = await createProduct('Cabo', 100, 10);
     const created = await order([{ id: cable.id, quantity: 4 }]).expect(201);
-    const statusUrl = `/orders/${created.body.id as string}/status`;
+    const orderUrl = `/orders/${created.body.id as string}`;
 
     await request(ctx.app)
-      .patch(statusUrl)
+      .patch(`${orderUrl}/cancel`)
       .set('Authorization', auth)
-      .send({ status: 'canceled' })
       .expect(200);
     expect(await stockOf(cable)).toBe(10);
 
     await request(ctx.app)
-      .patch(statusUrl)
+      .patch(`${orderUrl}/complete`)
       .set('Authorization', auth)
-      .send({ status: 'completed' })
       .expect(409);
     await request(ctx.app)
-      .patch(statusUrl)
+      .patch(`${orderUrl}/cancel`)
       .set('Authorization', auth)
-      .send({ status: 'pending' })
-      .expect(400);
+      .expect(409);
+  });
+
+  it('concluir não mexe no estoque', async () => {
+    const cable = await createProduct('Cabo', 100, 10);
+    const created = await order([{ id: cable.id, quantity: 4 }]).expect(201);
+
+    const completed = await request(ctx.app)
+      .patch(`/orders/${created.body.id as string}/complete`)
+      .set('Authorization', auth)
+      .expect(200);
+    expect(completed.body.status).toBe('completed');
+    expect(await stockOf(cable)).toBe(6);
   });
 
   it('valida cliente e produtos inexistentes', async () => {

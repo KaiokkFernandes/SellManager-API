@@ -19,16 +19,20 @@ describe('Produtos e clientes', () => {
   });
   beforeEach(async () => {
     await resetDatabase();
-    auth = await authenticate(ctx.app);
+    auth = await authenticate(ctx);
   });
   afterAll(closeDatabase);
 
   describe('/products', () => {
     const keyboard = { name: 'Teclado', price_cents: 19990, quantity: 10 };
 
-    it('leitura é pública, escrita exige autenticação', async () => {
-      await request(ctx.app).get('/products').expect(200);
+    it('leitura e escrita exigem autenticação', async () => {
+      await request(ctx.app).get('/products').expect(401);
       await request(ctx.app).post('/products').send(keyboard).expect(401);
+      await request(ctx.app)
+        .get('/products')
+        .set('Authorization', auth)
+        .expect(200);
     });
 
     it('CRUD completo com preço numérico', async () => {
@@ -39,7 +43,10 @@ describe('Produtos e clientes', () => {
         .expect(201);
       const id = created.body.id as string;
 
-      const shown = await request(ctx.app).get(`/products/${id}`).expect(200);
+      const shown = await request(ctx.app)
+        .get(`/products/${id}`)
+        .set('Authorization', auth)
+        .expect(200);
       expect(shown.body.price_cents).toBe(19990);
 
       await request(ctx.app)
@@ -52,7 +59,10 @@ describe('Produtos e clientes', () => {
         .delete(`/products/${id}`)
         .set('Authorization', auth)
         .expect(204);
-      await request(ctx.app).get(`/products/${id}`).expect(404);
+      await request(ctx.app)
+        .get(`/products/${id}`)
+        .set('Authorization', auth)
+        .expect(404);
     });
 
     it('valida o body e rejeita nome duplicado', async () => {
@@ -140,6 +150,7 @@ describe('Produtos e clientes', () => {
 
       const page = await request(ctx.app)
         .get('/products?page=2&limit=2')
+        .set('Authorization', auth)
         .expect(200);
 
       expect(
@@ -169,28 +180,37 @@ describe('Produtos e clientes', () => {
       const names = (body: { data: { name: string }[] }) =>
         body.data.map(product => product.name);
 
-      const found = await request(ctx.app).get('/products?q=CABO').expect(200);
+      const found = await request(ctx.app)
+        .get('/products?q=CABO')
+        .set('Authorization', auth)
+        .expect(200);
       expect(names(found.body)).toEqual(['Cabo USB', 'cabo HDMI'].sort());
       expect(found.body.meta.total).toBe(2);
 
       const byPrice = await request(ctx.app)
         .get('/products?q=cabo&sort=price&order=desc')
+        .set('Authorization', auth)
         .expect(200);
       expect(names(byPrice.body)).toEqual(['cabo HDMI', 'Cabo USB']);
 
       // % digitado pelo usuário é literal, não curinga
-      const literal = await request(ctx.app).get('/products?q=%25').expect(200);
+      const literal = await request(ctx.app)
+        .get('/products?q=%25')
+        .set('Authorization', auth)
+        .expect(200);
       expect(names(literal.body)).toEqual(['Desconto 100%']);
 
       // q vazio = sem filtro
       const all = await request(ctx.app)
         .get('/products?q=&sort=quantity&order=desc')
+        .set('Authorization', auth)
         .expect(200);
       expect(all.body.meta.total).toBe(4);
       expect(names(all.body)[0]).toBe('cabo HDMI');
 
       const invalid = await request(ctx.app)
         .get('/products?sort=senha')
+        .set('Authorization', auth)
         .expect(400);
       expect(invalid.body.issues[0]).toMatchObject({
         segment: 'query',
@@ -237,7 +257,10 @@ describe('Produtos e clientes', () => {
       // a imagem anterior foi apagada
       await request(ctx.app).get(firstPath).expect(404);
 
-      const shown = await request(ctx.app).get(`/products/${id}`).expect(200);
+      const shown = await request(ctx.app)
+        .get(`/products/${id}`)
+        .set('Authorization', auth)
+        .expect(200);
       expect(shown.body.image_url).toBe(second.body.image_url);
 
       const removed = await request(ctx.app)

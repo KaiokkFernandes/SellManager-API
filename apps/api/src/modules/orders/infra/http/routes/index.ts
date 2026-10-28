@@ -24,5 +24,6 @@ export function registerOrdersRoutes(
   mount(routes.orders.list, controller.list);
   mount(routes.orders.show, controller.show);
   mount(routes.orders.create, controller.create);
-  mount(routes.orders.updateStatus, controller.updateStatus);
+  mount(routes.orders.complete, controller.complete);
+  mount(routes.orders.cancel, controller.cancel);
 }

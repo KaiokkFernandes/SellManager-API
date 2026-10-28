@@ -2,11 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   createOrderBodySchema,
   createUserBodySchema,
-  ORDER_STATUSES,
   paginatedSchema,
   paginationQuerySchema,
   productSchema,
-  updateOrderStatusBodySchema,
 } from './index';
 
 describe('@sellmanager/shared', () => {
@@ -39,13 +37,6 @@ describe('@sellmanager/shared', () => {
     ).toBe(false);
   });
 
-  it('não permite voltar um pedido para pending', () => {
-    expect(ORDER_STATUSES).toContain('pending');
-    expect(
-      updateOrderStatusBodySchema.safeParse({ status: 'pending' }).success,
-    ).toBe(false);
-  });
-
   it('valida o envelope paginado', () => {
     const now = new Date().toISOString();
     const page = {
@@ -73,7 +64,7 @@ describe('contrato de rotas', () => {
     const ids = allRoutes.map(route => route.operationId);
     const keys = allRoutes.map(route => `${route.method} ${route.path}`);
 
-    expect(allRoutes).toHaveLength(24);
+    expect(allRoutes).toHaveLength(25);
     expect(new Set(ids).size).toBe(ids.length);
     expect(new Set(keys).size).toBe(keys.length);
   });
@@ -81,14 +72,24 @@ describe('contrato de rotas', () => {
   it('deduz os erros automáticos de cada rota', async () => {
     const { routes } = await import('./index');
 
-    expect(routes.products.show.errorStatuses).toEqual([400, 404, 500]);
+    // permissão específica => 403; 'authenticated' => só 401
+    expect(routes.products.show.errorStatuses).toEqual([
+      400, 401, 403, 404, 500,
+    ]);
     expect(routes.orders.create.errorStatuses).toEqual([
-      400, 401, 404, 409, 413, 500,
+      400, 401, 403, 404, 409, 413, 500,
     ]);
     expect(routes.sessions.create.errorStatuses).toEqual([
       400, 401, 413, 429, 500,
     ]);
     expect(routes.users.updateAvatar.errorStatuses).toEqual([400, 401, 500]);
     expect(routes.profile.show.errorStatuses).toEqual([401, 404, 500]);
+  });
+
+  it('toda rota autenticada declara a permissão', async () => {
+    const { allRoutes, PERMISSIONS } = await import('./index');
+    for (const route of allRoutes.filter(item => item.auth)) {
+      expect([...PERMISSIONS, 'authenticated']).toContain(route.permission);
+    }
   });
 });

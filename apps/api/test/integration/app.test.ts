@@ -34,7 +34,7 @@ describe('Aplicação', () => {
   });
 
   it('envia headers de segurança', async () => {
-    const response = await request(ctx.app).get('/products').expect(200);
+    const response = await request(ctx.app).get('/docs.json').expect(200);
     expect(response.headers['x-content-type-options']).toBe('nosniff');
     expect(response.headers['x-powered-by']).toBeUndefined();
   });

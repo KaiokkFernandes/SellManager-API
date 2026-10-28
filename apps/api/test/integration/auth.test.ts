@@ -3,6 +3,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   authenticate,
   closeDatabase,
+  createUser,
   createTestContext,
   defaultUser,
   resetDatabase,
@@ -21,9 +22,11 @@ describe('Usuários, sessão, perfil e senha', () => {
   });
   afterAll(closeDatabase);
 
-  it('cadastra, faz login e acessa o perfil sem expor a senha', async () => {
+  it('ADMIN cadastra, o usuário faz login e acessa o perfil sem expor a senha', async () => {
+    const admin = await authenticate(ctx, { email: 'admin@test.com' });
     const created = await request(ctx.app)
       .post('/users')
+      .set('Authorization', admin)
       .send(defaultUser)
       .expect(201);
     expect(created.body).not.toHaveProperty('password');
@@ -44,20 +47,31 @@ describe('Usuários, sessão, perfil e senha', () => {
     });
   });
 
+  it('o cadastro não é público', async () => {
+    await request(ctx.app).post('/users').send(defaultUser).expect(401);
+  });
+
   it('valida o cadastro (senha curta, e-mail inválido) e rejeita e-mail duplicado', async () => {
+    const admin = await authenticate(ctx, { email: 'admin@test.com' });
     const invalid = await request(ctx.app)
       .post('/users')
+      .set('Authorization', admin)
       .send({ name: '', email: 'nao-e-email', password: '123' })
       .expect(400);
     expect(invalid.body.code).toBe('VALIDATION_FAILED');
     expect(invalid.body.issues).toHaveLength(3);
 
-    await request(ctx.app).post('/users').send(defaultUser).expect(201);
-    await request(ctx.app).post('/users').send(defaultUser).expect(409);
+    const create = () =>
+      request(ctx.app)
+        .post('/users')
+        .set('Authorization', admin)
+        .send(defaultUser);
+    await create().expect(201);
+    await create().expect(409);
   });
 
   it('responde 401 com a mesma mensagem para e-mail inexistente e senha errada', async () => {
-    await request(ctx.app).post('/users').send(defaultUser).expect(201);
+    await createUser(ctx);
 
     const wrongPassword = await request(ctx.app)
       .post('/sessions')
@@ -81,7 +95,7 @@ describe('Usuários, sessão, perfil e senha', () => {
   });
 
   it('lista usuários paginado', async () => {
-    const auth = await authenticate(ctx.app);
+    const auth = await authenticate(ctx);
 
     const response = await request(ctx.app)
       .get('/users?limit=5')
@@ -97,7 +111,7 @@ describe('Usuários, sessão, perfil e senha', () => {
   });
 
   it('atualiza o perfil e troca a senha exigindo a senha antiga', async () => {
-    const auth = await authenticate(ctx.app);
+    const auth = await authenticate(ctx);
     const update = {
       name: 'Kaio F',
       email: defaultUser.email,
@@ -123,7 +137,7 @@ describe('Usuários, sessão, perfil e senha', () => {
   });
 
   it('recupera a senha pelo link do e-mail; o token é de uso único', async () => {
-    await request(ctx.app).post('/users').send(defaultUser).expect(201);
+    await createUser(ctx);
 
     await request(ctx.app)
       .post('/password/forgot')
@@ -152,7 +166,7 @@ describe('Usuários, sessão, perfil e senha', () => {
   });
 
   it('envia avatar de imagem e rejeita outros tipos', async () => {
-    const auth = await authenticate(ctx.app);
+    const auth = await authenticate(ctx);
 
     await request(ctx.app)
       .patch('/users/avatar')

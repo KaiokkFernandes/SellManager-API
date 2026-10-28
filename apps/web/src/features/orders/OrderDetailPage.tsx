@@ -164,7 +164,7 @@ export function OrderDetailPage() {
         isPending={updateStatus.isPending}
         onConfirm={() => {
           if (!action) return;
-          updateStatus.mutate(action, {
+          updateStatus.mutate(action === 'completed' ? 'complete' : 'cancel', {
             onSuccess: () => setAction(null),
             onError: error => {
               setAction(null);
