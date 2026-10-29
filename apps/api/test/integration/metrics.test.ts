@@ -170,6 +170,208 @@ describe('/metrics', () => {
     });
   });
 
+  describe('blocos do dashboard', () => {
+    let cableId: string;
+    let mouseId: string;
+    let otherCustomer: string;
+
+    // pedido com linhas livres (produto, unidades) e datas forçadas
+    const sale = async (
+      customer: string,
+      lines: [string, number][],
+      dates: { paid?: string; canceled?: string; created?: string },
+    ) => {
+      const created = await request(ctx.app)
+        .post('/orders')
+        .set('Authorization', admin)
+        .send({
+          customer_id: customer,
+          products: lines.map(([id, quantity]) => ({ id, quantity })),
+        })
+        .expect(201);
+      const id = created.body.id as string;
+      const status = dates.canceled
+        ? 'canceled'
+        : dates.paid
+          ? 'delivered'
+          : 'pending';
+      await AppDataSource.query(
+        `UPDATE orders SET status = $2, paid_at = $3::timestamptz,
+           canceled_at = $4::timestamptz,
+           created_at = COALESCE($5::timestamptz, $3::timestamptz, $4::timestamptz)
+         WHERE id = $1`,
+        [
+          id,
+          status,
+          dates.paid ?? null,
+          dates.canceled ?? null,
+          dates.created ?? null,
+        ],
+      );
+    };
+
+    beforeEach(async () => {
+      const cables = (
+        await request(ctx.app)
+          .post('/categories')
+          .set('Authorization', admin)
+          .send({ name: 'Cabos' })
+          .expect(201)
+      ).body.id as string;
+      const product = (
+        name: string,
+        price_cents: number,
+        category_id: string | null,
+      ) =>
+        request(ctx.app)
+          .post('/products')
+          .set('Authorization', admin)
+          .send({ name, price_cents, quantity: 100, category_id })
+          .expect(201)
+          .then(response => response.body.id as string);
+      cableId = await product('Cabo HDMI', 2000, cables); // R$ 20
+      mouseId = await product('Mouse', 5000, null); // R$ 50, sem categoria
+      otherCustomer = (
+        await request(ctx.app)
+          .post('/customers')
+          .set('Authorization', admin)
+          .send({ name: 'Bruno', email: 'bruno@test.com' })
+          .expect(201)
+      ).body.id as string;
+
+      // seg 05/10: Ana compra 2 cabos (R$ 40)
+      await sale(customerId, [[cableId, 2]], { paid: '2026-10-05T15:00:00Z' });
+      // qua 07/10: Bruno compra 1 mouse e 1 cabo (R$ 70)
+      await sale(
+        otherCustomer,
+        [
+          [mouseId, 1],
+          [cableId, 1],
+        ],
+        {
+          paid: '2026-10-07T15:00:00Z',
+        },
+      );
+      // dom 11/10 23:30 em SP (seg 12/10 em UTC): Bruno, 2 mouses (R$ 100)
+      await sale(otherCustomer, [[mouseId, 2]], {
+        paid: '2026-10-12T02:30:00Z',
+      });
+      // cancelado: não entra em tops, série nem categorias
+      await sale(customerId, [[mouseId, 10]], {
+        paid: '2026-10-06T15:00:00Z',
+        canceled: '2026-10-06T18:00:00Z',
+      });
+      // pendente criado em 08/10: só no funil de status
+      await sale(customerId, [[cableId, 1]], {
+        created: '2026-10-08T15:00:00Z',
+      });
+    });
+
+    const WEEK = { preset: 'custom', from: '2026-10-05', to: '2026-10-11' };
+    const get = (path: string, query: object = WEEK) =>
+      request(ctx.app)
+        .get(`/metrics/${path}`)
+        .query(query)
+        .set('Authorization', admin)
+        .expect(200);
+
+    it('série diária com os dias vazios em zero e a venda das 23:30 no domingo', async () => {
+      const { body } = await get('revenue');
+      expect(body.granularity).toBe('day');
+      expect(
+        body.points.map((p: { bucket: string; revenue_cents: number }) => [
+          p.bucket,
+          p.revenue_cents,
+        ]),
+      ).toEqual([
+        ['2026-10-05', 4000],
+        ['2026-10-06', 0],
+        ['2026-10-07', 7000],
+        ['2026-10-08', 0],
+        ['2026-10-09', 0],
+        ['2026-10-10', 0],
+        ['2026-10-11', 10000],
+      ]);
+    });
+
+    it('série semanal começa na segunda-feira', async () => {
+      const { body } = await get('revenue', {
+        preset: 'custom',
+        from: '2026-10-01',
+        to: '2026-10-31',
+        granularity: 'week',
+      });
+      expect(
+        body.points.map((p: { bucket: string; orders: number }) => [
+          p.bucket,
+          p.orders,
+        ]),
+      ).toEqual([
+        ['2026-09-28', 0],
+        ['2026-10-05', 3],
+        ['2026-10-12', 0],
+        ['2026-10-19', 0],
+        ['2026-10-26', 0],
+      ]);
+    });
+
+    it('top produtos e clientes pelo faturamento (cancelado fora)', async () => {
+      const products = await get('top-products');
+      expect(products.body.items).toEqual([
+        {
+          product: { id: mouseId, name: 'Mouse' },
+          units: 3,
+          revenue_cents: 15000,
+        },
+        {
+          product: { id: cableId, name: 'Cabo HDMI' },
+          units: 3,
+          revenue_cents: 6000,
+        },
+      ]);
+      const customers = await get('top-customers', { ...WEEK, limit: 1 });
+      expect(customers.body.items).toEqual([
+        {
+          customer: {
+            id: otherCustomer,
+            name: 'Bruno',
+            email: 'bruno@test.com',
+          },
+          orders: 2,
+          revenue_cents: 17000,
+        },
+      ]);
+    });
+
+    it('vendas por categoria, com "sem categoria" como null', async () => {
+      const { body } = await get('categories');
+      expect(body.items).toEqual([
+        { category: null, units: 3, revenue_cents: 15000 },
+        {
+          category: { id: expect.any(String), name: 'Cabos' },
+          units: 3,
+          revenue_cents: 6000,
+        },
+      ]);
+    });
+
+    it('pedidos por status: criados no período, todos os status em ordem', async () => {
+      const { body } = await get('status');
+      expect(
+        body.items.map((item: { status: string; orders: number }) => [
+          item.status,
+          item.orders,
+        ]),
+      ).toEqual([
+        ['pending', 1],
+        ['paid', 0],
+        ['shipped', 0],
+        ['delivered', 3],
+        ['canceled', 1],
+      ]);
+    });
+  });
+
   it('valida o período personalizado', async () => {
     const missing = await request(ctx.app)
       .get('/metrics/summary?preset=custom&from=2026-10-01')

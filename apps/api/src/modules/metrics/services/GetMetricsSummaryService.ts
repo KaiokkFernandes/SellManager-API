@@ -1,20 +1,7 @@
-import type {
-  MetricsPeriodQuery,
-  MetricsSummary,
-  Role,
-} from '@sellmanager/shared';
-import {
-  compareFigures,
-  metricsScope,
-  toSalesFigures,
-} from '../domain/figures';
-import { resolvePeriod } from '../domain/period';
+import type { MetricsPeriodQuery, MetricsSummary } from '@sellmanager/shared';
+import { IMetricsViewer, metricsContext } from '../domain/context';
+import { compareFigures, toSalesFigures } from '../domain/figures';
 import { IMetricsRepository } from '../domain/repositories/IMetricsRepository';
-
-export interface IMetricsViewer {
-  id: string;
-  role: Role;
-}
 
 export class GetMetricsSummaryService {
   constructor(
@@ -27,12 +14,12 @@ export class GetMetricsSummaryService {
     query: MetricsPeriodQuery,
     viewer: IMetricsViewer,
   ): Promise<MetricsSummary> {
-    const period = resolvePeriod(query, this.timezone, this.now());
-    const scope = metricsScope(viewer.role);
-    const filter = {
-      timezone: this.timezone,
-      createdBy: scope === 'own' ? viewer.id : undefined,
-    };
+    const { period, scope, filter } = metricsContext(
+      query,
+      viewer,
+      this.timezone,
+      this.now(),
+    );
 
     const [current, previous] = await Promise.all([
       this.metricsRepository.salesFigures(period.current, filter),

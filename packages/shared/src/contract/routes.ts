@@ -1,3 +1,4 @@
+import type { z } from 'zod';
 import {
   categoryBodySchema,
   categorySchema,
@@ -47,8 +48,38 @@ import {
   updateUserStatusBodySchema,
   userSchema,
 } from '../users';
-import { metricsPeriodQuerySchema, metricsSummarySchema } from '../metrics';
+import {
+  metricsPeriodQuerySchema,
+  metricsSummarySchema,
+  ordersByStatusSchema,
+  revenueQuerySchema,
+  revenueSeriesSchema,
+  salesByCategorySchema,
+  topCustomersSchema,
+  topProductsSchema,
+  topQuerySchema,
+} from '../metrics';
 import { defineRoute, RouteDefinition } from './define';
+
+/** Bloco do dashboard: GET /metrics/<nome>, mesmo acesso do resumo. */
+function metricsRoute<const Q extends z.ZodType, const S extends z.ZodType>(
+  name: string,
+  doc: { operationId: string; summary: string; query: Q; response: S },
+) {
+  return defineRoute({
+    method: 'get',
+    path: `/metrics/${name}`,
+    operationId: doc.operationId,
+    summary: doc.summary,
+    description:
+      'Sem report:read, só os pedidos criados pelo usuário (scope=own).',
+    tags: ['Métricas'],
+    auth: true,
+    permission: 'dashboard:read',
+    request: { query: doc.query },
+    responses: { 200: doc.response },
+  });
+}
 
 /** Transição sem corpo (pagar, enviar, entregar). */
 function transitionRoute(
@@ -491,6 +522,37 @@ export const routes = {
       permission: 'dashboard:read',
       request: { query: metricsPeriodQuerySchema },
       responses: { 200: metricsSummarySchema },
+    }),
+    revenue: metricsRoute('revenue', {
+      operationId: 'getRevenueSeries',
+      summary:
+        'Faturamento no tempo (dia, semana ou mês), com os dias vazios em zero',
+      query: revenueQuerySchema,
+      response: revenueSeriesSchema,
+    }),
+    topProducts: metricsRoute('top-products', {
+      operationId: 'getTopProducts',
+      summary: 'Produtos com mais faturamento no período (preço da compra)',
+      query: topQuerySchema,
+      response: topProductsSchema,
+    }),
+    topCustomers: metricsRoute('top-customers', {
+      operationId: 'getTopCustomers',
+      summary: 'Clientes com mais faturamento no período',
+      query: topQuerySchema,
+      response: topCustomersSchema,
+    }),
+    categories: metricsRoute('categories', {
+      operationId: 'getSalesByCategory',
+      summary: 'Faturamento por categoria (categoria atual do produto)',
+      query: metricsPeriodQuerySchema,
+      response: salesByCategorySchema,
+    }),
+    status: metricsRoute('status', {
+      operationId: 'getOrdersByStatus',
+      summary: 'Pedidos criados no período, por status atual',
+      query: metricsPeriodQuerySchema,
+      response: ordersByStatusSchema,
     }),
   },
 
