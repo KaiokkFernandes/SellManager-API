@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { errorResponse, signIn } from '@/test/fixtures';
-import { summary } from '@/test/metricsFixtures';
+import { categories, revenue, summary } from '@/test/metricsFixtures';
 import { renderApp } from '@/test/render';
 import { server } from '@/test/server';
 
@@ -164,5 +164,93 @@ describe('Dashboard', () => {
     expect(
       await screen.findByRole('list', { name: 'Indicadores' }),
     ).toBeInTheDocument();
+  });
+
+  it('gráfico de faturamento traz os números numa tabela acessível', async () => {
+    signIn();
+    renderApp('/');
+
+    const table = await screen.findByRole('table', {
+      name: 'Faturamento por dia',
+    });
+    expect(
+      within(table)
+        .getAllByRole('row')
+        .slice(1)
+        .map(row => row.textContent?.replace(/\s/g, ' ')),
+    ).toEqual(['27/10R$ 500,002', '28/10R$ 0,000', '29/10R$ 749,003']);
+  });
+
+  it('categoria e status levam para a lista filtrada', async () => {
+    signIn();
+    renderApp('/');
+
+    const byCategory = await screen.findByRole('list', {
+      name: 'Vendas por categoria',
+    });
+    expect(
+      within(byCategory).getByRole('link', { name: /Cabos/ }),
+    ).toHaveAttribute(
+      'href',
+      '/products?category_id=2f1d3c4b-5a69-4788-9a0b-1c2d3e4f5a6b',
+    );
+    // "sem categoria" não tem filtro na lista de produtos: não é link
+    expect(
+      within(byCategory).getByText('Sem categoria').closest('a'),
+    ).toBeNull();
+
+    const byStatus = screen.getByRole('list', { name: 'Pedidos por status' });
+    expect(
+      within(byStatus).getByRole('link', { name: /Cancelado/ }),
+    ).toHaveAttribute(
+      'href',
+      '/orders?status=canceled&from=2026-09-30&to=2026-10-29',
+    );
+  });
+
+  it('um bloco com erro não derruba os outros', async () => {
+    signIn();
+    server.use(
+      http.get(`${API}/metrics/categories`, () =>
+        errorResponse(500, 'INTERNAL_ERROR', 'boom'),
+      ),
+    );
+    renderApp('/');
+
+    expect(
+      await screen.findByRole('list', { name: 'Pedidos por status' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('list', { name: 'Indicadores' }),
+    ).toBeInTheDocument();
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Algo deu errado no servidor');
+    expect(
+      within(alert).getByRole('button', { name: 'Tentar de novo' }),
+    ).toBeInTheDocument();
+  });
+
+  it('período sem vendas mostra o vazio de cada bloco', async () => {
+    signIn();
+    server.use(
+      http.get(`${API}/metrics/revenue`, () =>
+        HttpResponse.json({
+          ...revenue,
+          points: revenue.points.map(p => ({
+            ...p,
+            revenue_cents: 0,
+            orders: 0,
+          })),
+        }),
+      ),
+      http.get(`${API}/metrics/categories`, () =>
+        HttpResponse.json({ ...categories, items: [] }),
+      ),
+    );
+    renderApp('/');
+
+    expect(await screen.findAllByText('Sem vendas no período.')).toHaveLength(
+      2,
+    );
   });
 });
