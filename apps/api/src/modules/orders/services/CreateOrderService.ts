@@ -82,6 +82,7 @@ export class CreateOrderService {
           },
           status: 'pending',
           total: calculateOrderTotal(items),
+          created_by,
           items,
         });
         // saída por venda: uma movimentação por produto, ligada ao pedido
@@ -99,6 +100,7 @@ export class CreateOrderService {
           from_status: null,
           to_status: 'pending',
           changed_by_id: created_by,
+          at: order.created_at,
         });
         return order;
       },

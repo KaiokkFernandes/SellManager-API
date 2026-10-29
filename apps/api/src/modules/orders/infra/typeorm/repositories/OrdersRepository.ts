@@ -10,11 +10,11 @@ import {
   Order,
   OrderCustomer,
   OrderItem,
-  OrderStatus,
 } from '../../../domain/entities/Order';
 import {
   ICreateOrderDTO,
   IFindOrdersFilter,
+  IOrderStatusChanges,
   IOrdersRepository,
 } from '../../../domain/repositories/IOrdersRepository';
 import {
@@ -140,7 +140,9 @@ export class OrdersRepository implements IOrdersRepository {
     items,
     ...data
   }: ICreateOrderDTO): Promise<Order> {
-    const order = await this.orders.save(this.orders.create(data));
+    const order = await this.orders.save(
+      this.orders.create({ ...data, paid_at: null, canceled_at: null }),
+    );
     const savedItems = await this.items.save(
       items.map(({ product_id, price, quantity }) =>
         this.items.create({ product_id, price, quantity, order_id: order.id }),
@@ -155,8 +157,11 @@ export class OrdersRepository implements IOrdersRepository {
     };
   }
 
-  public async updateStatus(id: string, status: OrderStatus): Promise<Order> {
-    await this.orders.update({ id }, { status });
+  public async updateStatus(
+    id: string,
+    changes: IOrderStatusChanges,
+  ): Promise<Order> {
+    await this.orders.update({ id }, changes);
     const order = await this.findById(id);
     if (!order) throw new Error(`Order ${id} not found after update`);
     return order;

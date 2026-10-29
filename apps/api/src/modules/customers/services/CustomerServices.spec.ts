@@ -90,6 +90,7 @@ describe('Customer services', () => {
       customer_id: customer.id,
       customer,
       status: 'pending',
+      created_by: 'user-1',
       total: 10,
       items: [
         {

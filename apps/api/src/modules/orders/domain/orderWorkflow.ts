@@ -29,3 +29,13 @@ export function nextOrderStatus(
 
   return transition.to;
 }
+
+/** Datas que a transição grava no pedido (o faturamento usa paid_at). */
+export function statusTimestamps(
+  to: OrderStatus,
+  at: Date,
+): { paid_at?: Date; canceled_at?: Date } {
+  if (to === 'paid') return { paid_at: at };
+  if (to === 'canceled') return { canceled_at: at };
+  return {};
+}

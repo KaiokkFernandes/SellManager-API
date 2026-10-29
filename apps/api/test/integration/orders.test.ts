@@ -185,6 +185,9 @@ describe('/orders', () => {
       ['shipped', 'delivered'],
     ]);
     expect(shown.body.history[1].changed_by).toMatchObject({ name: 'Kaio' });
+    // a data do pagamento é a da transição para paid (base do faturamento)
+    expect(shown.body.paid_at).toBe(shown.body.history[1].created_at);
+    expect(shown.body.canceled_at).toBeNull();
 
     const filtered = await request(ctx.app)
       .get('/orders?status=delivered')

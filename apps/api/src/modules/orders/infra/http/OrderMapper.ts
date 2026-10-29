@@ -12,6 +12,8 @@ export function toOrderResponse(order: Order): OrderResponse {
     customer: { ...order.customer },
     status: order.status,
     total_cents: toCents(order.total),
+    paid_at: order.paid_at?.toISOString() ?? null,
+    canceled_at: order.canceled_at?.toISOString() ?? null,
     items: order.items.map(item => ({
       id: item.id,
       order_id: item.order_id,

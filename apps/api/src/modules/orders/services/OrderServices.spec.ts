@@ -267,6 +267,39 @@ describe('Order services', () => {
       expect(await stockOf(keyboard)).toBe(6);
     });
 
+    it('grava paid_at no pagamento, canceled_at no cancelamento e o autor', async () => {
+      const order = await createPending();
+      expect(order).toMatchObject({
+        created_by: ACTOR,
+        paid_at: null,
+        canceled_at: null,
+      });
+
+      const paid = await changeStatus.execute({
+        changed_by: ACTOR,
+        id: order.id,
+        action: 'pay',
+      });
+      expect(paid.paid_at).toBeInstanceOf(Date);
+      const shipped = await changeStatus.execute({
+        changed_by: ACTOR,
+        id: order.id,
+        action: 'ship',
+      });
+      // enviar não mexe na data do pagamento
+      expect(shipped.paid_at).toEqual(paid.paid_at);
+
+      const other = await createPending();
+      const canceled = await changeStatus.execute({
+        changed_by: ACTOR,
+        id: other.id,
+        action: 'cancel',
+        reason: 'Desistiu',
+      });
+      expect(canceled).toMatchObject({ paid_at: null });
+      expect(canceled.canceled_at).toBeInstanceOf(Date);
+    });
+
     it('registra cada mudança no histórico (de/para, quem e motivo)', async () => {
       const order = await createPending();
       await changeStatus.execute({
