@@ -11,6 +11,12 @@ const pages = [
   { name: 'produtos', path: '/products', ready: 'Produtos' },
   // inclui os produtos com imagem criados pelo fluxo e2e
   { name: 'produtos-busca', path: '/products?q=teclado', ready: 'Produtos' },
+  { name: 'categorias', path: '/categories', ready: 'Categorias' },
+  {
+    name: 'estoque-baixo',
+    path: '/products/low-stock',
+    ready: 'Estoque baixo',
+  },
   { name: 'pedidos', path: '/orders', ready: 'Pedidos' },
   { name: 'novo-pedido', path: '/orders/new', ready: 'Novo pedido' },
 ] as const;
