@@ -253,4 +253,59 @@ describe('Dashboard', () => {
       2,
     );
   });
+
+  it('top produtos e clientes levam ao item; SELLER vai para a lista filtrada', async () => {
+    signIn();
+    renderApp('/');
+
+    const products = await screen.findByRole('table', {
+      name: 'Produtos com mais faturamento',
+    });
+    expect(
+      within(products).getByRole('link', { name: 'Cabo USB-C' }),
+    ).toHaveAttribute(
+      'href',
+      '/products/9f8c1a52-4d4e-4a1b-9d0c-2f6a7b8c9d01/edit',
+    );
+    const customers = screen.getByRole('table', {
+      name: 'Clientes com mais faturamento',
+    });
+    expect(
+      within(customers).getByRole('link', { name: 'Ana Souza' }),
+    ).toHaveAttribute(
+      'href',
+      '/customers/6e2ba4c6-96f5-4d7f-9303-6f6b91a1a960',
+    );
+  });
+
+  it('SELLER (sem editar produto) vai para a lista filtrada pelo nome', async () => {
+    signIn('SELLER');
+    renderApp('/');
+
+    const products = await screen.findByRole('table', {
+      name: 'Produtos com mais faturamento',
+    });
+    expect(
+      within(products).getByRole('link', { name: 'Cabo USB-C' }),
+    ).toHaveAttribute('href', '/products?q=Cabo+USB-C');
+  });
+
+  it('aviso de estoque baixo com link para a lista', async () => {
+    signIn();
+    server.use(
+      http.get(`${API}/products/low-stock`, () =>
+        HttpResponse.json({
+          data: [],
+          meta: { page: 1, limit: 1, total: 4, total_pages: 4 },
+        }),
+      ),
+    );
+    renderApp('/');
+
+    expect(
+      await screen.findByRole('link', {
+        name: /4 produtos estão abaixo do estoque mínimo/,
+      }),
+    ).toHaveAttribute('href', '/products/low-stock');
+  });
 });

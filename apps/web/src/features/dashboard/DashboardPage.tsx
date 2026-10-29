@@ -1,21 +1,26 @@
-import { getRouteApi } from '@tanstack/react-router';
+import { getRouteApi, Link } from '@tanstack/react-router';
+import { TriangleAlert } from 'lucide-react';
 import { lazy, Suspense } from 'react';
 import { PageHeader } from '@/components/feedback/PageHeader';
 import { ORDER_STATUS_LABELS } from '@/components/status/orderStatusLabels';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCents, formatLocalDay } from '@/lib/format';
-import { useAuth } from '@/features/auth';
+import { useAuth, useCan } from '@/features/auth';
 import { BarList } from './BarList';
 import { DashboardBlock } from './DashboardBlock';
 import { KpiCards } from './KpiCards';
 import { PeriodPicker } from './PeriodPicker';
 import {
+  useLowStockCount,
   useOrdersByStatus,
   useRevenue,
   useSalesByCategory,
   useSummary,
+  useTopCustomers,
+  useTopProducts,
 } from './queries';
+import { TopCustomersTable, TopProductsTable } from './TopTables';
 import { toPeriodQuery } from './search';
 
 // o Recharts só baixa quando o gráfico aparece: os KPIs não esperam por ele
@@ -34,6 +39,9 @@ export function DashboardPage() {
   const revenue = useRevenue(period);
   const categories = useSalesByCategory(period);
   const statuses = useOrdersByStatus(period);
+  const topProducts = useTopProducts(period);
+  const topCustomers = useTopCustomers(period);
+  const can = useCan();
   const resolved = summary.data?.period.current;
 
   return (
@@ -60,6 +68,7 @@ export function DashboardPage() {
       />
       <div className="space-y-6">
         <KpiCards query={summary} />
+        {can('product:read') ? <LowStockNotice /> : null}
 
         <DashboardBlock
           title="Faturamento"
@@ -135,7 +144,45 @@ export function DashboardPage() {
             )}
           </DashboardBlock>
         </div>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <DashboardBlock
+            title="Top produtos"
+            description="Por faturamento (preço da compra)"
+            query={topProducts}
+            isEmpty={data => data.items.length === 0}
+          >
+            {data => <TopProductsTable data={data} />}
+          </DashboardBlock>
+          <DashboardBlock
+            title="Top clientes"
+            description="Por total comprado"
+            query={topCustomers}
+            isEmpty={data => data.items.length === 0}
+          >
+            {data => <TopCustomersTable data={data} />}
+          </DashboardBlock>
+        </div>
       </div>
     </>
+  );
+}
+
+/** Estoque baixo não depende do período: é o estado atual. */
+function LowStockNotice() {
+  const low = useLowStockCount();
+  const total = low.data?.meta.total ?? 0;
+  if (total === 0) return null;
+  return (
+    <Link
+      to="/products/low-stock"
+      className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 hover:underline dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200"
+    >
+      <TriangleAlert className="size-4 shrink-0" aria-hidden="true" />
+      {total === 1
+        ? '1 produto está abaixo do estoque mínimo.'
+        : `${total} produtos estão abaixo do estoque mínimo.`}{' '}
+      Ver lista
+    </Link>
   );
 }
