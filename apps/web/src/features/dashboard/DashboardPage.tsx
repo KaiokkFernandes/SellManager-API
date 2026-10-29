@@ -1,77 +1,46 @@
-import { unwrap } from '@sellmanager/api-client';
-import { useQuery } from '@tanstack/react-query';
+import { getRouteApi } from '@tanstack/react-router';
 import { PageHeader } from '@/components/feedback/PageHeader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { api } from '@/lib/api';
-import { getErrorMessage } from '@/lib/apiErrors';
+import { Badge } from '@/components/ui/badge';
+import { formatLocalDay } from '@/lib/format';
 import { useAuth } from '@/features/auth';
-import { queryKeys } from '@/lib/queryKeys';
+import { KpiCards } from './KpiCards';
+import { PeriodPicker } from './PeriodPicker';
+import { useSummary } from './queries';
+import { toPeriodQuery } from './search';
 
-const ONE = { page: 1, limit: 1 } as const;
-
-/** Totais vêm de `meta.total` das listagens (limit=1): não há endpoint de resumo. */
-function useTotals() {
-  const products = useQuery({
-    queryKey: queryKeys.products.list(ONE),
-    queryFn: () => unwrap(api.GET('/products', { params: { query: ONE } })),
-  });
-  const customers = useQuery({
-    queryKey: queryKeys.customers.list(ONE),
-    queryFn: () => unwrap(api.GET('/customers', { params: { query: ONE } })),
-  });
-  const orders = useQuery({
-    queryKey: queryKeys.orders.list(ONE),
-    queryFn: () => unwrap(api.GET('/orders', { params: { query: ONE } })),
-  });
-  return [
-    { label: 'Produtos', query: products },
-    { label: 'Clientes', query: customers },
-    { label: 'Pedidos', query: orders },
-  ] as const;
-}
+const route = getRouteApi('/authenticated/');
 
 export function DashboardPage() {
   const { user } = useAuth();
-  const totals = useTotals();
+  const search = route.useSearch();
+  const navigate = route.useNavigate();
+  const period = toPeriodQuery(search);
+  const summary = useSummary(period);
+  const resolved = summary.data?.period.current;
 
   return (
     <>
       <PageHeader
         title="Dashboard"
         description={
-          user
-            ? `Olá, ${user.name}. Este é o resumo do seu negócio.`
-            : 'Resumo do seu negócio.'
+          <span className="flex flex-wrap items-center gap-2">
+            {resolved
+              ? `Vendas de ${formatLocalDay(resolved.from)} a ${formatLocalDay(resolved.to)}`
+              : user
+                ? `Olá, ${user.name}.`
+                : 'Resumo de vendas.'}
+            {summary.data?.scope === 'own' ? (
+              <Badge variant="outline">Seus números</Badge>
+            ) : null}
+          </span>
         }
       />
-      <div className="grid gap-4 sm:grid-cols-3">
-        {totals.map(({ label, query }) => (
-          <Card key={label}>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {label}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {query.isPending ? (
-                <Skeleton className="h-8 w-16" />
-              ) : query.isError ? (
-                <p role="alert" className="text-sm text-destructive">
-                  {getErrorMessage(query.error)}
-                </p>
-              ) : (
-                <p
-                  className="text-3xl font-semibold"
-                  aria-label={`${label}: ${query.data.meta.total}`}
-                >
-                  {query.data.meta.total}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <PeriodPicker
+        key={`${search.preset ?? ''}${search.from ?? ''}${search.to ?? ''}`}
+        value={search}
+        onChange={next => void navigate({ search: next })}
+      />
+      <KpiCards query={summary} />
     </>
   );
 }

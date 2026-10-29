@@ -40,6 +40,8 @@ beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
 afterEach(() => {
   cleanup();
   server.resetHandlers();
+  // espiões de requisição (server.events.on) não vazam para o próximo teste
+  server.events.removeAllListeners();
   tokenStorage.clear();
   localStorage.clear();
   document.documentElement.classList.remove('dark');

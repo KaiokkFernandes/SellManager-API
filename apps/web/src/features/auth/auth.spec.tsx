@@ -184,11 +184,9 @@ describe('fim de sessão', () => {
     tokenStorage.set(makeToken(inOneHour()));
     server.use(
       http.get(`${API}/profile`, () => HttpResponse.json(user)),
-      http.get(`${API}/products`, () =>
+      http.get(`${API}/metrics/summary`, () =>
         errorResponse(401, 'UNAUTHORIZED', 'Invalid JWT token'),
       ),
-      http.get(`${API}/customers`, () => HttpResponse.json(page([]))),
-      http.get(`${API}/orders`, () => HttpResponse.json(page([]))),
     );
     const { router } = renderApp('/');
 

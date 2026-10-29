@@ -18,7 +18,7 @@ import {
   EditCustomerPage,
   NewCustomerPage,
 } from '@/features/customers';
-import { DashboardPage } from '@/features/dashboard';
+import { DashboardPage, dashboardSearchSchema } from '@/features/dashboard';
 import {
   LoginPage,
   profileQueryOptions,
@@ -112,6 +112,8 @@ const authenticatedRoute = createRoute({
 const dashboardRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/',
+  beforeLoad: requires('dashboard:read'),
+  validateSearch: dashboardSearchSchema,
   component: DashboardPage,
 });
 // ---- Perfil (qualquer usuário logado)
