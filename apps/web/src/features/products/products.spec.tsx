@@ -2,7 +2,14 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
-import { errorResponse, page, product, signIn } from '@/test/fixtures';
+import {
+  category,
+  errorResponse,
+  page,
+  product,
+  productDetailHandler,
+  signIn,
+} from '@/test/fixtures';
 import { renderApp } from '@/test/render';
 import { server } from '@/test/server';
 
@@ -18,6 +25,8 @@ const low = {
   id: '9f8c1a52-4d4e-4a1b-9d0c-2f6a7b8c9d03',
   name: 'Hub USB',
   quantity: 3,
+  min_stock: 5,
+  below_min_stock: true,
 };
 
 function mockProducts() {
@@ -35,7 +44,8 @@ function mockProducts() {
         ),
       );
     }),
-    http.get(`${API}/products/:id`, () => HttpResponse.json(product)),
+    productDetailHandler(product),
+    http.get(`${API}/categories`, () => HttpResponse.json(page([category]))),
   );
   return requests;
 }
@@ -95,7 +105,7 @@ describe('Produtos', () => {
 
     await typing.type(await screen.findByLabelText('Nome'), 'Cabo USB-C');
     await typing.type(screen.getByLabelText('Preço'), '1.234,56');
-    await typing.type(screen.getByLabelText('Estoque'), '10');
+    await typing.type(screen.getByLabelText('Estoque inicial'), '10');
     await typing.click(
       screen.getByRole('button', { name: 'Cadastrar produto' }),
     );
@@ -109,6 +119,8 @@ describe('Produtos', () => {
       name: 'Cabo USB-C',
       price_cents: 123456,
       quantity: 10,
+      category_id: null,
+      min_stock: 0,
     });
     expect(await screen.findByText('Sem imagem')).toBeInTheDocument();
   });
@@ -138,7 +150,7 @@ describe('Produtos', () => {
 
     await typing.type(await screen.findByLabelText('Nome'), 'Cabo');
     await typing.type(screen.getByLabelText('Preço'), '10');
-    await typing.type(screen.getByLabelText('Estoque'), '1');
+    await typing.type(screen.getByLabelText('Estoque inicial'), '1');
     await typing.click(
       screen.getByRole('button', { name: 'Cadastrar produto' }),
     );
@@ -243,5 +255,38 @@ describe('Produtos', () => {
     expect(received).toContain('name="image"; filename="foto.png"');
     expect(received).toContain('Content-Type: image/png');
     expect(await screen.findByText('Imagem atualizada.')).toBeInTheDocument();
+  });
+
+  it('edição não mostra o estoque e o PUT não o envia', async () => {
+    signIn();
+    let sent: unknown;
+    server.use(
+      productDetailHandler(product),
+      http.put(`${API}/products/:id`, async ({ request }) => {
+        sent = await request.json();
+        return HttpResponse.json(product);
+      }),
+      http.get(`${API}/products`, () => HttpResponse.json(page([product]))),
+      http.get(`${API}/categories`, () => HttpResponse.json(page([category]))),
+    );
+    renderApp(`/products/${product.id}/edit`);
+    const typing = userEvent.setup();
+
+    const name = await screen.findByLabelText('Nome');
+    expect(screen.queryByLabelText('Estoque inicial')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Estoque mínimo')).toBeInTheDocument();
+    await typing.type(name, ' 2m');
+    await typing.click(
+      screen.getByRole('button', { name: 'Salvar alterações' }),
+    );
+
+    await waitFor(() =>
+      expect(sent).toEqual({
+        name: `${product.name} 2m`,
+        price_cents: product.price_cents,
+        category_id: null,
+        min_stock: 0,
+      }),
+    );
   });
 });

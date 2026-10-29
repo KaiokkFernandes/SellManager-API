@@ -1,4 +1,5 @@
 import { ICustomersRepository } from '@modules/customers/domain/repositories/ICustomersRepository';
+import { StockLedger } from '@modules/products/domain/StockLedger';
 import AppError from '@shared/errors/AppError';
 import { calculateOrderTotal, Order } from '../domain/entities/Order';
 import { IOrdersUnitOfWork } from '../domain/repositories/IOrdersUnitOfWork';
@@ -6,6 +7,8 @@ import { IOrdersUnitOfWork } from '../domain/repositories/IOrdersUnitOfWork';
 interface IRequest {
   customer_id: string;
   products: { id: string; quantity: number }[];
+  /** Usuário que criou: primeira linha do histórico. */
+  created_by: string;
 }
 
 export class CreateOrderService {
@@ -14,7 +17,11 @@ export class CreateOrderService {
     private readonly unitOfWork: IOrdersUnitOfWork,
   ) {}
 
-  public async execute({ customer_id, products }: IRequest): Promise<Order> {
+  public async execute({
+    customer_id,
+    products,
+    created_by,
+  }: IRequest): Promise<Order> {
     const customer = await this.customersRepository.findById(customer_id);
 
     if (!customer) {
@@ -28,7 +35,7 @@ export class CreateOrderService {
     }
 
     return this.unitOfWork.run(
-      async ({ orders, products: productsRepository }) => {
+      async ({ orders, products: productsRepository, history, movements }) => {
         const found = await productsRepository.findByIdsForUpdate([
           ...requested.keys(),
         ]);
@@ -66,12 +73,7 @@ export class CreateOrderService {
           quantity: requested.get(product.id) ?? 0,
         }));
 
-        for (const product of found) {
-          product.quantity -= requested.get(product.id) ?? 0;
-          await productsRepository.save(product);
-        }
-
-        return orders.create({
+        const order = await orders.create({
           customer_id,
           customer: {
             id: customer.id,
@@ -82,6 +84,23 @@ export class CreateOrderService {
           total: calculateOrderTotal(items),
           items,
         });
+        // saída por venda: uma movimentação por produto, ligada ao pedido
+        const ledger = new StockLedger(productsRepository, movements);
+        for (const product of found) {
+          await ledger.move(product, {
+            type: 'SALE',
+            quantity: -(requested.get(product.id) ?? 0),
+            order_id: order.id,
+            created_by,
+          });
+        }
+        await history.add({
+          order_id: order.id,
+          from_status: null,
+          to_status: 'pending',
+          changed_by_id: created_by,
+        });
+        return order;
       },
     );
   }

@@ -17,7 +17,9 @@ const MESSAGES: Record<
   NOT_FOUND: 'O item não foi encontrado.',
   CONFLICT: 'Essa operação conflita com o estado atual dos dados.',
   ALREADY_EXISTS: 'Já existe um registro com esses dados.',
-  INSUFFICIENT_STOCK: 'Estoque insuficiente para concluir o pedido.',
+  INSUFFICIENT_STOCK: 'Estoque insuficiente: o saldo não pode ficar negativo.',
+  INVALID_TRANSITION:
+    'O pedido mudou de situação. Recarregue para ver as ações possíveis.',
   RESOURCE_IN_USE: 'Este item está em uso e não pode ser removido.',
   PAYLOAD_TOO_LARGE: 'Os dados enviados são grandes demais.',
   RATE_LIMITED: 'Muitas tentativas. Aguarde um instante e tente de novo.',
@@ -53,12 +55,17 @@ export function getFieldErrors(error: unknown): Record<string, string> {
   );
 }
 
-/** `orders_count` do erro RESOURCE_IN_USE (exclusão barrada por pedidos). */
-export function getInUseOrdersCount(error: unknown): number | undefined {
+/**
+ * Contagem do erro RESOURCE_IN_USE (exclusão barrada): `orders_count` em
+ * clientes/produtos, `products_count` em categorias.
+ */
+export function getInUseCount(
+  error: unknown,
+  key: 'orders_count' | 'products_count' = 'orders_count',
+): number | undefined {
   if (!(error instanceof ApiClientError) || error.code !== 'RESOURCE_IN_USE')
     return undefined;
-  const count = (error.details as { orders_count?: unknown } | undefined)
-    ?.orders_count;
+  const count = (error.details as Record<string, unknown> | undefined)?.[key];
   return typeof count === 'number' ? count : undefined;
 }
 

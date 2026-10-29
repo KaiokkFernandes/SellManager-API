@@ -36,6 +36,7 @@ export class FakeOrdersRepository implements IOrdersRepository {
             order =>
               (!filter.customer_id ||
                 order.customer_id === filter.customer_id) &&
+              (!filter.status || order.status === filter.status) &&
               (!filter.from || order.created_at >= filter.from) &&
               (!filter.to || order.created_at < filter.to),
           )

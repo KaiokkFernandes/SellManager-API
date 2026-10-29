@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { registerCategoriesRoutes } from '@modules/categories/infra/http/routes';
 import { registerCustomersRoutes } from '@modules/customers/infra/http/routes';
 import { registerOrdersRoutes } from '@modules/orders/infra/http/routes';
 import { registerProductsRoutes } from '@modules/products/infra/http/routes';
@@ -24,6 +25,7 @@ export function createRoutes(container: Container): Router {
 
   registerUsersRoutes(mount, container);
   registerProductsRoutes(mount, container);
+  registerCategoriesRoutes(mount, container);
   registerCustomersRoutes(mount, container);
   registerOrdersRoutes(mount, container);
 

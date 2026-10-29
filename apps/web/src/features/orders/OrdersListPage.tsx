@@ -1,4 +1,5 @@
 import type { Customer, Order } from '@sellmanager/api-client';
+import { ORDER_STATUSES, type OrderStatus } from '@sellmanager/shared';
 import { getRouteApi, Link } from '@tanstack/react-router';
 import { Plus, X } from 'lucide-react';
 import { useId, useState } from 'react';
@@ -6,14 +7,24 @@ import { Combobox } from '@/components/combobox';
 import { DataTable, type Column } from '@/components/data-table';
 import { PageHeader } from '@/components/feedback/PageHeader';
 import { OrderStatusBadge } from '@/components/status/OrderStatusBadge';
+import { ORDER_STATUS_LABELS } from '@/components/status/orderStatusLabels';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { formatCents, formatDateTime } from '@/lib/format';
 import { usePermission } from '@/features/auth';
 import { useCustomerById, useCustomerOptions, useOrdersList } from './queries';
 
 const route = getRouteApi('/authenticated/orders/');
+
+const ALL = 'all';
 
 /** Unidades somadas de todas as linhas do pedido. */
 function unitsOf(order: Order): number {
@@ -61,7 +72,9 @@ export function OrdersListPage() {
     search.from && search.to && search.to < search.from,
   );
   const list = useOrdersList(search, !invalidRange);
-  const filtered = Boolean(search.customer_id || search.from || search.to);
+  const filtered = Boolean(
+    search.status || search.customer_id || search.from || search.to,
+  );
   const canCreate = usePermission('order:create');
 
   return (
@@ -79,6 +92,7 @@ export function OrdersListPage() {
         }
       />
       <Filters
+        status={search.status}
         customerId={search.customer_id}
         from={search.from}
         to={search.to}
@@ -142,11 +156,13 @@ export function OrdersListPage() {
 }
 
 interface FiltersProps {
+  status: OrderStatus | undefined;
   customerId: string | undefined;
   from: string | undefined;
   to: string | undefined;
   invalidRange: boolean;
   onChange: (changes: {
+    status?: OrderStatus;
     customer_id?: string;
     from?: string;
     to?: string;
@@ -155,6 +171,7 @@ interface FiltersProps {
 }
 
 function Filters({
+  status,
   customerId,
   from,
   to,
@@ -169,6 +186,7 @@ function Filters({
   const fromId = useId();
   const toId = useId();
   const customerLabelId = useId();
+  const statusId = useId();
   const selected = customerId
     ? chosen?.id === customerId
       ? chosen
@@ -177,6 +195,29 @@ function Filters({
 
   return (
     <div className="mb-4 flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:flex-wrap sm:items-end">
+      <div className="flex flex-col gap-1.5 sm:w-40">
+        <Label htmlFor={statusId}>Status</Label>
+        <Select
+          value={status ?? ALL}
+          onValueChange={value =>
+            onChange({
+              status: value === ALL ? undefined : (value as OrderStatus),
+            })
+          }
+        >
+          <SelectTrigger id={statusId}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL}>Todos</SelectItem>
+            {ORDER_STATUSES.map(item => (
+              <SelectItem key={item} value={item}>
+                {ORDER_STATUS_LABELS[item]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
       <div className="flex flex-col gap-1.5 sm:w-64">
         <span id={customerLabelId} className="text-sm font-medium">
           Cliente
@@ -225,7 +266,7 @@ function Filters({
           />
         </div>
       </div>
-      {customerId || from || to ? (
+      {status || customerId || from || to ? (
         <Button type="button" variant="ghost" onClick={onClear}>
           <X aria-hidden="true" />
           Limpar filtros

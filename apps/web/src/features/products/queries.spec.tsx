@@ -61,6 +61,8 @@ describe('hooks de produtos (modelo)', () => {
       name: 'Cabo',
       price_cents: 4990,
       quantity: 10,
+      category_id: null,
+      min_stock: 0,
     });
 
     await waitFor(() => expect(calls).toBe(2));

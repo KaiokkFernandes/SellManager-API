@@ -17,15 +17,21 @@ single composition root.
 
 - **Authentication** with JWT (HS256, with expiration), bcrypt password hashing, and generic
   login errors so the API doesn't reveal which emails exist
-- **Users:** sign-up, profile view/update (changing the password requires the old one),
-  avatar upload (jpeg/png/webp, max 2 MB)
+- **Users and roles:** ADMIN creates users with a role (ADMIN, MANAGER, SELLER); profile
+  view/update (changing the password requires the current one), avatar upload (jpeg/png/webp,
+  max 2 MB)
 - **Password recovery** by email. The token is random, single-use, expires in 2 hours and is
   stored only as a SHA-256 hash
-- **Products** with public read access; changing them requires authentication
+- **Products** with categories and minimum stock, plus a low-stock list
 - **Customers** CRUD
-- **Orders.** Creating an order runs in a **transaction** that locks the products,
-  checks stock, copies the current price, computes the total in cents and decrements stock.
-  Canceling an order restores the stock. Concurrent orders cannot oversell
+- **Orders** with a state machine (`pending → paid → shipped → delivered`, cancel from
+  `pending`/`paid` with a reason) validated in the domain, and a status history. Creating an
+  order runs in a **transaction** that locks the products, checks stock, copies the current
+  price, computes the total in cents and takes the stock. Canceling returns it. Concurrent
+  orders cannot oversell
+- **Stock ledger:** every stock change is a movement (initial, entry, sale, cancel return,
+  manual adjustment); the balance always equals their sum. Rules and diagram in the
+  [root README](../../README.md#orders-and-stock)
 - **Pagination** on every list (`?page=&limit=`)
 - **One contract** in [`@sellmanager/shared`](../../packages/shared): routing, input validation,
   response checks and the committed `openapi.json` all come from it
@@ -116,13 +122,15 @@ pnpm dev                                    # api + web; or: pnpm --filter api d
 
 `pnpm --filter api seed` fills the **development** database so pagination, search and filters
 can be tried for real: one user per role (ADMIN, MANAGER and SELLER, credentials in the
-[root README](../../README.md#development-users)), 30 customers,
-50 products (some with low or zero stock) and 18 orders spread over the last 60 days, some
-completed or canceled.
+[root README](../../README.md#development-users)), 30 customers, 11 categories, 50 products
+with a minimum stock (several below it), 24 orders over the last 60 days in **every status**
+(pending, paid, shipped, delivered, and canceled from pending and from paid) with their
+history, and a few stock entries and manual adjustments.
 
 - It goes through the services, so stock, prices and totals follow the same rules as the API.
 - It is idempotent: it only removes what it created itself (customers `@seed.sellmanager.dev`,
-  their orders, and the seed products that are not in other orders), then creates them again.
+  their orders and stock movements, and the seed products and categories not used elsewhere),
+  then creates them again.
 - It refuses to run with `NODE_ENV=production`.
 
 | URL                        | What                                           |
@@ -183,37 +191,46 @@ Run them inside `apps/api`, or from the root with `pnpm --filter api <script>`.
 All bodies are JSON. Full schemas and examples are at **`/docs`**. 🔒 means the route requires
 `Authorization: Bearer <token>`.
 
-| Method | Path                   | Auth | Description                                            |
-| ------ | ---------------------- | :--: | ------------------------------------------------------ |
-| POST   | `/users`               |  🔒  | Create a user with role and initial password (ADMIN)   |
-| GET    | `/users`               |  🔒  | List users (`?q=&role=&status=`, ADMIN)                |
-| GET    | `/users/:id`           |  🔒  | Get a user (ADMIN)                                     |
-| PUT    | `/users/:id`           |  🔒  | Change name and role (ADMIN)                           |
-| PATCH  | `/users/:id/status`    |  🔒  | Activate / deactivate (ADMIN; users are never deleted) |
-| PATCH  | `/users/avatar`        |  🔒  | Upload avatar (`multipart/form-data`, field `avatar`)  |
-| POST   | `/sessions`            |      | Log in, returns `{ user, token }`                      |
-| GET    | `/profile`             |  🔒  | Current user's profile (with `role`)                   |
-| PUT    | `/profile`             |  🔒  | Change your own name                                   |
-| PUT    | `/profile/password`    |  🔒  | Change your password (needs the current one)           |
-| POST   | `/password/forgot`     |      | Send recovery email (always `204`)                     |
-| POST   | `/password/reset`      |      | Reset password with the emailed token                  |
-| GET    | `/products`            |      | List products (`?q=&sort=&order=`, paginated)          |
-| GET    | `/products/:id`        |      | Get a product                                          |
-| POST   | `/products`            |  🔒  | Create a product                                       |
-| PUT    | `/products/:id`        |  🔒  | Update a product                                       |
-| DELETE | `/products/:id`        |  🔒  | Delete a product (`409` if it is in orders)            |
-| PATCH  | `/products/:id/image`  |  🔒  | Upload/replace the image (`multipart`, field `image`)  |
-| DELETE | `/products/:id/image`  |  🔒  | Remove the image                                       |
-| GET    | `/customers`           |  🔒  | List customers (`?q=&sort=&order=`, paginated)         |
-| GET    | `/customers/:id`       |  🔒  | Get a customer                                         |
-| POST   | `/customers`           |  🔒  | Create a customer                                      |
-| PUT    | `/customers/:id`       |  🔒  | Update a customer                                      |
-| DELETE | `/customers/:id`       |  🔒  | Delete a customer (`409` if they have orders)          |
-| GET    | `/orders`              |  🔒  | List orders (`?customer_id=&from=&to=`, paginated)     |
-| GET    | `/orders/:id`          |  🔒  | Get an order with its items                            |
-| POST   | `/orders`              |  🔒  | Create an order                                        |
-| PATCH  | `/orders/:id/complete` |  🔒  | Complete a pending order                               |
-| PATCH  | `/orders/:id/cancel`   |  🔒  | Cancel a pending order (stock goes back)               |
+| Method | Path                            | Auth | Description                                            |
+| ------ | ------------------------------- | :--: | ------------------------------------------------------ |
+| POST   | `/users`                        |  🔒  | Create a user with role and initial password (ADMIN)   |
+| GET    | `/users`                        |  🔒  | List users (`?q=&role=&status=`, ADMIN)                |
+| GET    | `/users/:id`                    |  🔒  | Get a user (ADMIN)                                     |
+| PUT    | `/users/:id`                    |  🔒  | Change name and role (ADMIN)                           |
+| PATCH  | `/users/:id/status`             |  🔒  | Activate / deactivate (ADMIN; users are never deleted) |
+| PATCH  | `/users/avatar`                 |  🔒  | Upload avatar (`multipart/form-data`, field `avatar`)  |
+| POST   | `/sessions`                     |      | Log in, returns `{ user, token }`                      |
+| GET    | `/profile`                      |  🔒  | Current user's profile (with `role`)                   |
+| PUT    | `/profile`                      |  🔒  | Change your own name                                   |
+| PUT    | `/profile/password`             |  🔒  | Change your password (needs the current one)           |
+| POST   | `/password/forgot`              |      | Send recovery email (always `204`)                     |
+| POST   | `/password/reset`               |      | Reset password with the emailed token                  |
+| GET    | `/products`                     |  🔒  | List products (`?q=&category_id=&sort=&order=`)        |
+| GET    | `/products/low-stock`           |  🔒  | Products below their minimum stock                     |
+| GET    | `/products/:id`                 |  🔒  | Get a product                                          |
+| POST   | `/products`                     |  🔒  | Create a product (`quantity` = initial stock)          |
+| PUT    | `/products/:id`                 |  🔒  | Update name, price, category, minimum (not stock)      |
+| DELETE | `/products/:id`                 |  🔒  | Delete a product (`409` if it is in orders)            |
+| GET    | `/products/:id/stock-movements` |  🔒  | Stock movements, newest first                          |
+| POST   | `/products/:id/stock-movements` |  🔒  | Stock entry or manual adjustment (reason required)     |
+| PATCH  | `/products/:id/image`           |  🔒  | Upload/replace the image (`multipart`, field `image`)  |
+| DELETE | `/products/:id/image`           |  🔒  | Remove the image                                       |
+| GET    | `/categories`                   |  🔒  | List categories (with `products_count`)                |
+| POST   | `/categories`                   |  🔒  | Create a category                                      |
+| PUT    | `/categories/:id`               |  🔒  | Rename a category                                      |
+| DELETE | `/categories/:id`               |  🔒  | Delete a category (`409` if it has products)           |
+| GET    | `/customers`                    |  🔒  | List customers (`?q=&sort=&order=`, paginated)         |
+| GET    | `/customers/:id`                |  🔒  | Get a customer                                         |
+| POST   | `/customers`                    |  🔒  | Create a customer                                      |
+| PUT    | `/customers/:id`                |  🔒  | Update a customer                                      |
+| DELETE | `/customers/:id`                |  🔒  | Delete a customer (`409` if they have orders)          |
+| GET    | `/orders`                       |  🔒  | List orders (`?status=&customer_id=&from=&to=`)        |
+| GET    | `/orders/:id`                   |  🔒  | Get an order with items and status history             |
+| POST   | `/orders`                       |  🔒  | Create an order (takes the stock)                      |
+| PATCH  | `/orders/:id/pay`               |  🔒  | `pending → paid`                                       |
+| PATCH  | `/orders/:id/ship`              |  🔒  | `paid → shipped`                                       |
+| PATCH  | `/orders/:id/deliver`           |  🔒  | `shipped → delivered`                                  |
+| PATCH  | `/orders/:id/cancel`            |  🔒  | Cancel a pending/paid order (`{ reason }`, stock back) |
 
 `/sessions` and `/password/*` are rate limited to 20 requests per 15 minutes per IP.
 
@@ -228,7 +245,7 @@ permission on each operation. There is no public sign-up: an ADMIN creates users
   `_` are literal characters, not wildcards.
 - `sort` + `order` (`asc` | `desc`): customers by `name`, `email` or `created_at`; products by
   `name`, `price`, `quantity` or `created_at`. Default: `name` ascending.
-- Orders: `customer_id`, `from` (inclusive) and `to` (exclusive), as ISO 8601 instants with a
+- Orders: `status`, `customer_id`, `from` (inclusive) and `to` (exclusive), as ISO 8601 instants with a
   time zone offset, e.g. `from=2026-10-01T00:00:00-03:00`. The client decides where the day
   starts. `to` must be after `from` (`400` otherwise). Newest orders come first.
 
@@ -243,6 +260,10 @@ served from `/files/<name>`, and responses carry the full URL in `avatar_url` / 
   are stored trimmed and in lower case.
 - Customers with orders, and products that appear in orders, cannot be deleted (`409
 RESOURCE_IN_USE` with `details.orders_count`). Orders are sales history.
+- Order transitions follow the state machine; anything else is `409 INVALID_TRANSITION`
+  with `details.allowed_actions`. See the [root README](../../README.md#orders-and-stock).
+- Stock only changes through movements; a change that would make it negative is
+  `409 INSUFFICIENT_STOCK`.
 - The price of an order item is the product's price at the moment of purchase. Changing the
   product later does not change past orders. The item also carries `product: { id, name }`,
   with the current name.

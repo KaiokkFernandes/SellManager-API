@@ -1,20 +1,38 @@
-import { idParamsSchema, paginatedSchema } from '../common';
+import {
+  categoryBodySchema,
+  categorySchema,
+  listCategoriesQuerySchema,
+} from '../categories';
+import {
+  idParamsSchema,
+  paginatedSchema,
+  paginationQuerySchema,
+} from '../common';
 import {
   customerBodySchema,
   customerSchema,
   listCustomersQuerySchema,
 } from '../customers';
 import {
+  cancelOrderBodySchema,
   createOrderBodySchema,
   listOrdersQuerySchema,
+  orderDetailsSchema,
   orderSchema,
 } from '../orders';
+import { ORDER_TRANSITIONS, type OrderAction } from '../orderWorkflow';
 import {
   listProductsQuerySchema,
   productBodySchema,
   productImageUploadBodySchema,
   productSchema,
+  updateProductBodySchema,
 } from '../products';
+import {
+  listStockMovementsQuerySchema,
+  stockMovementBodySchema,
+  stockMovementSchema,
+} from '../stock';
 import {
   avatarUploadBodySchema,
   changePasswordBodySchema,
@@ -30,6 +48,26 @@ import {
   userSchema,
 } from '../users';
 import { defineRoute, RouteDefinition } from './define';
+
+/** Transição sem corpo (pagar, enviar, entregar). */
+function transitionRoute(
+  action: Exclude<OrderAction, 'cancel'>,
+  doc: { operationId: string; summary: string },
+) {
+  const { from, permission } = ORDER_TRANSITIONS[action];
+  return defineRoute({
+    method: 'patch',
+    path: `/orders/{id}/${action}`,
+    ...doc,
+    description: `Só a partir de: ${from.join(', ')}. 409 INVALID_TRANSITION nos demais status.`,
+    tags: ['Pedidos'],
+    auth: true,
+    permission,
+    request: { params: idParamsSchema },
+    responses: { 200: orderDetailsSchema },
+    errors: [404, 409],
+  });
+}
 
 /**
  * Contrato único da API: a fonte para o roteamento e a validação da API,
@@ -202,11 +240,22 @@ export const routes = {
       method: 'get',
       path: '/products',
       operationId: 'listProducts',
-      summary: 'Lista produtos, com busca e ordenação',
+      summary: 'Lista produtos, com busca, categoria e ordenação',
       tags: ['Produtos'],
       auth: true,
       permission: 'product:read',
       request: { query: listProductsQuerySchema },
+      responses: { 200: paginatedSchema(productSchema) },
+    }),
+    lowStock: defineRoute({
+      method: 'get',
+      path: '/products/low-stock',
+      operationId: 'listLowStockProducts',
+      summary: 'Produtos abaixo do estoque mínimo (maior falta primeiro)',
+      tags: ['Estoque'],
+      auth: true,
+      permission: 'product:read',
+      request: { query: paginationQuerySchema },
       responses: { 200: paginatedSchema(productSchema) },
     }),
     show: defineRoute({
@@ -231,7 +280,7 @@ export const routes = {
       permission: 'product:create',
       request: { body: productBodySchema },
       responses: { 201: productSchema },
-      errors: [409],
+      errors: [404, 409],
     }),
     update: defineRoute({
       method: 'put',
@@ -241,7 +290,7 @@ export const routes = {
       tags: ['Produtos'],
       auth: true,
       permission: 'product:update',
-      request: { params: idParamsSchema, body: productBodySchema },
+      request: { params: idParamsSchema, body: updateProductBodySchema },
       responses: { 200: productSchema },
       errors: [404, 409],
     }),
@@ -256,6 +305,32 @@ export const routes = {
       permission: 'product:delete',
       request: { params: idParamsSchema },
       responses: { 204: null },
+      errors: [404, 409],
+    }),
+    listStockMovements: defineRoute({
+      method: 'get',
+      path: '/products/{id}/stock-movements',
+      operationId: 'listStockMovements',
+      summary: 'Movimentações de estoque do produto (mais recentes primeiro)',
+      tags: ['Estoque'],
+      auth: true,
+      permission: 'stock:read',
+      request: { params: idParamsSchema, query: listStockMovementsQuerySchema },
+      responses: { 200: paginatedSchema(stockMovementSchema) },
+      errors: [404],
+    }),
+    createStockMovement: defineRoute({
+      method: 'post',
+      path: '/products/{id}/stock-movements',
+      operationId: 'createStockMovement',
+      summary: 'Registra uma entrada ou um ajuste manual de estoque',
+      description:
+        'Trava o produto e grava a movimentação e o novo saldo na mesma transação. 409 INSUFFICIENT_STOCK se o ajuste deixaria o saldo negativo.',
+      tags: ['Estoque'],
+      auth: true,
+      permission: 'stock:adjust',
+      request: { params: idParamsSchema, body: stockMovementBodySchema },
+      responses: { 201: stockMovementSchema },
       errors: [404, 409],
     }),
     updateImage: defineRoute({
@@ -285,6 +360,57 @@ export const routes = {
       request: { params: idParamsSchema },
       responses: { 200: productSchema },
       errors: [404],
+    }),
+  },
+
+  categories: {
+    list: defineRoute({
+      method: 'get',
+      path: '/categories',
+      operationId: 'listCategories',
+      summary: 'Lista categorias de produto (por nome)',
+      tags: ['Categorias'],
+      auth: true,
+      permission: 'product:read',
+      request: { query: listCategoriesQuerySchema },
+      responses: { 200: paginatedSchema(categorySchema) },
+    }),
+    create: defineRoute({
+      method: 'post',
+      path: '/categories',
+      operationId: 'createCategory',
+      summary: 'Cria uma categoria',
+      tags: ['Categorias'],
+      auth: true,
+      permission: 'category:create',
+      request: { body: categoryBodySchema },
+      responses: { 201: categorySchema },
+      errors: [409],
+    }),
+    update: defineRoute({
+      method: 'put',
+      path: '/categories/{id}',
+      operationId: 'updateCategory',
+      summary: 'Renomeia uma categoria',
+      tags: ['Categorias'],
+      auth: true,
+      permission: 'category:update',
+      request: { params: idParamsSchema, body: categoryBodySchema },
+      responses: { 200: categorySchema },
+      errors: [404, 409],
+    }),
+    delete: defineRoute({
+      method: 'delete',
+      path: '/categories/{id}',
+      operationId: 'deleteCategory',
+      summary: 'Remove uma categoria',
+      description: '409 RESOURCE_IN_USE se houver produtos na categoria.',
+      tags: ['Categorias'],
+      auth: true,
+      permission: 'category:delete',
+      request: { params: idParamsSchema },
+      responses: { 204: null },
+      errors: [404, 409],
     }),
   },
 
@@ -367,12 +493,12 @@ export const routes = {
       method: 'get',
       path: '/orders/{id}',
       operationId: 'showOrder',
-      summary: 'Mostra um pedido com os itens',
+      summary: 'Mostra um pedido com os itens e o histórico de status',
       tags: ['Pedidos'],
       auth: true,
       permission: 'order:read',
       request: { params: idParamsSchema },
-      responses: { 200: orderSchema },
+      responses: { 200: orderDetailsSchema },
       errors: [404],
     }),
     create: defineRoute({
@@ -389,32 +515,31 @@ export const routes = {
       responses: { 201: orderSchema },
       errors: [404, 409],
     }),
-    // concluir e cancelar são rotas separadas porque exigem permissões diferentes
-    complete: defineRoute({
-      method: 'patch',
-      path: '/orders/{id}/complete',
-      operationId: 'completeOrder',
-      summary: 'Conclui um pedido pendente',
-      description: '409 se o pedido já foi concluído ou cancelado.',
-      tags: ['Pedidos'],
-      auth: true,
-      permission: 'order:complete',
-      request: { params: idParamsSchema },
-      responses: { 200: orderSchema },
-      errors: [404, 409],
+    // uma rota por ação: cada uma exige uma permissão diferente do mapa
+    pay: transitionRoute('pay', {
+      operationId: 'payOrder',
+      summary: 'Registra o pagamento de um pedido pendente',
+    }),
+    ship: transitionRoute('ship', {
+      operationId: 'shipOrder',
+      summary: 'Marca um pedido pago como enviado',
+    }),
+    deliver: transitionRoute('deliver', {
+      operationId: 'deliverOrder',
+      summary: 'Marca um pedido enviado como entregue',
     }),
     cancel: defineRoute({
       method: 'patch',
       path: '/orders/{id}/cancel',
       operationId: 'cancelOrder',
-      summary: 'Cancela um pedido pendente',
+      summary: 'Cancela um pedido pendente ou pago (motivo obrigatório)',
       description:
-        'Devolve os itens ao estoque. 409 se o pedido já foi concluído ou cancelado.',
+        'Devolve todos os itens ao estoque. 409 INVALID_TRANSITION a partir de enviado, entregue ou cancelado.',
       tags: ['Pedidos'],
       auth: true,
-      permission: 'order:cancel',
-      request: { params: idParamsSchema },
-      responses: { 200: orderSchema },
+      permission: ORDER_TRANSITIONS.cancel.permission,
+      request: { params: idParamsSchema, body: cancelOrderBodySchema },
+      responses: { 200: orderDetailsSchema },
       errors: [404, 409],
     }),
   },

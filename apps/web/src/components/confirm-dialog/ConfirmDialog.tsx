@@ -1,5 +1,6 @@
 import { AlertDialog } from 'radix-ui';
 import { Loader2 } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -14,6 +15,8 @@ interface ConfirmDialogProps {
   /** Mantém o diálogo aberto e desabilita os botões enquanto a ação roda. */
   isPending?: boolean;
   onConfirm: () => void;
+  /** Conteúdo extra entre a descrição e os botões (ex.: campo de motivo). */
+  children?: ReactNode;
 }
 
 /**
@@ -29,6 +32,7 @@ export function ConfirmDialog({
   destructive,
   isPending,
   onConfirm,
+  children,
 }: ConfirmDialogProps) {
   return (
     <AlertDialog.Root open={open} onOpenChange={onOpenChange}>
@@ -43,6 +47,7 @@ export function ConfirmDialog({
               {description}
             </AlertDialog.Description>
           </div>
+          {children}
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <AlertDialog.Cancel
               disabled={isPending}

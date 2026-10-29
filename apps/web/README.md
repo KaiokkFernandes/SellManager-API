@@ -37,23 +37,36 @@ Prints gerados pelo Playwright (`pnpm --filter web e2e`) em
 | ------------------------------------------------------------ | ------------------------------------------------------ |
 | ![Estoque](docs/screenshots/pedido-estoque-insuficiente.png) | ![Clientes](docs/screenshots/clientes-mobile-dark.png) |
 
+| Pedido com a linha do tempo                                   | Estoque baixo (desktop, claro)                                     |
+| ------------------------------------------------------------- | ------------------------------------------------------------------ |
+| ![Linha do tempo](docs/screenshots/pedido-linha-do-tempo.png) | ![Estoque baixo](docs/screenshots/estoque-baixo-desktop-light.png) |
+
 - **Clientes**: lista com busca (debounce) e ordenação por nome, e-mail ou cadastro;
   formulário de criar/editar; detalhe com os pedidos do cliente e atalho para novo pedido;
   exclusão com confirmação que explica a recusa quando há pedidos.
-- **Produtos**: lista com miniatura, preço em BRL e selo de estoque (esgotado / baixo ≤ 5);
-  formulário com o preço em centavos; imagem com preview, validação de tipo e tamanho
-  (os limites do shared), progresso, substituição, remoção e placeholder sem imagem.
+- **Produtos**: lista com miniatura, categoria (coluna e filtro na URL), preço em BRL e selo de
+  estoque (esgotado / abaixo do mínimo, pela regra da API); formulário com categoria, preço em
+  centavos, estoque mínimo e estoque inicial (só no cadastro: depois, só por movimentação);
+  aba **Movimentações** (com `stock:read`) com o livro de estoque e "Ajustar estoque"
+  (entrada ou ajuste com motivo, com `stock:adjust`); imagem com preview, validação de tipo e
+  tamanho (os limites do shared), progresso, substituição, remoção e placeholder sem imagem.
+- **Categorias**: lista com a contagem de produtos (link para os produtos filtrados); criar,
+  renomear e excluir conforme `category:*`, com a recusa explicada quando há produtos.
+- **Estoque baixo**: alerta com a contagem no cabeçalho (some quando não há nada) e a página
+  `/products/low-stock` com quanto falta de cada produto.
 - **Usuários** (só ADMIN): lista com busca e filtros de papel e situação na URL; cadastro com
   papel e senha inicial; edição de nome e papel; ativar/desativar com confirmação. Na própria
   conta, o papel fica bloqueado e não há "desativar", e as recusas da API (último ADMIN) aparecem
   no diálogo.
 - **Meu perfil** (todos; link no nome do header): editar o nome e trocar a senha (exige a
   atual). A sessão atual recebe um token novo e as outras são encerradas.
-- **Pedidos**: lista com cliente, data, itens, total e status, filtrável por cliente e
-  período; criação com combobox de cliente e de produtos (busca no servidor), quantidade,
+- **Pedidos**: lista com cliente, data, itens, total e badge de status, filtrável por status,
+  cliente e período (tudo na URL); criação com combobox de cliente e de produtos (busca no servidor), quantidade,
   preço unitário e subtotal por linha, produto repetido somando quantidade, total ao vivo,
   aviso acima do estoque conhecido e o erro de estoque da API apontando a linha; detalhe com
-  os preços da compra, concluir e cancelar (devolve o estoque).
+  os preços da compra, a **linha do tempo** (quem, quando, de/para, motivo) e só as ações que
+  o status atual (tabela do shared) e o papel permitem: pagar, enviar e entregar com
+  confirmação, cancelar com motivo obrigatório (devolve o estoque).
 
 ### Por que formulário em página (e não em drawer)
 
@@ -333,6 +346,11 @@ para `@/lib/utils`.
 - Pedidos não registram quem os criou: SELLER vê todos os pedidos. "Vendedor vê só os seus"
   precisa de `created_by` no pedido.
 - `report:read` está reservada: ainda não há relatórios.
+- Pedidos `pending` abandonados seguram estoque (a baixa é na criação): falta expirar pedidos
+  pendentes antigos, ou separar estoque reservado de físico.
+- Movimentações não têm filtro por tipo nem período, e não há exportação.
+- O alerta de estoque baixo atualiza a cada minuto ou após uma mudança feita nesta sessão;
+  não há push (WebSocket) nem notificação por e-mail.
 - Não há fluxo para trocar o próprio e-mail (com confirmação por e-mail).
 - Papel alterado chega ao front ao voltar para a aba ou em até 1 min; até lá a UI pode mostrar
   um botão que a API recusa (403, com mensagem).

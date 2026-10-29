@@ -5,7 +5,7 @@ import {
   slicePage,
 } from '@shared/domain/pagination';
 import { matchesSearch, sortInMemory } from '@shared/domain/listing';
-import { Product } from '../domain/entities/Product';
+import { isBelowMinStock, Product } from '../domain/entities/Product';
 import {
   ICreateProductDTO,
   IFindProductsFilter,
@@ -15,12 +15,25 @@ import {
 export class FakeProductsRepository implements IProductsRepository {
   public readonly products: Product[] = [];
 
+  /** Nome da categoria pelo id (os testes ligam ao fake de categorias). */
+  constructor(
+    private readonly categoryName: (id: string) => string = () => '',
+  ) {}
+
+  private summary(categoryId: string | null): Product['category'] {
+    return categoryId
+      ? { id: categoryId, name: this.categoryName(categoryId) }
+      : null;
+  }
+
   public findAll(
-    { search, sort = 'name', order }: IFindProductsFilter,
+    { search, category_id, sort = 'name', order }: IFindProductsFilter,
     pagination: PaginationParams,
   ): Promise<PageResult<Product>> {
-    const found = this.products.filter(product =>
-      matchesSearch(search, product.name),
+    const found = this.products.filter(
+      product =>
+        matchesSearch(search, product.name) &&
+        (!category_id || product.category_id === category_id),
     );
     return Promise.resolve(
       slicePage(
@@ -52,6 +65,20 @@ export class FakeProductsRepository implements IProductsRepository {
     );
   }
 
+  public findBelowMinStock(
+    pagination: PaginationParams,
+  ): Promise<PageResult<Product>> {
+    const below = this.products
+      .filter(isBelowMinStock)
+      .sort(
+        (a, b) =>
+          b.min_stock - b.quantity - (a.min_stock - a.quantity) ||
+          a.name.localeCompare(b.name),
+      )
+      .map(product => ({ ...product }));
+    return Promise.resolve(slicePage(below, pagination));
+  }
+
   public create(data: ICreateProductDTO): Promise<Product> {
     const now = new Date();
     const product: Product = {
@@ -59,7 +86,10 @@ export class FakeProductsRepository implements IProductsRepository {
       created_at: now,
       updated_at: now,
       image: null,
+      min_stock: 0,
       ...data,
+      category_id: data.category_id ?? null,
+      category: this.summary(data.category_id ?? null),
     };
     this.products.push(product);
     return Promise.resolve({ ...product });
@@ -67,7 +97,11 @@ export class FakeProductsRepository implements IProductsRepository {
 
   public save(product: Product): Promise<Product> {
     const index = this.products.findIndex(item => item.id === product.id);
-    const saved = { ...product, updated_at: new Date() };
+    const saved = {
+      ...product,
+      category: this.summary(product.category_id),
+      updated_at: new Date(),
+    };
     if (index >= 0) this.products[index] = saved;
     else this.products.push(saved);
     return Promise.resolve({ ...saved });

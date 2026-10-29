@@ -1,7 +1,4 @@
 import { getRouteApi, Link } from '@tanstack/react-router';
-import { Ban, CheckCircle2 } from 'lucide-react';
-import { useState } from 'react';
-import { ConfirmDialog } from '@/components/confirm-dialog';
 import { PageHeader } from '@/components/feedback/PageHeader';
 import { OrderStatusBadge } from '@/components/status/OrderStatusBadge';
 import { Button } from '@/components/ui/button';
@@ -17,38 +14,15 @@ import {
 } from '@/components/ui/table';
 import { getErrorMessage } from '@/lib/apiErrors';
 import { formatCents, formatDateTime } from '@/lib/format';
-import { notify } from '@/lib/notify';
-import { useCan } from '@/features/auth';
-import { useOrder, useUpdateOrderStatus } from './queries';
+import { OrderActions } from './OrderActions';
+import { OrderTimeline } from './OrderTimeline';
+import { useOrder } from './queries';
 
 const route = getRouteApi('/authenticated/orders/$orderId');
-
-type Action = 'completed' | 'canceled';
-
-const ACTIONS: Record<
-  Action,
-  { title: string; description: string; label: string }
-> = {
-  completed: {
-    title: 'Concluir pedido?',
-    description:
-      'O pedido será marcado como concluído e não poderá mais ser alterado.',
-    label: 'Concluir pedido',
-  },
-  canceled: {
-    title: 'Cancelar pedido?',
-    description:
-      'Os itens voltam ao estoque e o pedido não poderá mais ser alterado.',
-    label: 'Cancelar pedido',
-  },
-};
 
 export function OrderDetailPage() {
   const { orderId } = route.useParams();
   const order = useOrder(orderId);
-  const updateStatus = useUpdateOrderStatus(orderId);
-  const [action, setAction] = useState<Action | null>(null);
-  const can = useCan();
 
   if (order.isPending) {
     return (
@@ -81,24 +55,7 @@ export function OrderDetailPage() {
       <PageHeader
         title={`Pedido de ${formatDateTime(data.created_at)}`}
         description={`Nº ${data.id.slice(0, 8)}`}
-        actions={
-          data.status === 'pending' ? (
-            <div className="flex flex-wrap gap-2">
-              {can('order:cancel') ? (
-                <Button variant="outline" onClick={() => setAction('canceled')}>
-                  <Ban aria-hidden="true" />
-                  Cancelar pedido
-                </Button>
-              ) : null}
-              {can('order:complete') ? (
-                <Button onClick={() => setAction('completed')}>
-                  <CheckCircle2 aria-hidden="true" />
-                  Concluir pedido
-                </Button>
-              ) : null}
-            </div>
-          ) : null
-        }
+        actions={<OrderActions orderId={data.id} status={data.status} />}
       />
       <div className="mb-6 flex flex-wrap items-center gap-3 text-sm">
         <OrderStatusBadge status={data.status} />
@@ -115,70 +72,60 @@ export function OrderDetailPage() {
         </span>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Itens</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <caption className="sr-only">
-              Itens do pedido, com o preço do momento da compra
-            </caption>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead>Produto</TableHead>
-                <TableHead className="text-right">Preço na compra</TableHead>
-                <TableHead className="text-right">Qtd.</TableHead>
-                <TableHead className="text-right">Subtotal</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.items.map(item => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">
-                    {item.product.name}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {formatCents(item.price_cents)}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {item.quantity}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {formatCents(item.price_cents * item.quantity)}
-                  </TableCell>
+      <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+        <Card>
+          <CardHeader>
+            <CardTitle>Itens</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <caption className="sr-only">
+                Itens do pedido, com o preço do momento da compra
+              </caption>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Produto</TableHead>
+                  <TableHead className="text-right">Preço na compra</TableHead>
+                  <TableHead className="text-right">Qtd.</TableHead>
+                  <TableHead className="text-right">Subtotal</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <p className="mt-4 flex justify-end gap-3 border-t pt-4 text-lg">
-            <span className="text-muted-foreground">Total</span>
-            <span className="font-semibold tabular-nums">
-              {formatCents(data.total_cents)}
-            </span>
-          </p>
-        </CardContent>
-      </Card>
-
-      <ConfirmDialog
-        open={action !== null}
-        onOpenChange={open => !open && setAction(null)}
-        title={action ? ACTIONS[action].title : ''}
-        description={action ? ACTIONS[action].description : ''}
-        confirmLabel={action ? ACTIONS[action].label : ''}
-        destructive={action === 'canceled'}
-        isPending={updateStatus.isPending}
-        onConfirm={() => {
-          if (!action) return;
-          updateStatus.mutate(action === 'completed' ? 'complete' : 'cancel', {
-            onSuccess: () => setAction(null),
-            onError: error => {
-              setAction(null);
-              notify.error(error);
-            },
-          });
-        }}
-      />
+              </TableHeader>
+              <TableBody>
+                {data.items.map(item => (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-medium">
+                      {item.product.name}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formatCents(item.price_cents)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {item.quantity}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formatCents(item.price_cents * item.quantity)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <p className="mt-4 flex justify-end gap-3 border-t pt-4 text-lg">
+              <span className="text-muted-foreground">Total</span>
+              <span className="font-semibold tabular-nums">
+                {formatCents(data.total_cents)}
+              </span>
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="self-start">
+          <CardHeader>
+            <CardTitle>Histórico</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <OrderTimeline history={data.history} />
+          </CardContent>
+        </Card>
+      </div>
     </>
   );
 }

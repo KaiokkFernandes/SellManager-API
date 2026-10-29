@@ -1,7 +1,9 @@
 import { EntitySchema } from 'typeorm';
 import { Product } from '../../../domain/entities/Product';
 
-export const ProductSchema = new EntitySchema<Product>({
+export type ProductRow = Omit<Product, 'category'>;
+
+export const ProductSchema = new EntitySchema<ProductRow>({
   name: 'Product',
   tableName: 'products',
   columns: {
@@ -19,6 +21,8 @@ export const ProductSchema = new EntitySchema<Product>({
       },
     },
     quantity: { type: 'int' },
+    min_stock: { type: 'int', default: 0 },
+    category_id: { type: 'uuid', nullable: true },
     image: { type: 'varchar', nullable: true },
     created_at: { type: 'timestamptz', createDate: true },
     updated_at: { type: 'timestamptz', updateDate: true },

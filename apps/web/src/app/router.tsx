@@ -32,7 +32,14 @@ import {
   ordersSearchSchema,
 } from '@/features/orders';
 import {
+  CategoriesListPage,
+  categoriesSearchSchema,
+} from '@/features/categories';
+import {
   EditProductPage,
+  editProductSearchSchema,
+  LowStockPage,
+  lowStockSearchSchema,
   NewProductPage,
   ProductsListPage,
   productsSearchSchema,
@@ -170,11 +177,28 @@ const newProductRoute = createRoute({
   beforeLoad: requires('product:create'),
   component: NewProductPage,
 });
+const lowStockRoute = createRoute({
+  getParentRoute: () => productsRoute,
+  path: '/low-stock',
+  beforeLoad: requires('product:read'),
+  validateSearch: lowStockSearchSchema,
+  component: LowStockPage,
+});
 const editProductRoute = createRoute({
   getParentRoute: () => productsRoute,
   path: '/$productId/edit',
   beforeLoad: requires('product:update'),
+  validateSearch: editProductSearchSchema,
   component: EditProductPage,
+});
+
+// ---- Categorias (leitura para todos; alterar exige category:*)
+const categoriesRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/categories',
+  beforeLoad: requires('product:read'),
+  validateSearch: categoriesSearchSchema,
+  component: CategoriesListPage,
 });
 
 // ---- Pedidos
@@ -243,8 +267,10 @@ const routeTree = rootRoute.addChildren([
     productsRoute.addChildren([
       productsListRoute,
       newProductRoute,
+      lowStockRoute,
       editProductRoute,
     ]),
+    categoriesRoute,
     ordersRoute.addChildren([ordersListRoute, newOrderRoute, orderDetailRoute]),
     usersRoute.addChildren([usersListRoute, newUserRoute, editUserRoute]),
   ]),

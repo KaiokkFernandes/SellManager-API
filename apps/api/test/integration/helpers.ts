@@ -26,7 +26,7 @@ export async function createTestContext(): Promise<TestContext> {
 
 export async function resetDatabase(): Promise<void> {
   await AppDataSource.query(
-    'TRUNCATE order_items, orders, customers, products, user_tokens, users CASCADE',
+    'TRUNCATE categories, stock_movements, order_status_history, order_items, orders, customers, products, user_tokens, users CASCADE',
   );
 }
 
@@ -80,4 +80,20 @@ export async function authenticate(
   user: TestUser = {},
 ): Promise<string> {
   return login(ctx, await createUser(ctx, user));
+}
+
+/**
+ * Invariante do estoque: o saldo de cada produto é a soma das movimentações.
+ * Devolve os produtos que divergem (vazio = consistente).
+ */
+export async function stockInconsistencies(): Promise<
+  { id: string; quantity: number; ledger: number }[]
+> {
+  return AppDataSource.query(`
+    SELECT p.id, p.quantity, COALESCE(SUM(m.quantity), 0)::int AS ledger
+    FROM products p
+    LEFT JOIN stock_movements m ON m.product_id = p.id
+    GROUP BY p.id
+    HAVING p.quantity <> COALESCE(SUM(m.quantity), 0)
+  `);
 }

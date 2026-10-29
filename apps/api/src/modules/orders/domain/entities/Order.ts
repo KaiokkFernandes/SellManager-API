@@ -1,4 +1,5 @@
 import type { OrderStatus } from '@sellmanager/shared';
+import type { OrderStatusChange } from './OrderStatusChange';
 
 // Fonte única dos status: @sellmanager/shared (usado também pelo front-end).
 export { ORDER_STATUSES } from '@sellmanager/shared';
@@ -38,17 +39,9 @@ export interface Order {
   updated_at: Date;
 }
 
-const allowedTransitions: Record<OrderStatus, OrderStatus[]> = {
-  pending: ['completed', 'canceled'],
-  completed: [],
-  canceled: [],
-};
-
-export function canChangeOrderStatus(
-  from: OrderStatus,
-  to: OrderStatus,
-): boolean {
-  return allowedTransitions[from].includes(to);
+/** Pedido com o histórico de status (detalhe e respostas das transições). */
+export interface OrderDetails extends Order {
+  history: OrderStatusChange[];
 }
 
 /** Soma em centavos para evitar erro de ponto flutuante (0.1 + 0.2). */

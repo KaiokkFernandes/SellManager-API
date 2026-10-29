@@ -56,6 +56,8 @@ describe('formulário com schema do shared', () => {
       name: 'Cabo',
       price_cents: 123456,
       quantity: 3,
+      category_id: null,
+      min_stock: 0,
     });
   });
 

@@ -1,16 +1,16 @@
 import type { routes } from '@sellmanager/shared';
+import { ChangeOrderStatusService } from '../../../services/ChangeOrderStatusService';
 import type { RouteHandler } from '@shared/http/contract/mountRoute';
 import { CreateOrderService } from '../../../services/CreateOrderService';
 import { ListOrdersService } from '../../../services/ListOrdersService';
 import { ShowOrderService } from '../../../services/ShowOrderService';
-import { UpdateOrderStatusService } from '../../../services/UpdateOrderStatusService';
-import { toOrderResponse } from '../OrderMapper';
+import { toOrderDetailsResponse, toOrderResponse } from '../OrderMapper';
 
 interface OrdersServices {
   list: ListOrdersService;
   show: ShowOrderService;
   create: CreateOrderService;
-  updateStatus: UpdateOrderStatusService;
+  changeStatus: ChangeOrderStatusService;
 }
 
 type Routes = typeof routes.orders;
@@ -19,10 +19,11 @@ export class OrdersController {
   constructor(private readonly services: OrdersServices) {}
 
   public list: RouteHandler<Routes['list']> = async ({ input, reply }) => {
-    const { customer_id, from, to, page, limit } = input.query;
+    const { customer_id, status, from, to, page, limit } = input.query;
     const { data, meta } = await this.services.list.execute(
       {
         customer_id,
+        status,
         from: from ? new Date(from) : undefined,
         to: to ? new Date(to) : undefined,
       },
@@ -33,30 +34,71 @@ export class OrdersController {
 
   public show: RouteHandler<Routes['show']> = async ({ input, reply }) => {
     const order = await this.services.show.execute({ id: input.params.id });
-    reply(200, toOrderResponse(order));
+    reply(200, toOrderDetailsResponse(order));
   };
 
-  public create: RouteHandler<Routes['create']> = async ({ input, reply }) => {
-    const order = await this.services.create.execute(input.body);
+  public create: RouteHandler<Routes['create']> = async ({
+    input,
+    request,
+    reply,
+  }) => {
+    const order = await this.services.create.execute({
+      ...input.body,
+      created_by: request.user.id,
+    });
     reply(201, toOrderResponse(order));
   };
 
-  public complete: RouteHandler<Routes['complete']> = async ({
+  public pay: RouteHandler<Routes['pay']> = async ({
     input,
+    request,
     reply,
   }) => {
-    const order = await this.services.updateStatus.execute({
+    const order = await this.services.changeStatus.execute({
       id: input.params.id,
-      status: 'completed',
+      action: 'pay',
+      changed_by: request.user.id,
     });
-    reply(200, toOrderResponse(order));
+    reply(200, toOrderDetailsResponse(order));
   };
 
-  public cancel: RouteHandler<Routes['cancel']> = async ({ input, reply }) => {
-    const order = await this.services.updateStatus.execute({
+  public ship: RouteHandler<Routes['ship']> = async ({
+    input,
+    request,
+    reply,
+  }) => {
+    const order = await this.services.changeStatus.execute({
       id: input.params.id,
-      status: 'canceled',
+      action: 'ship',
+      changed_by: request.user.id,
     });
-    reply(200, toOrderResponse(order));
+    reply(200, toOrderDetailsResponse(order));
+  };
+
+  public deliver: RouteHandler<Routes['deliver']> = async ({
+    input,
+    request,
+    reply,
+  }) => {
+    const order = await this.services.changeStatus.execute({
+      id: input.params.id,
+      action: 'deliver',
+      changed_by: request.user.id,
+    });
+    reply(200, toOrderDetailsResponse(order));
+  };
+
+  public cancel: RouteHandler<Routes['cancel']> = async ({
+    input,
+    request,
+    reply,
+  }) => {
+    const order = await this.services.changeStatus.execute({
+      id: input.params.id,
+      action: 'cancel',
+      reason: input.body.reason,
+      changed_by: request.user.id,
+    });
+    reply(200, toOrderDetailsResponse(order));
   };
 }

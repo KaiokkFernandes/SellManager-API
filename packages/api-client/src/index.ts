@@ -19,3 +19,7 @@ export type Product = Schemas['Product'];
 export type Customer = Schemas['Customer'];
 export type Order = Schemas['Order'];
 export type OrderItem = Schemas['OrderItem'];
+export type OrderDetails = Schemas['OrderDetails'];
+export type OrderStatusChange = Schemas['OrderStatusChange'];
+export type StockMovement = Schemas['StockMovement'];
+export type Category = Schemas['Category'];

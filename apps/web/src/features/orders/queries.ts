@@ -1,5 +1,10 @@
 import { unwrap } from '@sellmanager/api-client';
-import type { CreateOrderBody } from '@sellmanager/shared';
+import type {
+  CancelOrderBody,
+  CreateOrderBody,
+  OrderAction,
+  OrderStatus,
+} from '@sellmanager/shared';
 import {
   keepPreviousData,
   useMutation,
@@ -14,6 +19,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { useDebouncedValue } from '@/lib/useDebouncedValue';
 
 export interface OrdersListParams {
+  status?: OrderStatus;
   customer_id?: string;
   /** Dias locais (AAAA-MM-DD), inclusivos. */
   from?: string;
@@ -29,6 +35,7 @@ export function useOrdersList(params: OrdersListParams, enabled = true) {
         api.GET('/orders', {
           params: {
             query: {
+              status: params.status,
               customer_id: params.customer_id,
               from: params.from ? startOfLocalDay(params.from) : undefined,
               to: params.to ? startOfNextLocalDay(params.to) : undefined,
@@ -104,30 +111,44 @@ export function useCreateOrder() {
   });
 }
 
-const STATUS_MESSAGE = {
-  completed: 'Pedido concluído.',
-  canceled: 'Pedido cancelado. Os itens voltaram ao estoque.',
+const SUCCESS_MESSAGE: Record<OrderAction, string> = {
+  pay: 'Pagamento registrado.',
+  ship: 'Pedido marcado como enviado.',
+  deliver: 'Pedido marcado como entregue.',
+  cancel: 'Pedido cancelado. Os itens voltaram ao estoque.',
 };
 
-export function useUpdateOrderStatus(id: string) {
+export type OrderActionInput =
+  | { action: Exclude<OrderAction, 'cancel'> }
+  | { action: 'cancel'; body: CancelOrderBody };
+
+function requestAction(id: string, input: OrderActionInput) {
+  const params = { path: { id } };
+  switch (input.action) {
+    case 'pay':
+      return api.PATCH('/orders/{id}/pay', { params });
+    case 'ship':
+      return api.PATCH('/orders/{id}/ship', { params });
+    case 'deliver':
+      return api.PATCH('/orders/{id}/deliver', { params });
+    case 'cancel':
+      return api.PATCH('/orders/{id}/cancel', { params, body: input.body });
+  }
+}
+
+/** Pagar, enviar, entregar ou cancelar (a API valida estado e papel). */
+export function useOrderAction(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (action: 'complete' | 'cancel') =>
-      unwrap(
-        action === 'complete'
-          ? api.PATCH('/orders/{id}/complete', { params: { path: { id } } })
-          : api.PATCH('/orders/{id}/cancel', { params: { path: { id } } }),
-      ),
-    onSuccess: async order => {
+    mutationFn: (input: OrderActionInput) => unwrap(requestAction(id, input)),
+    onSuccess: async (order, input) => {
       queryClient.setQueryData(queryKeys.orders.detail(id), order);
       // cancelar devolve o estoque
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.orders.all }),
         queryClient.invalidateQueries({ queryKey: queryKeys.products.all }),
       ]);
-      notify.success(
-        STATUS_MESSAGE[order.status === 'canceled' ? 'canceled' : 'completed'],
-      );
+      notify.success(SUCCESS_MESSAGE[input.action]);
     },
   });
 }

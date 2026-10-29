@@ -87,13 +87,14 @@ export class OrdersRepository implements IOrdersRepository {
   }
 
   public async findAll(
-    { customer_id, from, to }: IFindOrdersFilter,
+    { customer_id, status, from, to }: IFindOrdersFilter,
     pagination: PaginationParams,
   ): Promise<PageResult<Order>> {
     const query = this.orders.createQueryBuilder('order');
     if (customer_id) {
       query.andWhere('order.customer_id = :customer_id', { customer_id });
     }
+    if (status) query.andWhere('order.status = :status', { status });
     if (from) query.andWhere('order.created_at >= :from', { from });
     if (to) query.andWhere('order.created_at < :to', { to });
 

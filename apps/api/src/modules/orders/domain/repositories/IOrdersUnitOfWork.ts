@@ -1,9 +1,13 @@
 import { IProductsRepository } from '@modules/products/domain/repositories/IProductsRepository';
+import { IStockMovementsRepository } from '@modules/products/domain/repositories/IStockMovementsRepository';
+import { IOrderStatusHistoryRepository } from './IOrderStatusHistoryRepository';
 import { IOrdersRepository } from './IOrdersRepository';
 
 export interface IOrdersTransactionContext {
   orders: IOrdersRepository;
   products: IProductsRepository;
+  movements: IStockMovementsRepository;
+  history: IOrderStatusHistoryRepository;
 }
 
 /**

@@ -1,22 +1,33 @@
+import type { ICategoriesRepository } from '@modules/categories/domain/repositories/ICategoriesRepository';
 import AppError from '@shared/errors/AppError';
+import { assertCategoryExists } from './CreateProductService';
 import { Product } from '../domain/entities/Product';
-import {
-  ICreateProductDTO,
-  IProductsRepository,
-} from '../domain/repositories/IProductsRepository';
+import { IProductsRepository } from '../domain/repositories/IProductsRepository';
 
-interface IRequest extends ICreateProductDTO {
+/** O estoque não muda aqui: só por movimentação (entrada/ajuste). */
+interface IRequest {
   id: string;
+  name: string;
+  price: number;
+  category_id?: string | null;
+  min_stock?: number;
 }
 
 export class UpdateProductService {
-  constructor(private readonly productsRepository: IProductsRepository) {}
+  constructor(
+    private readonly productsRepository: IProductsRepository,
+    private readonly categoriesRepository: Pick<
+      ICategoriesRepository,
+      'findById'
+    >,
+  ) {}
 
   public async execute({
     id,
     name,
     price,
-    quantity,
+    category_id = null,
+    min_stock = 0,
   }: IRequest): Promise<Product> {
     const product = await this.productsRepository.findById(id);
 
@@ -33,9 +44,12 @@ export class UpdateProductService {
       );
     }
 
+    await assertCategoryExists(this.categoriesRepository, category_id);
+
     product.name = name;
+    product.category_id = category_id;
+    product.min_stock = min_stock;
     product.price = price;
-    product.quantity = quantity;
 
     return this.productsRepository.save(product);
   }

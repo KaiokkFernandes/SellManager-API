@@ -10,6 +10,7 @@ import {
   useZodForm,
 } from '@/components/form';
 import { Button } from '@/components/ui/button';
+import { CategoryField } from './CategoryField';
 
 interface ProductFormProps<T> {
   defaultValues?: ProductBody;
@@ -17,18 +18,28 @@ interface ProductFormProps<T> {
   onSubmit: (values: ProductBody) => Promise<T>;
   onSaved: (result: T) => void;
   onCancel: () => void;
+  /** Só no cadastro: depois o estoque muda por entradas e ajustes. */
+  withInitialStock?: boolean;
 }
 
-/** Criar e editar. Preço em centavos (MoneyField), validação = schema do shared. */
+/**
+ * Criar e editar. Preço em centavos (MoneyField), validação = schema do shared.
+ * Na edição o estoque não aparece: ele só muda por movimentação.
+ */
 export function ProductForm<T>({
   defaultValues,
   submitLabel,
   onSubmit,
   onSaved,
   onCancel,
+  withInitialStock = false,
 }: ProductFormProps<T>) {
   const form = useZodForm(productBodySchema, {
-    defaultValues: defaultValues ?? { name: '' },
+    defaultValues: defaultValues ?? {
+      name: '',
+      category_id: null,
+      min_stock: 0,
+    },
   });
   const guard = useUnsavedChangesGuard(form.formState.isDirty);
   const submitting = form.formState.isSubmitting;
@@ -54,16 +65,28 @@ export function ProductForm<T>({
         label="Nome"
         autoComplete="off"
       />
+      <CategoryField control={form.control} name="category_id" />
       <div className="grid gap-4 sm:grid-cols-2">
         <MoneyField control={form.control} name="price_cents" label="Preço" />
+        {withInitialStock ? (
+          <NumberField
+            control={form.control}
+            name="quantity"
+            label="Estoque inicial"
+            min={0}
+            step={1}
+            inputMode="numeric"
+            description="Depois, só muda por entradas e ajustes"
+          />
+        ) : null}
         <NumberField
           control={form.control}
-          name="quantity"
-          label="Estoque"
+          name="min_stock"
+          label="Estoque mínimo"
           min={0}
           step={1}
           inputMode="numeric"
-          description="Unidades disponíveis"
+          description="Abaixo disso, entra no alerta (0 desliga)"
         />
       </div>
       <div className="flex flex-col-reverse gap-2 sm:flex-row">

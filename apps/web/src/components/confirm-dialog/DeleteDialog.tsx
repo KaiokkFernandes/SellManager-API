@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getErrorMessage, getInUseOrdersCount } from '@/lib/apiErrors';
+import { getErrorMessage, getInUseCount } from '@/lib/apiErrors';
 import { ConfirmDialog } from './ConfirmDialog';
 
 interface DeleteDialogProps {
@@ -9,8 +9,10 @@ interface DeleteDialogProps {
   /** Executa a exclusão (rejeita com o erro da API). */
   onDelete: () => Promise<unknown>;
   onDeleted?: () => void;
-  /** Texto quando a API recusa porque há pedidos (RESOURCE_IN_USE + orders_count). */
-  describeInUse: (ordersCount: number) => string;
+  /** Texto quando a API recusa porque o item está em uso (RESOURCE_IN_USE). */
+  describeInUse: (count: number) => string;
+  /** Qual contagem o RESOURCE_IN_USE traz (padrão: pedidos). */
+  inUseKey?: 'orders_count' | 'products_count';
 }
 
 /** Confirmação de exclusão que explica a recusa da API no próprio diálogo. */
@@ -20,6 +22,7 @@ export function DeleteDialog({
   onDelete,
   onDeleted,
   describeInUse,
+  inUseKey,
 }: DeleteDialogProps) {
   const [pending, setPending] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
@@ -49,11 +52,11 @@ export function DeleteDialog({
             onDeleted?.();
           })
           .catch((error: unknown) => {
-            const orders = getInUseOrdersCount(error);
+            const count = getInUseCount(error, inUseKey);
             setRefusal(
-              orders === undefined
+              count === undefined
                 ? getErrorMessage(error)
-                : describeInUse(orders),
+                : describeInUse(count),
             );
           })
           .finally(() => setPending(false));

@@ -7,6 +7,8 @@ import {
   customer,
   errorResponse,
   order,
+  orderDetails,
+  orderWith,
   page,
   product,
   signIn,
@@ -104,6 +106,38 @@ describe('Pedidos', () => {
     await waitFor(() => expect(router.state.location.search).toEqual({}));
   });
 
+  it('filtra por status (URL ↔ API) e mostra o badge de cada status', async () => {
+    signIn();
+    mockCatalog();
+    const requests: URLSearchParams[] = [];
+    server.use(
+      http.get(`${API}/orders`, ({ request }) => {
+        const params = new URL(request.url).searchParams;
+        requests.push(params);
+        const status = params.get('status') ?? 'shipped';
+        return HttpResponse.json(page([{ ...order, status }]));
+      }),
+    );
+    const { router } = renderApp('/orders?status=paid');
+    const typing = userEvent.setup();
+
+    const table = await screen.findByRole('table', { name: 'Pedidos' });
+    expect(await within(table).findByText('Pago')).toBeInTheDocument();
+    expect(requests.at(-1)?.get('status')).toBe('paid');
+
+    await typing.click(screen.getByRole('combobox', { name: 'Status' }));
+    await typing.click(await screen.findByRole('option', { name: 'Enviado' }));
+    await waitFor(() =>
+      expect(router.state.location.search).toEqual({ status: 'shipped' }),
+    );
+    expect(await within(table).findByText('Enviado')).toBeInTheDocument();
+    expect(requests.at(-1)?.get('status')).toBe('shipped');
+
+    // valor inválido na URL é ignorado
+    await router.navigate({ to: '/orders', search: { status: 'x' as never } });
+    await waitFor(() => expect(requests.at(-1)?.get('status')).toBeNull());
+  });
+
   it('monta o pedido: soma item repetido, remove linha, total ao vivo e envia o schema do shared', async () => {
     signIn();
     mockCatalog();
@@ -113,7 +147,7 @@ describe('Pedidos', () => {
         body = await request.json();
         return HttpResponse.json(order, { status: 201 });
       }),
-      http.get(`${API}/orders/:id`, () => HttpResponse.json(order)),
+      http.get(`${API}/orders/:id`, () => HttpResponse.json(orderDetails)),
     );
     const { router } = renderApp('/orders/new');
     const typing = userEvent.setup();
@@ -225,16 +259,16 @@ describe('Pedidos', () => {
     expect(screen.getByRole('button', { name: 'Criar pedido' })).toBeEnabled();
   });
 
-  it('detalhe mostra itens a preço da compra e cancela após confirmar', async () => {
+  it('detalhe mostra itens a preço da compra e cancela com motivo', async () => {
     signIn();
-    let status = 'pending';
+    let current = orderWith('pending');
+    let sentBody: unknown;
     server.use(
-      http.get(`${API}/orders/:id`, () =>
-        HttpResponse.json({ ...order, status }),
-      ),
-      http.patch(`${API}/orders/:id/cancel`, () => {
-        status = 'canceled';
-        return HttpResponse.json({ ...order, status });
+      http.get(`${API}/orders/:id`, () => HttpResponse.json(current)),
+      http.patch(`${API}/orders/:id/cancel`, async ({ request }) => {
+        sentBody = (await request.json()) as { reason: string };
+        current = orderWith('canceled', 'Cliente desistiu');
+        return HttpResponse.json(current);
       }),
     );
     renderApp(`/orders/${order.id}`);
@@ -253,9 +287,17 @@ describe('Pedidos', () => {
     const dialog = await screen.findByRole('alertdialog', {
       name: 'Cancelar pedido?',
     });
-    await typing.click(
-      within(dialog).getByRole('button', { name: 'Cancelar pedido' }),
-    );
+    const confirm = within(dialog).getByRole('button', {
+      name: 'Cancelar pedido',
+    });
+    // sem motivo: o schema do shared barra antes de chamar a API
+    await typing.click(confirm);
+    const reason = within(dialog).getByLabelText('Motivo do cancelamento');
+    await waitFor(() => expect(reason).toBeInvalid());
+    expect(current.status).toBe('pending');
+
+    await typing.type(reason, 'Cliente desistiu');
+    await typing.click(confirm);
 
     expect(
       await screen.findByText(
@@ -264,9 +306,57 @@ describe('Pedidos', () => {
     ).toBeInTheDocument();
     await waitFor(() =>
       expect(
-        screen.queryByRole('button', { name: 'Concluir pedido' }),
+        screen.queryByRole('button', { name: 'Registrar pagamento' }),
       ).not.toBeInTheDocument(),
     );
-    expect(status).toBe('canceled');
+    expect(sentBody).toEqual({ reason: 'Cliente desistiu' });
+
+    // a linha do tempo ganha a mudança com o motivo
+    const timeline = screen.getByRole('list', { name: 'Histórico do pedido' });
+    const steps = within(timeline).getAllByRole('listitem');
+    expect(steps.map(step => step.textContent)).toEqual([
+      expect.stringMatching(/^Pedido criado.*Vera$/),
+      expect.stringMatching(
+        /^Pendente → Cancelado.*Gil.*Motivo: Cliente desistiu$/,
+      ),
+    ]);
+  });
+
+  it('transição comum pede confirmação e atualiza status e ações', async () => {
+    signIn('MANAGER');
+    let current = orderWith('paid');
+    let shipped = 0;
+    server.use(
+      http.get(`${API}/orders/:id`, () => HttpResponse.json(current)),
+      http.patch(`${API}/orders/:id/ship`, () => {
+        shipped += 1;
+        current = orderWith('shipped');
+        return HttpResponse.json(current);
+      }),
+    );
+    renderApp(`/orders/${order.id}`);
+    const typing = userEvent.setup();
+
+    await typing.click(
+      await screen.findByRole('button', { name: 'Marcar como enviado' }),
+    );
+    const dialog = await screen.findByRole('alertdialog', {
+      name: 'Marcar como enviado?',
+    });
+    expect(shipped).toBe(0);
+    await typing.click(
+      within(dialog).getByRole('button', { name: 'Marcar como enviado' }),
+    );
+
+    expect(
+      await screen.findByText('Pedido marcado como enviado.'),
+    ).toBeInTheDocument();
+    expect(shipped).toBe(1);
+    expect(
+      await screen.findByRole('button', { name: 'Marcar como entregue' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Cancelar pedido' }),
+    ).not.toBeInTheDocument();
   });
 });

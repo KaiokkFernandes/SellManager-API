@@ -20,6 +20,20 @@ test('vendedor: sem Usuários no menu, sem excluir e 403 pela URL', async ({
   await expect(
     page.getByRole('heading', { name: 'Acesso não permitido' }),
   ).toBeVisible();
+
+  // pedido pendente do seed: o vendedor só registra o pagamento
+  await page.goto('/orders?status=pending');
+  await page
+    .getByRole('table', { name: 'Pedidos' })
+    .getByRole('link')
+    .first()
+    .click();
+  await expect(
+    page.getByRole('button', { name: 'Registrar pagamento' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Cancelar pedido' }),
+  ).toHaveCount(0);
 });
 
 test('gerente: exclui produtos mas não gerencia usuários', async ({ page }) => {

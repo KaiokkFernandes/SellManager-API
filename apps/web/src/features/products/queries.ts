@@ -11,7 +11,13 @@
  *    `applyApiError`, ações soltas usam `notify.error`).
  */
 import { unwrap, type Product } from '@sellmanager/api-client';
-import type { ProductBody, ProductSort, SortOrder } from '@sellmanager/shared';
+import type {
+  ProductBody,
+  ProductSort,
+  SortOrder,
+  StockMovementBody,
+  UpdateProductBody,
+} from '@sellmanager/shared';
 import {
   keepPreviousData,
   useMutation,
@@ -25,6 +31,7 @@ import { queryKeys } from '@/lib/queryKeys';
 
 export interface ProductsListParams {
   q?: string;
+  category_id?: string;
   page?: number;
   sort?: ProductSort;
   order?: SortOrder;
@@ -87,7 +94,7 @@ export function useCreateProduct() {
 export function useUpdateProduct(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: ProductBody) =>
+    mutationFn: (body: UpdateProductBody) =>
       unwrap(api.PUT('/products/{id}', { params: { path: { id } }, body })),
     onSuccess: async product => {
       await productChanged(queryClient, product);
@@ -137,5 +144,64 @@ export function useRemoveProductImage(id: string) {
       await productChanged(queryClient, product);
       notify.success('Imagem removida.');
     },
+  });
+}
+
+/** Categorias para o select do formulário e o filtro da lista (são poucas). */
+export function useCategoryOptions() {
+  const query = { page: 1, limit: 100 };
+  return useQuery({
+    queryKey: queryKeys.categories.list(query),
+    queryFn: () => unwrap(api.GET('/categories', { params: { query } })),
+    staleTime: 60_000,
+  });
+}
+
+/** Movimentações de estoque do produto (mais recentes primeiro). */
+export function useStockMovements(id: string, page: number, enabled = true) {
+  const query = { page, limit: PAGE_SIZE };
+  return useQuery({
+    queryKey: queryKeys.products.movements(id, query),
+    queryFn: () =>
+      unwrap(
+        api.GET('/products/{id}/stock-movements', {
+          params: { path: { id }, query },
+        }),
+      ),
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+}
+
+/** Entrada ou ajuste manual: muda o saldo, as movimentações e o alerta. */
+export function useRecordStockMovement(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: StockMovementBody) =>
+      unwrap(
+        api.POST('/products/{id}/stock-movements', {
+          params: { path: { id } },
+          body,
+        }),
+      ),
+    onSuccess: async (_movement, body) => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.products.all });
+      notify.success(
+        body.type === 'ENTRY' ? 'Entrada registrada.' : 'Ajuste registrado.',
+      );
+    },
+  });
+}
+
+/** Produtos abaixo do estoque mínimo (página e alerta do layout). */
+export function useLowStockProducts(page = 1, limit = PAGE_SIZE) {
+  const query = { page, limit };
+  return useQuery({
+    queryKey: queryKeys.products.lowStock(query),
+    queryFn: () =>
+      unwrap(api.GET('/products/low-stock', { params: { query } })),
+    placeholderData: keepPreviousData,
+    // o alerta também acompanha vendas feitas em outras sessões
+    refetchInterval: 60_000,
   });
 }

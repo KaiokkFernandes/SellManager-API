@@ -98,13 +98,20 @@ and `can(role, permission)`). The same map is used everywhere:
 | `customer:create` | ✅ | ✅ | ✅ | `POST /customers` |
 | `customer:update` | ✅ | ✅ | — | `PUT /customers/{id}` |
 | `customer:delete` | ✅ | ✅ | — | `DELETE /customers/{id}` |
-| `product:read` | ✅ | ✅ | ✅ | `GET /products`, `GET /products/{id}` |
+| `product:read` | ✅ | ✅ | ✅ | `GET /products`, `GET /products/low-stock`, `GET /products/{id}`, `GET /categories` |
 | `product:create` | ✅ | ✅ | — | `POST /products` |
 | `product:update` | ✅ | ✅ | — | `PUT /products/{id}`, `PATCH /products/{id}/image`, `DELETE /products/{id}/image` |
 | `product:delete` | ✅ | ✅ | — | `DELETE /products/{id}` |
+| `category:create` | ✅ | ✅ | — | `POST /categories` |
+| `category:update` | ✅ | ✅ | — | `PUT /categories/{id}` |
+| `category:delete` | ✅ | ✅ | — | `DELETE /categories/{id}` |
+| `stock:read` | ✅ | ✅ | — | `GET /products/{id}/stock-movements` |
+| `stock:adjust` | ✅ | ✅ | — | `POST /products/{id}/stock-movements` |
 | `order:read` | ✅ | ✅ | ✅ | `GET /orders`, `GET /orders/{id}` |
 | `order:create` | ✅ | ✅ | ✅ | `POST /orders` |
-| `order:complete` | ✅ | ✅ | ✅ | `PATCH /orders/{id}/complete` |
+| `order:pay` | ✅ | ✅ | ✅ | `PATCH /orders/{id}/pay` |
+| `order:ship` | ✅ | ✅ | — | `PATCH /orders/{id}/ship` |
+| `order:deliver` | ✅ | ✅ | — | `PATCH /orders/{id}/deliver` |
 | `order:cancel` | ✅ | ✅ | — | `PATCH /orders/{id}/cancel` |
 | `report:read` | ✅ | ✅ | — | _reserved_ |
 | `user:read` | ✅ | — | — | `GET /users`, `GET /users/{id}` |
@@ -140,6 +147,74 @@ in a real environment.
 | ADMIN   | `admin@sellmanager.dev`    | `admin12345`    |
 | MANAGER | `gerente@sellmanager.dev`  | `gerente12345`  |
 | SELLER  | `vendedor@sellmanager.dev` | `vendedor12345` |
+
+## Orders and stock
+
+The business rules live in the domain (`apps/api/src/modules/*/domain`) and in two tables in
+`packages/shared`: the order state machine (`orderWorkflow.ts`) and the permission map. The
+front-end only reads them to decide which buttons to show; the API checks everything again.
+
+### Order state machine
+
+```mermaid
+stateDiagram-v2
+  [*] --> pending: create (stock is taken)
+  pending --> paid: pay
+  paid --> shipped: ship
+  shipped --> delivered: deliver
+  pending --> canceled: cancel (reason required, stock returns)
+  paid --> canceled: cancel (reason required, stock returns)
+  delivered --> [*]
+  canceled --> [*]
+```
+
+| Action  | Route                        | From                | Permission      | ADMIN | MANAGER | SELLER |
+| ------- | ---------------------------- | ------------------- | --------------- | :---: | :-----: | :----: |
+| create  | `POST /orders`               | —                   | `order:create`  |   ✓   |    ✓    |   ✓    |
+| pay     | `PATCH /orders/{id}/pay`     | `pending`           | `order:pay`     |   ✓   |    ✓    |   ✓    |
+| ship    | `PATCH /orders/{id}/ship`    | `paid`              | `order:ship`    |   ✓   |    ✓    |   —    |
+| deliver | `PATCH /orders/{id}/deliver` | `shipped`           | `order:deliver` |   ✓   |    ✓    |   —    |
+| cancel  | `PATCH /orders/{id}/cancel`  | `pending` or `paid` | `order:cancel`  |   ✓   |    ✓    |   —    |
+
+- A transition the current status does not allow answers `409 INVALID_TRANSITION`, with a
+  clear message (`Cannot cancel an order that is shipped`) and `details.allowed_actions`.
+  A role without the permission gets `403` before the status is even read.
+- Every change is recorded in the order history (`GET /orders/{id}` → `history`): who, when,
+  from/to and, for cancellations, the reason.
+- Orders created before this feature: `completed` became `delivered`, and the history got
+  the creation line plus the last change, with no author (the data did not exist).
+
+### Stock
+
+- **Stock is taken when the order is created**, not when it is paid: the seller only closes
+  an order if the goods exist, and the customer never pays for something that ran out in the
+  meantime. The cost is that abandoned `pending` orders hold stock (see pending items).
+- Canceling is only possible before shipping, so nothing has left the store: **cancel returns
+  every item**.
+- Every change is a row in `stock_movements`: `INITIAL` (new product), `ENTRY` (goods in),
+  `SALE` (order created), `CANCEL_RETURN` (order canceled) and `ADJUSTMENT` (manual, ±,
+  reason required). The product's `quantity` always equals the sum of its movements: the only
+  code that changes it is `StockLedger` (domain), which writes the movement and the new
+  balance together. `PUT /products/{id}` no longer changes stock.
+- **Concurrency.** Everything that touches orders and stock runs in one transaction with row
+  locks, always in the same order (the order first, then the products by id), so there are
+  no deadlocks:
+  - two orders for the last item: the second waits for the lock, sees 0 and gets
+    `409 INSUFFICIENT_STOCK`. The `CHECK (quantity >= 0)` in the database is the last safety
+    net;
+  - a manual adjustment at the same time as a sale locks the same product row, so
+    `balance_after` is never wrong;
+  - two cancellations, or cancel and ship at the same time, lock the order: the second sees
+    the new status and gets `409`. Stock goes back only once.
+
+  `apps/api/test/integration/concurrency.test.ts` proves each case against the real
+  PostgreSQL (removing the lock makes it fail).
+
+- **Minimum stock.** Each product has `min_stock` (0 turns the alert off). Below it, the
+  product has `below_min_stock: true`, shows up in `GET /products/low-stock` (biggest gap
+  first) and in the alert in the app header.
+- **Categories.** One optional category per product. Names are unique regardless of case, and
+  a category with products cannot be deleted (`409 RESOURCE_IN_USE`, `details.products_count`).
 
 ## Requirements
 

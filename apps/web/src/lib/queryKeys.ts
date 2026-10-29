@@ -13,6 +13,14 @@ export const queryKeys = {
     all: ['products'] as const,
     list: (params: object) => ['products', 'list', params] as const,
     detail: (id: string) => ['products', 'detail', id] as const,
+    // sob 'products': invalidar produtos atualiza movimentações e o alerta
+    movements: (id: string, params: object) =>
+      ['products', 'movements', id, params] as const,
+    lowStock: (params: object) => ['products', 'low-stock', params] as const,
+  },
+  categories: {
+    all: ['categories'] as const,
+    list: (params: object) => ['categories', 'list', params] as const,
   },
   customers: {
     all: ['customers'] as const,

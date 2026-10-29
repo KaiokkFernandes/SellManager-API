@@ -5,13 +5,8 @@ import {
   moneyCentsSchema,
   paginationQuerySchema,
 } from './common';
+import { orderStatusSchema } from './orderWorkflow';
 import { because } from './validation';
-
-export const ORDER_STATUSES = ['pending', 'completed', 'canceled'] as const;
-
-export type OrderStatus = (typeof ORDER_STATUSES)[number];
-
-export const orderStatusSchema = z.enum(ORDER_STATUSES);
 
 // ---- Entradas
 
@@ -41,6 +36,7 @@ const instantSchema = z.iso.datetime({ offset: true });
 export const listOrdersQuerySchema = paginationQuerySchema
   .extend({
     customer_id: z.uuid().optional(),
+    status: orderStatusSchema.optional(),
     from: instantSchema.optional().meta({
       description:
         'Criados a partir deste instante, inclusivo (ISO 8601, ex.: 2026-10-01T00:00:00-03:00)',
@@ -54,7 +50,15 @@ export const listOrdersQuerySchema = paginationQuerySchema
     because('inverted_range', 'to'),
   );
 
+export const cancelOrderBodySchema = z
+  .object({ reason: z.string().trim().min(3).max(500) })
+  .meta({
+    id: 'CancelOrderBody',
+    example: { reason: 'Cliente desistiu da compra' },
+  });
+
 export type CreateOrderBody = z.infer<typeof createOrderBodySchema>;
+export type CancelOrderBody = z.infer<typeof cancelOrderBodySchema>;
 export type ListOrdersQuery = z.infer<typeof listOrdersQuerySchema>;
 
 // ---- Respostas
@@ -124,7 +128,33 @@ export const orderSchema = z
     },
   });
 
+export const orderStatusChangeSchema = z
+  .object({
+    id: z.uuid(),
+    from_status: orderStatusSchema
+      .nullable()
+      .describe('null na criação do pedido'),
+    to_status: orderStatusSchema,
+    changed_by: z
+      .object({ id: z.uuid(), name: z.string() })
+      .nullable()
+      .describe('null em registros migrados de antes do histórico'),
+    reason: z.string().nullable().describe('Motivo (cancelamento)'),
+    created_at: isoDateSchema,
+  })
+  .meta({ id: 'OrderStatusChange' });
+
+export const orderDetailsSchema = orderSchema
+  .extend({
+    history: z
+      .array(orderStatusChangeSchema)
+      .describe('Mudanças de status, em ordem cronológica'),
+  })
+  .meta({ id: 'OrderDetails' });
+
 export type OrderCustomer = z.infer<typeof orderCustomerSchema>;
 export type OrderProduct = z.infer<typeof orderProductSchema>;
 export type OrderItem = z.infer<typeof orderItemSchema>;
 export type Order = z.infer<typeof orderSchema>;
+export type OrderStatusChange = z.infer<typeof orderStatusChangeSchema>;
+export type OrderDetails = z.infer<typeof orderDetailsSchema>;
