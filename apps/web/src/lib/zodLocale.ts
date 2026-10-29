@@ -8,6 +8,8 @@ const REASON_MESSAGES: Record<ValidationReason, string> = {
   zero_quantity: 'A quantidade não pode ser zero',
   negative_entry: 'A entrada deve ter quantidade positiva',
   reason_required: 'Informe o motivo',
+  custom_range_required: 'Informe a data inicial e a final',
+  range_too_long: 'O período pode ter no máximo 2 anos',
 };
 
 type Issue = Parameters<NonNullable<z.core.$ZodConfig['customError']>>[0];

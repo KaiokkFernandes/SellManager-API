@@ -47,6 +47,7 @@ import {
   updateUserStatusBodySchema,
   userSchema,
 } from '../users';
+import { metricsPeriodQuerySchema, metricsSummarySchema } from '../metrics';
 import { defineRoute, RouteDefinition } from './define';
 
 /** Transição sem corpo (pagar, enviar, entregar). */
@@ -474,6 +475,22 @@ export const routes = {
       request: { params: idParamsSchema },
       responses: { 204: null },
       errors: [404, 409],
+    }),
+  },
+
+  metrics: {
+    summary: defineRoute({
+      method: 'get',
+      path: '/metrics/summary',
+      operationId: 'getMetricsSummary',
+      summary: 'Indicadores de vendas do período, com o período anterior',
+      description:
+        'Venda = pedido pago e não cancelado, na data do pagamento, no fuso do negócio. Sem report:read, só os pedidos criados pelo usuário (scope=own).',
+      tags: ['Métricas'],
+      auth: true,
+      permission: 'dashboard:read',
+      request: { query: metricsPeriodQuerySchema },
+      responses: { 200: metricsSummarySchema },
     }),
   },
 

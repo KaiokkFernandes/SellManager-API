@@ -828,6 +828,217 @@
           "email": "ana@example.com"
         }
       },
+      "MetricsSummary": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/MetricsPeriod"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "all",
+              "own"
+            ]
+          },
+          "current": {
+            "type": "object",
+            "properties": {
+              "revenue_cents": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Valor em centavos (inteiro). R$ 199,90 = 19990"
+              },
+              "orders": {
+                "type": "integer",
+                "description": "Vendas (pagas e não canceladas)"
+              },
+              "average_ticket_cents": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Valor em centavos (inteiro). R$ 199,90 = 19990"
+              },
+              "canceled_orders": {
+                "type": "integer"
+              },
+              "canceled_cents": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Valor em centavos (inteiro). R$ 199,90 = 19990"
+              },
+              "cancel_rate": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "cancelados ÷ (vendas + cancelados); 0 sem pedidos"
+              }
+            },
+            "required": [
+              "revenue_cents",
+              "orders",
+              "average_ticket_cents",
+              "canceled_orders",
+              "canceled_cents",
+              "cancel_rate"
+            ]
+          },
+          "previous": {
+            "type": "object",
+            "properties": {
+              "revenue_cents": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Valor em centavos (inteiro). R$ 199,90 = 19990"
+              },
+              "orders": {
+                "type": "integer",
+                "description": "Vendas (pagas e não canceladas)"
+              },
+              "average_ticket_cents": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Valor em centavos (inteiro). R$ 199,90 = 19990"
+              },
+              "canceled_orders": {
+                "type": "integer"
+              },
+              "canceled_cents": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Valor em centavos (inteiro). R$ 199,90 = 19990"
+              },
+              "cancel_rate": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "cancelados ÷ (vendas + cancelados); 0 sem pedidos"
+              }
+            },
+            "required": [
+              "revenue_cents",
+              "orders",
+              "average_ticket_cents",
+              "canceled_orders",
+              "canceled_cents",
+              "cancel_rate"
+            ]
+          },
+          "change": {
+            "type": "object",
+            "properties": {
+              "revenue": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Variação relativa (0.12 = +12%); null se o anterior é zero"
+              },
+              "orders": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Variação relativa (0.12 = +12%); null se o anterior é zero"
+              },
+              "average_ticket": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Variação relativa (0.12 = +12%); null se o anterior é zero"
+              },
+              "canceled_orders": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Variação relativa (0.12 = +12%); null se o anterior é zero"
+              },
+              "cancel_rate": {
+                "type": "number",
+                "description": "Diferença em pontos (0.02 = +2 p.p.)"
+              }
+            },
+            "required": [
+              "revenue",
+              "orders",
+              "average_ticket",
+              "canceled_orders",
+              "cancel_rate"
+            ]
+          }
+        },
+        "required": [
+          "period",
+          "scope",
+          "current",
+          "previous",
+          "change"
+        ]
+      },
+      "MetricsPeriod": {
+        "type": "object",
+        "properties": {
+          "preset": {
+            "type": "string",
+            "enum": [
+              "today",
+              "7d",
+              "30d",
+              "month",
+              "custom"
+            ]
+          },
+          "timezone": {
+            "type": "string",
+            "example": "America/Sao_Paulo"
+          },
+          "current": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string",
+                "format": "date",
+                "description": "Dia local (AAAA-MM-DD)"
+              },
+              "to": {
+                "type": "string",
+                "format": "date",
+                "description": "Inclusivo"
+              }
+            },
+            "required": [
+              "from",
+              "to"
+            ]
+          },
+          "previous": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string",
+                "format": "date",
+                "description": "Dia local (AAAA-MM-DD)"
+              },
+              "to": {
+                "type": "string",
+                "format": "date",
+                "description": "Inclusivo"
+              }
+            },
+            "required": [
+              "from",
+              "to"
+            ]
+          }
+        },
+        "required": [
+          "preset",
+          "timezone",
+          "current",
+          "previous"
+        ]
+      },
       "Order": {
         "type": "object",
         "properties": {
@@ -4453,6 +4664,114 @@
           },
           "409": {
             "description": "Conflito com o estado atual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics/summary": {
+      "get": {
+        "operationId": "getMetricsSummary",
+        "summary": "Indicadores de vendas do período, com o período anterior",
+        "description": "Venda = pedido pago e não cancelado, na data do pagamento, no fuso do negócio. Sem report:read, só os pedidos criados pelo usuário (scope=own).\n\nPermissão: `dashboard:read` (ADMIN, MANAGER, SELLER).",
+        "x-permission": "dashboard:read",
+        "tags": [
+          "Métricas"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "today",
+                "7d",
+                "30d",
+                "month",
+                "custom"
+              ],
+              "default": "30d"
+            },
+            "required": false,
+            "name": "preset",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Dia local (AAAA-MM-DD)"
+            },
+            "required": false,
+            "description": "Dia local (AAAA-MM-DD)",
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Inclusivo"
+            },
+            "required": false,
+            "description": "Inclusivo",
+            "name": "to",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricsSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
             "content": {
               "application/json": {
                 "schema": {
