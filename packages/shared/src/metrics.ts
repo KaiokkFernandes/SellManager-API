@@ -25,7 +25,8 @@ export const MAX_METRICS_RANGE_DAYS = 731;
 
 const localDate = z.iso.date().meta({ description: 'Dia local (AAAA-MM-DD)' });
 
-const periodFields = z.object({
+/** Campos de período (presets + personalizado), usados também nos relatórios. */
+export const periodFields = z.object({
   preset: z.enum(METRICS_PRESETS).default('30d'),
   from: localDate.optional(),
   to: localDate.optional().meta({ description: 'Inclusivo' }),
@@ -35,7 +36,7 @@ const daysBetween = (from: string, to: string) =>
   (Date.parse(to) - Date.parse(from)) / 86_400_000;
 
 /** Regras do período personalizado, aplicadas em toda query de métricas. */
-function withPeriodRules<T extends typeof periodFields>(schema: T) {
+export function withPeriodRules<T extends typeof periodFields>(schema: T) {
   return schema
     .refine(
       ({ preset, from, to }) => preset !== 'custom' || Boolean(from && to),

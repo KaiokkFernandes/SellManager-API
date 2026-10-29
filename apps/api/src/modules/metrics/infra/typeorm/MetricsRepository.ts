@@ -1,6 +1,7 @@
 import type { MetricsGranularity } from '@sellmanager/shared';
 import { DataSource } from 'typeorm';
 import { RawSalesFigures } from '../../domain/figures';
+import { CANCELED, cents, CREATED, SOLD } from './salesSql';
 import { LocalRange } from '../../domain/period';
 import {
   ICategorySales,
@@ -11,22 +12,6 @@ import {
   ITopCustomer,
   ITopProduct,
 } from '../../domain/repositories/IMetricsRepository';
-
-/**
- * Parâmetros comuns: $1 = início (dia local), $2 = fim (dia local, inclusivo),
- * $3 = fuso. Os limites viram instantes no banco (`AT TIME ZONE` trata o
- * horário de verão), então a comparação usa os índices de paid_at/canceled_at.
- */
-const START = `(($1::date)::timestamp AT TIME ZONE $3)`;
-const END = `((($2::date) + 1)::timestamp AT TIME ZONE $3)`;
-/** Venda: paga e não cancelada, com o pagamento no período. */
-const SOLD = `o.status <> 'canceled' AND o.paid_at >= ${START} AND o.paid_at < ${END}`;
-const CANCELED = `o.canceled_at >= ${START} AND o.canceled_at < ${END}`;
-const CREATED = `o.created_at >= ${START} AND o.created_at < ${END}`;
-
-/** Soma de decimal em reais -> centavos inteiros, no banco. */
-const cents = (expression: string, where = 'TRUE') =>
-  `COALESCE(ROUND(SUM(${expression}) FILTER (WHERE ${where}) * 100), 0)::bigint`;
 
 type Row<T> = { [K in keyof T]: string };
 

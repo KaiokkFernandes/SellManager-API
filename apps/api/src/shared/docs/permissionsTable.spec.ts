@@ -17,6 +17,8 @@ describe('matriz de permissões do README', () => {
     expect(table).toContain(
       '| `order:cancel` | ✅ | ✅ | — | `PATCH /orders/{id}/cancel` |',
     );
-    expect(table).toContain('| `report:read` | ✅ | ✅ | — | _reserved_ |');
+    expect(table).toContain(
+      '| `report:read` | ✅ | ✅ | — | `GET /reports/sales`, `GET /reports/products`, `GET /reports/customers` |',
+    );
   });
 });

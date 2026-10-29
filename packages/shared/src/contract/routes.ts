@@ -59,6 +59,11 @@ import {
   topProductsSchema,
   topQuerySchema,
 } from '../metrics';
+import {
+  customersReportQuerySchema,
+  productsReportQuerySchema,
+  salesReportQuerySchema,
+} from '../reports';
 import { defineRoute, RouteDefinition } from './define';
 
 /** Bloco do dashboard: GET /metrics/<nome>, mesmo acesso do resumo. */
@@ -78,6 +83,27 @@ function metricsRoute<const Q extends z.ZodType, const S extends z.ZodType>(
     permission: 'dashboard:read',
     request: { query: doc.query },
     responses: { 200: doc.response },
+  });
+}
+
+/** Relatório CSV em streaming: GET /reports/<nome>, só com report:read. */
+function reportRoute<const Q extends z.ZodType>(
+  name: string,
+  doc: { operationId: string; summary: string; query: Q },
+) {
+  return defineRoute({
+    method: 'get',
+    path: `/reports/${name}`,
+    operationId: doc.operationId,
+    summary: doc.summary,
+    description:
+      'UTF-8 com BOM, separador ";", vírgula decimal e datas dd/mm/aaaa hh:mm no fuso do negócio (abre direto no Excel em português).',
+    tags: ['Relatórios'],
+    auth: true,
+    permission: 'report:read',
+    download: { contentType: 'text/csv' },
+    request: { query: doc.query },
+    responses: { 200: null },
   });
 }
 
@@ -553,6 +579,24 @@ export const routes = {
       summary: 'Pedidos criados no período, por status atual',
       query: metricsPeriodQuerySchema,
       response: ordersByStatusSchema,
+    }),
+  },
+
+  reports: {
+    sales: reportRoute('sales', {
+      operationId: 'exportSalesReport',
+      summary: 'CSV: vendas do período (um pedido por linha)',
+      query: salesReportQuerySchema,
+    }),
+    products: reportRoute('products', {
+      operationId: 'exportProductsReport',
+      summary: 'CSV: produtos com estoque e o vendido no período',
+      query: productsReportQuerySchema,
+    }),
+    customers: reportRoute('customers', {
+      operationId: 'exportCustomersReport',
+      summary: 'CSV: clientes com o total comprado no período',
+      query: customersReportQuerySchema,
     }),
   },
 

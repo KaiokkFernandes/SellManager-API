@@ -5657,6 +5657,385 @@
         }
       }
     },
+    "/reports/sales": {
+      "get": {
+        "operationId": "exportSalesReport",
+        "summary": "CSV: vendas do período (um pedido por linha)",
+        "description": "UTF-8 com BOM, separador \";\", vírgula decimal e datas dd/mm/aaaa hh:mm no fuso do negócio (abre direto no Excel em português).\n\nPermissão: `report:read` (ADMIN, MANAGER).",
+        "x-permission": "report:read",
+        "tags": [
+          "Relatórios"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "today",
+                "7d",
+                "30d",
+                "month",
+                "custom"
+              ],
+              "default": "30d"
+            },
+            "required": false,
+            "name": "preset",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Dia local (AAAA-MM-DD)"
+            },
+            "required": false,
+            "description": "Dia local (AAAA-MM-DD)",
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Inclusivo"
+            },
+            "required": false,
+            "description": "Inclusivo",
+            "name": "to",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "paid",
+                "shipped",
+                "delivered"
+              ]
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "customer_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Arquivo (download em streaming)",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reports/products": {
+      "get": {
+        "operationId": "exportProductsReport",
+        "summary": "CSV: produtos com estoque e o vendido no período",
+        "description": "UTF-8 com BOM, separador \";\", vírgula decimal e datas dd/mm/aaaa hh:mm no fuso do negócio (abre direto no Excel em português).\n\nPermissão: `report:read` (ADMIN, MANAGER).",
+        "x-permission": "report:read",
+        "tags": [
+          "Relatórios"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "today",
+                "7d",
+                "30d",
+                "month",
+                "custom"
+              ],
+              "default": "30d"
+            },
+            "required": false,
+            "name": "preset",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Dia local (AAAA-MM-DD)"
+            },
+            "required": false,
+            "description": "Dia local (AAAA-MM-DD)",
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Inclusivo"
+            },
+            "required": false,
+            "description": "Inclusivo",
+            "name": "to",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "category_id",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Só os abaixo do estoque mínimo"
+            },
+            "required": false,
+            "description": "Só os abaixo do estoque mínimo",
+            "name": "below_min_stock",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Arquivo (download em streaming)",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reports/customers": {
+      "get": {
+        "operationId": "exportCustomersReport",
+        "summary": "CSV: clientes com o total comprado no período",
+        "description": "UTF-8 com BOM, separador \";\", vírgula decimal e datas dd/mm/aaaa hh:mm no fuso do negócio (abre direto no Excel em português).\n\nPermissão: `report:read` (ADMIN, MANAGER).",
+        "x-permission": "report:read",
+        "tags": [
+          "Relatórios"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "today",
+                "7d",
+                "30d",
+                "month",
+                "custom"
+              ],
+              "default": "30d"
+            },
+            "required": false,
+            "name": "preset",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Dia local (AAAA-MM-DD)"
+            },
+            "required": false,
+            "description": "Dia local (AAAA-MM-DD)",
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Inclusivo"
+            },
+            "required": false,
+            "description": "Inclusivo",
+            "name": "to",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "default": true,
+              "description": "Só quem comprou no período (padrão)"
+            },
+            "required": false,
+            "description": "Só quem comprou no período (padrão)",
+            "name": "only_buyers",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Arquivo (download em streaming)",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/orders": {
       "get": {
         "operationId": "listOrders",

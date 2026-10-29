@@ -3,6 +3,7 @@ import {
   OpenApiGeneratorV31,
   type RouteConfig as OpenApiRouteConfig,
 } from '@asteasolutions/zod-to-openapi';
+import { z } from 'zod';
 import {
   allRoutes,
   apiErrorSchema,
@@ -41,12 +42,23 @@ function toOpenApiRoute(route: RouteDefinition): OpenApiRouteConfig {
 
   const responses: OpenApiRouteConfig['responses'] = {};
   for (const [status, schema] of Object.entries(route.responses)) {
-    responses[status] = schema
+    responses[status] = route.download
       ? {
-          description: SUCCESS_DESCRIPTIONS[Number(status)] ?? 'OK',
-          content: { 'application/json': { schema } },
+          description: 'Arquivo (download em streaming)',
+          content: {
+            [route.download.contentType]: {
+              schema: z.string().meta({ format: 'binary' }),
+            },
+          },
         }
-      : { description: SUCCESS_DESCRIPTIONS[Number(status)] ?? 'Sem conteúdo' };
+      : schema
+        ? {
+            description: SUCCESS_DESCRIPTIONS[Number(status)] ?? 'OK',
+            content: { 'application/json': { schema } },
+          }
+        : {
+            description: SUCCESS_DESCRIPTIONS[Number(status)] ?? 'Sem conteúdo',
+          };
   }
   for (const status of route.errorStatuses) {
     responses[status] = {

@@ -42,12 +42,9 @@ describe('matriz de permissões (gerada do mapa)', () => {
   });
   afterAll(closeDatabase);
 
-  it('toda permissão do mapa protege alguma rota (exceto as reservadas)', () => {
+  it('toda permissão do mapa protege alguma rota', () => {
     const used = new Set(protectedRoutes.map(route => route.permission));
-    // report:read fica reservada para a feature de relatórios
-    expect(PERMISSIONS.filter(permission => !used.has(permission))).toEqual([
-      'report:read',
-    ]);
+    expect(PERMISSIONS.filter(permission => !used.has(permission))).toEqual([]);
   });
 
   const cases = protectedRoutes.flatMap(route =>

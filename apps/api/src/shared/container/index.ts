@@ -4,6 +4,7 @@ import uploadConfig from '@config/upload';
 import { CategoriesRepository } from '@modules/categories/infra/typeorm/repositories/CategoriesRepository';
 import { CustomersRepository } from '@modules/customers/infra/typeorm/repositories/CustomersRepository';
 import { MetricsRepository } from '@modules/metrics/infra/typeorm/MetricsRepository';
+import { ReportsRepository } from '@modules/reports/infra/typeorm/ReportsRepository';
 import { OrdersUnitOfWork } from '@modules/orders/infra/typeorm/OrdersUnitOfWork';
 import { UsersUnitOfWork } from '@modules/users/infra/typeorm/UsersUnitOfWork';
 import { OrdersRepository } from '@modules/orders/infra/typeorm/repositories/OrdersRepository';
@@ -80,6 +81,7 @@ export function makeContainer(
     customers: new CustomersRepository(dataSource),
     categories: new CategoriesRepository(dataSource),
     metrics: new MetricsRepository(dataSource),
+    reports: new ReportsRepository(dataSource),
     orders: new OrdersRepository(dataSource),
     orderStatusHistory: new OrderStatusHistoryRepository(dataSource),
   };

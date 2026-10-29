@@ -6,6 +6,7 @@ export * from './orders';
 export * from './orderWorkflow';
 export * from './permissions';
 export * from './products';
+export * from './reports';
 export * from './stock';
 export * from './uploads';
 export * from './users';

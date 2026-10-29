@@ -1,4 +1,7 @@
 import { RequestHandler, Response, Router } from 'express';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
+import { logger } from '@shared/logger';
 import type {
   RouteDefinition,
   RouteInput,
@@ -26,6 +29,14 @@ export interface RouteContext<R extends RouteDefinition> {
     status: S,
     ...body: ReplyArgs<R, S>
   ) => void;
+  /**
+   * Rotas com `download` no contrato: envia o arquivo em streaming (linhas
+   * geradas aos poucos, memória constante). Erro no meio corta a conexão.
+   */
+  download: (file: {
+    filename: string;
+    content: AsyncIterable<string>;
+  }) => Promise<void>;
 }
 
 export type RouteHandler<R extends RouteDefinition> = (
@@ -75,6 +86,10 @@ export function createRouteMounter(
       async (request, response) => {
         const reply = (status: number, body?: unknown) =>
           send(route, response, status, body, responseValidation);
+        const download = (file: {
+          filename: string;
+          content: AsyncIterable<string>;
+        }) => stream(route, response, file);
 
         await handler({
           input: {
@@ -84,6 +99,7 @@ export function createRouteMounter(
           } as RouteInput<typeof route>,
           request,
           reply,
+          download,
         });
       },
     );
@@ -112,4 +128,50 @@ function send(
 
   checkResponse(schema, body, { operationId: route.operationId, status }, mode);
   response.status(status).json(body);
+}
+
+async function stream(
+  route: RouteDefinition,
+  response: Response,
+  { filename, content }: { filename: string; content: AsyncIterable<string> },
+): Promise<void> {
+  if (!route.download) {
+    throw new Error(`${route.operationId} não declara download no contrato`);
+  }
+  // o primeiro pedaço sai antes dos headers: se a consulta falhar já no
+  // início, o erro ainda vira a resposta JSON padrão (500)
+  const iterator = content[Symbol.asyncIterator]();
+  const first = await iterator.next();
+
+  response.status(200);
+  response.setHeader(
+    'Content-Type',
+    `${route.download.contentType}; charset=utf-8`,
+  );
+  response.setHeader(
+    'Content-Disposition',
+    `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+  );
+  response.setHeader('Cache-Control', 'no-store');
+
+  async function* rest() {
+    if (!first.done) yield first.value;
+    for (;;) {
+      const next = await iterator.next();
+      if (next.done) return;
+      yield next.value;
+    }
+  }
+  try {
+    // se o cliente desistir, o pipeline encerra o gerador (e ele fecha o cursor)
+    await pipeline(Readable.from(rest()), response);
+  } catch (error) {
+    // depois do primeiro byte não dá mais para responder com JSON de erro
+    logger.error(
+      { err: error, operationId: route.operationId },
+      'download interrompido',
+    );
+    await iterator.return?.();
+    response.destroy();
+  }
 }

@@ -114,7 +114,7 @@ and `can(role, permission)`). The same map is used everywhere:
 | `order:deliver` | ✅ | ✅ | — | `PATCH /orders/{id}/deliver` |
 | `order:cancel` | ✅ | ✅ | — | `PATCH /orders/{id}/cancel` |
 | `dashboard:read` | ✅ | ✅ | ✅ | `GET /metrics/summary`, `GET /metrics/revenue`, `GET /metrics/top-products`, `GET /metrics/top-customers`, `GET /metrics/categories`, `GET /metrics/status` |
-| `report:read` | ✅ | ✅ | — | _reserved_ |
+| `report:read` | ✅ | ✅ | — | `GET /reports/sales`, `GET /reports/products`, `GET /reports/customers` |
 | `user:read` | ✅ | — | — | `GET /users`, `GET /users/{id}` |
 | `user:create` | ✅ | — | — | `POST /users` |
 | `user:update` | ✅ | — | — | `PUT /users/{id}`, `PATCH /users/{id}/status` |
