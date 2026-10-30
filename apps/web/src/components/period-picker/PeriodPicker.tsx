@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import type { DashboardSearch } from './search';
+import type { PeriodSearch } from './periodSearch';
 
 const PRESETS: { value: Exclude<MetricsPreset, 'custom'>; label: string }[] = [
   { value: 'today', label: 'Hoje' },
@@ -13,13 +13,13 @@ const PRESETS: { value: Exclude<MetricsPreset, 'custom'>; label: string }[] = [
   { value: 'month', label: 'Mês atual' },
 ];
 
-/** Presets e período personalizado; tudo vai para a URL. */
+/** Presets e período personalizado (métricas e relatórios); tudo vai para a URL. */
 export function PeriodPicker({
   value,
   onChange,
 }: {
-  value: DashboardSearch;
-  onChange: (next: DashboardSearch) => void;
+  value: PeriodSearch;
+  onChange: (next: PeriodSearch) => void;
 }) {
   const active = value.preset ?? '30d';
   const [from, setFrom] = useState(value.from ?? '');

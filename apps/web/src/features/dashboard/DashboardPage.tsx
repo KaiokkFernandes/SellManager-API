@@ -10,7 +10,6 @@ import { useAuth, useCan } from '@/features/auth';
 import { BarList } from './BarList';
 import { DashboardBlock } from './DashboardBlock';
 import { KpiCards } from './KpiCards';
-import { PeriodPicker } from './PeriodPicker';
 import {
   useLowStockCount,
   useOrdersByStatus,
@@ -21,7 +20,7 @@ import {
   useTopProducts,
 } from './queries';
 import { TopCustomersTable, TopProductsTable } from './TopTables';
-import { toPeriodQuery } from './search';
+import { PeriodPicker, toPeriodQuery } from '@/components/period-picker';
 
 // o Recharts só baixa quando o gráfico aparece: os KPIs não esperam por ele
 const RevenueChart = lazy(() => import('./RevenueChart'));

@@ -1,4 +1,5 @@
-export { createApiClient, unwrap } from './client';
+export { createApiClient, filenameFrom, unwrap, unwrapFile } from './client';
+export type { DownloadedFile } from './client';
 export type {
   ApiClientOptions,
   SellManagerClient,

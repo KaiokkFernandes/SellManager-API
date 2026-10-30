@@ -1,5 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ApiClientError, createApiClient, unwrap, type Product } from './index';
+import {
+  ApiClientError,
+  createApiClient,
+  filenameFrom,
+  unwrap,
+  unwrapFile,
+  type Product,
+} from './index';
 
 const product = {
   id: '5c301fd4-233e-4eac-bb22-994b162e70d2',
@@ -267,5 +274,51 @@ describe('uploadProductImage', () => {
       code: 'UNAUTHORIZED',
     });
     expect(onUnauthorized).toHaveBeenCalledOnce();
+  });
+});
+
+describe('unwrapFile (downloads)', () => {
+  it('devolve o arquivo e o nome do Content-Disposition (UTF-8)', async () => {
+    const fetch = vi.fn(() =>
+      Promise.resolve(
+        new Response('\uFEFFCliente;Total\r\nJoão;10,00\r\n', {
+          status: 200,
+          headers: {
+            'Content-Type': 'text/csv; charset=utf-8',
+            'Content-Disposition':
+              'attachment; filename="vendas.csv"; filename*=UTF-8\'\'vendas_2026-10.csv',
+          },
+        }),
+      ),
+    ) as unknown as typeof globalThis.fetch;
+    const client = createApiClient({ baseUrl: 'http://api.test', fetch });
+
+    const file = await unwrapFile(
+      client.GET('/reports/sales', {
+        params: { query: { preset: '30d' } },
+        parseAs: 'blob',
+      }),
+    );
+
+    expect(file.filename).toBe('vendas_2026-10.csv');
+    expect(await file.blob.text()).toContain('João;10,00');
+  });
+
+  it('erro da API vira ApiClientError com o code', async () => {
+    const { fetch } = fakeFetch(403, {
+      status: 'error',
+      code: 'FORBIDDEN',
+      message: 'Forbidden',
+    });
+    const client = createApiClient({ baseUrl: 'http://api.test', fetch });
+
+    await expect(
+      unwrapFile(client.GET('/reports/sales', { parseAs: 'blob' })),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN', status: 403 });
+  });
+
+  it('nome sem filename* usa o filename simples; sem header, undefined', () => {
+    expect(filenameFrom('attachment; filename="a.csv"')).toBe('a.csv');
+    expect(filenameFrom(null)).toBeUndefined();
   });
 });

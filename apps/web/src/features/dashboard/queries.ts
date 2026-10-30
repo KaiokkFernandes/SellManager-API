@@ -2,7 +2,7 @@ import { unwrap } from '@sellmanager/api-client';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
-import type { PeriodQuery } from './search';
+import type { PeriodQuery } from '@/components/period-picker';
 
 /**
  * Um hook por bloco do dashboard: cada bloco carrega, falha e tenta de novo

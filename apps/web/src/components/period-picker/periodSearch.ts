@@ -3,17 +3,17 @@ import { z } from 'zod';
 
 const day = z.iso.date().optional().catch(undefined);
 
-/** Período do dashboard na URL: ?preset=30d ou ?preset=custom&from=&to= */
-export const dashboardSearchSchema = z.object({
+/** Período na URL: ?preset=30d ou ?preset=custom&from=&to= (dashboard e relatórios). */
+export const periodSearchSchema = z.object({
   preset: z.enum(METRICS_PRESETS).optional().catch(undefined),
   from: day,
   to: day,
 });
 
-export type DashboardSearch = z.infer<typeof dashboardSearchSchema>;
+export type PeriodSearch = z.infer<typeof periodSearchSchema>;
 
-/** Query das métricas: personalizado só vale com as duas datas. */
-export function toPeriodQuery({ preset, from, to }: DashboardSearch) {
+/** Query da API: personalizado só vale com as duas datas, em ordem. */
+export function toPeriodQuery({ preset, from, to }: PeriodSearch) {
   if (preset === 'custom' && from && to && from <= to)
     return { preset, from, to } as const;
   return { preset: preset && preset !== 'custom' ? preset : '30d' } as const;

@@ -14,6 +14,7 @@ const FEATURES = [
   'customers',
   'products',
   'categories',
+  'reports',
   'orders',
   'users',
   'profile',
