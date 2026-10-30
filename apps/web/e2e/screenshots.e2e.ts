@@ -7,6 +7,7 @@ const viewports = {
   desktop: { width: 1280, height: 860 },
 } as const;
 const pages = [
+  { name: 'dashboard', path: '/', ready: 'Dashboard' },
   { name: 'clientes', path: '/customers', ready: 'Clientes' },
   { name: 'produtos', path: '/products', ready: 'Produtos' },
   // inclui os produtos com imagem criados pelo fluxo e2e
