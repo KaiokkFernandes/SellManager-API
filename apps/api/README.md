@@ -32,6 +32,10 @@ single composition root.
 - **Stock ledger:** every stock change is a movement (initial, entry, sale, cancel return,
   manual adjustment); the balance always equals their sum. Rules and diagram in the
   [root README](../../README.md#orders-and-stock)
+- **Sales metrics and CSV reports**: one definition of a sale (paid and not canceled, on the
+  payment date, in the business time zone), aggregated in SQL; CSV streamed from a cursor and
+  ready for Excel in Portuguese. Definitions in the
+  [root README](../../README.md#sales-metrics-and-reports)
 - **Pagination** on every list (`?page=&limit=`)
 - **One contract** in [`@sellmanager/shared`](../../packages/shared): routing, input validation,
   response checks and the committed `openapi.json` all come from it
@@ -123,9 +127,11 @@ pnpm dev                                    # api + web; or: pnpm --filter api d
 `pnpm --filter api seed` fills the **development** database so pagination, search and filters
 can be tried for real: one user per role (ADMIN, MANAGER and SELLER, credentials in the
 [root README](../../README.md#development-users)), 30 customers, 11 categories, 50 products
-with a minimum stock (several below it), 24 orders over the last 60 days in **every status**
-(pending, paid, shipped, delivered, and canceled from pending and from paid) with their
-history, and a few stock entries and manual adjustments.
+with a minimum stock (several below it) and **12 months of sales** (≈2,200 orders: more on
+weekdays and in November/December, a growing trend, repeat customers, all three roles
+selling). Old orders are mostly delivered, ≈8% are canceled (from pending and from paid), and
+recent ones are still in progress. Stock is restocked before it runs out, and orders, history
+and stock movements share the same dates. It takes about 40 seconds.
 
 - It goes through the services, so stock, prices and totals follow the same rules as the API.
 - It is idempotent: it only removes what it created itself (customers `@seed.sellmanager.dev`,
@@ -153,6 +159,7 @@ variables are listed with comments in [`.env.example`](.env.example).
 | `PORT`                                                                | `3333`                                            |                                                   |
 | `APP_API_URL`                                                         | `http://localhost:3333`                           | Used to build `avatar_url` and docs server        |
 | `APP_WEB_URL`                                                         | `http://localhost:3000`                           | Front-end URL used in the recovery link           |
+| `BUSINESS_TIMEZONE`                                                   | `America/Sao_Paulo`                               | IANA zone of the metrics: what "one day" means    |
 | `DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASSWORD` / `DB_NAME`         | Docker values                                     | PostgreSQL connection                             |
 | `JWT_SECRET`                                                          | —                                                 | **Required**, at least 32 characters              |
 | `JWT_EXPIRES_IN`                                                      | `2h`                                              |                                                   |

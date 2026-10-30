@@ -58,6 +58,9 @@
   validadas no domínio (`nextOrderStatus`); o front só lê para decidir os botões.
 - Estoque: nunca alterar `products.quantity` direto — só via `StockLedger` (domínio), que grava a
   movimentação junto; operações de pedido/estoque em transação com o produto travado.
+- Métricas e relatórios: "venda" = pago e não cancelado, pela data do pagamento, no
+  `BUSINESS_TIMEZONE`; SQL só em `modules/metrics/infra/typeorm/salesSql.ts`; agregar no banco
+  (nunca carregar pedidos em memória); CSV via cursor (`streamRows`) e `download` do contrato.
 - Dinheiro em centavos inteiros (`*_cents`); erros `{ status, code, message, issues?, details? }`.
 - Cada módulo da api (`apps/api/src/modules/<m>`) tem `domain/` (interfaces puras),
   `services/` (casos de uso), `fakes/` (repositórios em memória) e `infra/{typeorm,http}`.
