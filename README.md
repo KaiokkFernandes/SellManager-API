@@ -148,6 +148,9 @@ in a real environment.
 | MANAGER | `gerente@sellmanager.dev`  | `gerente12345`  |
 | SELLER  | `vendedor@sellmanager.dev` | `vendedor12345` |
 
+In production the seed does not run: create the first ADMIN with `create-admin:prod`
+([API README](apps/api/README.md#production-build)).
+
 ## Orders and stock
 
 The business rules live in the domain (`apps/api/src/modules/*/domain`) and in two tables in

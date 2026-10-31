@@ -183,6 +183,7 @@ Run them inside `apps/api`, or from the root with `pnpm --filter api <script>`.
 | `pnpm migration:create src/shared/infra/typeorm/migrations/Name` | New empty migration (register it in `data-source.ts`)  |
 | `pnpm migration:run:prod`                                        | Apply migrations from the compiled `dist/`             |
 | `pnpm seed`                                                      | Development data (idempotent, never in production)     |
+| `pnpm create-admin` / `create-admin:prod`                        | Create the first ADMIN (installation; see below)       |
 | `pnpm openapi:generate`                                          | Write `openapi.json` from the contract                 |
 | `pnpm openapi:check`                                             | Fail if `openapi.json` is out of date                  |
 
@@ -377,8 +378,22 @@ integration tests on every push and pull request.
 ```bash
 pnpm build          # from the root: builds @sellmanager/shared first (Turborepo)
 NODE_ENV=production pnpm --filter api migration:run:prod
+NODE_ENV=production pnpm --filter api create-admin:prod   # first install only
 NODE_ENV=production pnpm --filter api start
 ```
+
+**First ADMIN.** There is no public sign-up and the seed refuses to run in production, so a new
+database starts with nobody able to log in. `create-admin:prod` creates the first ADMIN, who
+then adds everyone else under Usuários. It reads `ADMIN_NAME`, `ADMIN_EMAIL` and
+`ADMIN_PASSWORD`, asks in the terminal for whatever is missing (the password is not echoed),
+and applies the same validation as the API. The password is never a command-line argument,
+because that would end up in the shell history and in the process list. In a pipeline, pass
+the variables from your secret store and remove them afterwards.
+
+It only acts when there is no active ADMIN. Otherwise it changes nothing and exits with 0, so
+it is safe to leave in a deploy script. An e-mail that already belongs to another user is
+refused (exit 1) and that account is not promoted. With only deactivated ADMINs it creates a new
+one, which also recovers a store locked out of its admin accounts.
 
 In production, use `MAIL_DRIVER=smtp` with a real provider. Set `CORS_ORIGIN` to the
 front-end origin and `TRUST_PROXY` if the app runs behind a proxy. Uploaded avatars are
