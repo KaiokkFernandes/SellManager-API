@@ -1,5 +1,6 @@
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { CreateFirstAdminService } from '@modules/users/services/CreateFirstAdminService';
 import { AppDataSource } from '@shared/infra/typeorm/data-source';
 import {
   closeDatabase,
@@ -189,6 +190,30 @@ describe('gestão de usuários (ADMIN)', () => {
       "SELECT count(*)::int AS count FROM users WHERE role = 'ADMIN' AND active",
     );
     expect(count).toBe(1);
+  });
+
+  it('instalação: banco sem ADMIN ganha o primeiro; com ADMIN nada muda', async () => {
+    const firstAdmin = new CreateFirstAdminService(
+      ctx.container.usersUnitOfWork,
+      ctx.container.providers.hash,
+    );
+    const data = {
+      name: 'Dona',
+      email: 'dona@test.com',
+      password: 'senha-forte-123',
+    };
+
+    expect(await firstAdmin.execute(data)).toBeNull(); // o do beforeEach está ativo
+
+    await resetDatabase();
+    const created = await firstAdmin.execute(data);
+    expect(created).toMatchObject({ role: 'ADMIN', active: true });
+
+    const session = await login(ctx, data);
+    await request(ctx.app)
+      .get('/users')
+      .set('Authorization', session)
+      .expect(200);
   });
 
   it('404 para usuário inexistente', async () => {
