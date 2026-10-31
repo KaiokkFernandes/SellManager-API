@@ -13,12 +13,12 @@ export class FakeOrderStatusHistoryRepository implements IOrderStatusHistoryRepo
 
   constructor(private readonly users?: IUsersRepository) {}
 
-  public add({ reason, ...data }: IAddOrderStatusChangeDTO): Promise<void> {
+  public add({ reason, at, ...data }: IAddOrderStatusChangeDTO): Promise<void> {
     this.rows.push({
       ...data,
       id: randomUUID(),
       reason: reason ?? null,
-      created_at: new Date(),
+      created_at: at,
     });
     return Promise.resolve();
   }

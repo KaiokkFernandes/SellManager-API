@@ -140,18 +140,47 @@ function minStockFor(price: number, quantity: number): number {
   return price >= 1000 ? 2 : Math.max(3, Math.round(quantity / 5));
 }
 
+/** Dias de histórico de vendas e ritmo médio de pedidos por dia útil. */
+const HISTORY_DAYS = 365;
+const ORDERS_PER_WEEKDAY = 8;
+
 /**
- * Destino de cada pedido do seed: cobre os 5 status, inclusive cancelamento
- * a partir de pendente e de pago.
+ * Quantos pedidos num dia: dia útil > fim de semana, novembro e dezembro mais
+ * fortes, janeiro mais fraco, e a loja crescendo ao longo do ano.
  */
-const ORDER_PATHS: readonly (readonly OrderAction[])[] = [
-  [],
-  ['pay'],
-  ['pay', 'ship'],
-  ['pay', 'ship', 'deliver'],
-  ['cancel'],
-  ['pay', 'cancel'],
-];
+function ordersOn(day: Date, daysAgo: number, next: () => number): number {
+  const weekday = day.getUTCDay();
+  const weekend = weekday === 0 || weekday === 6 ? 0.45 : 1;
+  const month = day.getUTCMonth();
+  const season = month === 10 || month === 11 ? 1.6 : month === 0 ? 0.75 : 1;
+  const growth = 0.65 + 0.35 * (1 - daysAgo / HISTORY_DAYS);
+  const expected = ORDERS_PER_WEEKDAY * weekend * season * growth;
+  return Math.max(0, Math.round(expected * (0.6 + next() * 0.8)));
+}
+
+/**
+ * Caminho do pedido pela idade: antigos quase todos entregues (~8% cancelados,
+ * de pendente e de pago); recentes ainda em andamento.
+ */
+function pathFor(daysAgo: number, roll: number): OrderAction[] {
+  // cancelamento acontece no dia seguinte: só em pedidos de ontem para trás
+  if (daysAgo >= 1 && roll < 0.04) return ['cancel'];
+  if (daysAgo >= 1 && roll < 0.08) return ['pay', 'cancel'];
+  if (daysAgo >= 7) return ['pay', 'ship', 'deliver'];
+  if (daysAgo >= 3)
+    return roll < 0.6 ? ['pay', 'ship', 'deliver'] : ['pay', 'ship'];
+  if (daysAgo >= 1) return roll < 0.5 ? ['pay', 'ship'] : ['pay'];
+  return roll < 0.5 ? ['pay'] : [];
+}
+
+/** Horas depois da criação em que cada passo aconteceu. */
+const STEP_HOURS: Record<OrderAction, number> = {
+  pay: 2,
+  ship: 22,
+  deliver: 48,
+  cancel: 18,
+};
+
 const CANCEL_REASONS = [
   'Cliente desistiu da compra',
   'Pagamento não confirmado',
@@ -172,29 +201,33 @@ function deburr(value: string): string {
 }
 
 /**
- * Leva o pedido para o passado: criado há `daysAgo` dias e cada mudança de
- * status 20 h depois da anterior; as movimentações de estoque acompanham.
+ * Leva o pedido para o passado: criado em `at` e cada mudança de status
+ * `offsets[i]` horas depois; pedido (paid_at/canceled_at), histórico e
+ * movimentações de estoque acompanham.
  */
 async function backdateOrder(
   orderId: string,
-  daysAgo: number,
-  hour: number,
+  at: Date,
+  offsets: number[],
 ): Promise<void> {
   await AppDataSource.query(
-    `WITH base AS (SELECT now() - make_interval(days => $2, hours => $3) AS at),
-     steps AS (
-       SELECT id, row_number() OVER (ORDER BY created_at, id) - 1 AS step
+    `WITH steps AS (
+       SELECT id, row_number() OVER (ORDER BY created_at, id) AS step
        FROM order_status_history WHERE order_id = $1
      )
      UPDATE order_status_history h
-       SET created_at = base.at + steps.step * interval '20 hours'
-       FROM base, steps WHERE h.id = steps.id`,
-    [orderId, daysAgo, hour],
+       SET created_at = $2::timestamptz + ($3::int[])[steps.step] * interval '1 hour'
+       FROM steps WHERE h.id = steps.id`,
+    [orderId, at, [0, ...offsets]],
   );
   await AppDataSource.query(
     `UPDATE orders o SET
        created_at = (SELECT min(created_at) FROM order_status_history WHERE order_id = o.id),
-       updated_at = (SELECT max(created_at) FROM order_status_history WHERE order_id = o.id)
+       updated_at = (SELECT max(created_at) FROM order_status_history WHERE order_id = o.id),
+       paid_at = (SELECT min(created_at) FROM order_status_history
+         WHERE order_id = o.id AND to_status = 'paid'),
+       canceled_at = (SELECT max(created_at) FROM order_status_history
+         WHERE order_id = o.id AND to_status = 'canceled')
      WHERE o.id = $1`,
     [orderId],
   );
@@ -289,7 +322,7 @@ async function main(): Promise<void> {
 
   const createdCustomers = [];
   const usedNames = new Set<string>();
-  while (createdCustomers.length < 30) {
+  while (createdCustomers.length < 120) {
     const name = `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}`;
     if (usedNames.has(name)) continue;
     usedNames.add(name);
@@ -327,7 +360,7 @@ async function main(): Promise<void> {
   }
   // o saldo inicial "chegou" antes de todos os pedidos (a linha do tempo do livro fecha)
   await AppDataSource.query(
-    `UPDATE stock_movements SET created_at = now() - interval '90 days'
+    `UPDATE stock_movements SET created_at = now() - interval '400 days'
        WHERE type = 'INITIAL' AND product_id = ANY($1)`,
     [createdProducts.map(product => product.id)],
   );
@@ -337,33 +370,120 @@ async function main(): Promise<void> {
     container.ordersUnitOfWork,
   );
   const changeStatus = new ChangeOrderStatusService(container.ordersUnitOfWork);
+  const record = new RecordStockMovementService(container.productsUnitOfWork);
   const inStock = createdProducts.filter(product => product.quantity >= 10);
-  const ORDERS = 24;
-  for (let index = 0; index < ORDERS; index += 1) {
-    const lines = new Map<string, number>();
-    const size = 1 + Math.floor(next() * 3);
-    while (lines.size < size)
-      lines.set(pick(inStock).id, 1 + Math.floor(next() * 2));
+  // quem vende: vendedor na maior parte, gerente e admin também
+  const sellers = [
+    ...Array<string>(6).fill(actorByRole.SELLER),
+    ...Array<string>(3).fill(actorByRole.MANAGER),
+    actorByRole.ADMIN,
+  ];
+  // clientes "fiéis" compram mais (top clientes com o que mostrar)
+  const loyal = createdCustomers.slice(0, 15);
+  const now = Date.now();
+  let orders = 0;
+  let restocks = 0;
 
-    const order = await createOrder.execute({
-      created_by: actorByRole.SELLER,
-      customer_id: pick(createdCustomers).id,
-      products: [...lines].map(([id, quantity]) => ({ id, quantity })),
-    });
-    for (const action of ORDER_PATHS[index % ORDER_PATHS.length] ?? []) {
-      await changeStatus.execute({
-        id: order.id,
-        action,
-        // o vendedor registra o pagamento; envio, entrega e cancelamento são do gerente
-        changed_by: action === 'pay' ? actorByRole.SELLER : actorByRole.MANAGER,
-        reason: action === 'cancel' ? pick(CANCEL_REASONS) : undefined,
-      });
-    }
-    await backdateOrder(order.id, 60 - index * 2, Math.floor(next() * 10));
+  /**
+   * Relógio simulado: o cancelamento (que devolve estoque) só é executado
+   * quando a simulação chega à hora dele. Assim a ordem em que as
+   * movimentações são gravadas é a mesma das datas, e o "saldo após" de cada
+   * uma fecha com a soma em ordem cronológica.
+   */
+  interface Scheduled {
+    orderId: string;
+    at: Date;
+    offsets: number[];
+    cancelAt: number;
   }
+  const cancels: Scheduled[] = [];
+  const runCancelsUntil = async (time: number) => {
+    cancels.sort((a, b) => a.cancelAt - b.cancelAt);
+    while (cancels.length > 0 && (cancels[0]?.cancelAt ?? Infinity) <= time) {
+      const due = cancels.shift();
+      if (!due) break;
+      await changeStatus.execute({
+        id: due.orderId,
+        action: 'cancel',
+        changed_by: actorByRole.MANAGER,
+        reason: pick(CANCEL_REASONS),
+      });
+      await backdateOrder(due.orderId, due.at, due.offsets);
+    }
+  };
+
+  for (let daysAgo = HISTORY_DAYS; daysAgo >= 0; daysAgo -= 1) {
+    const day = new Date(now - daysAgo * 86_400_000);
+    const count = ordersOn(day, daysAgo, next);
+    for (let index = 0; index < count; index += 1) {
+      // horário comercial (8h–20h em São Paulo = 11h–23h UTC), em ordem no dia
+      // instantes distintos (sem empate de horário com outro pedido)
+      const opening = new Date(day).setUTCHours(11, 0, 0, 0);
+      const at = new Date(
+        opening + Math.floor((12 * 3_600_000 * (index + next())) / count),
+      );
+      if (at.getTime() > now) continue;
+      const entryAt = at.getTime() - 60_000;
+
+      const lines = new Map<string, number>();
+      const size = 1 + Math.floor(next() * next() * 4);
+      while (lines.size < size)
+        lines.set(pick(inStock).id, 1 + Math.floor(next() * next() * 4));
+
+      // repõe antes de faltar (entrada registrada 1 min antes do pedido)
+      await runCancelsUntil(entryAt);
+      for (const [id, units] of lines) {
+        const product = await products.findById(id);
+        if (product && product.quantity < units + 10) {
+          const entry = await record.execute({
+            product_id: id,
+            type: 'ENTRY',
+            quantity: 60,
+            reason: 'Reposição do fornecedor',
+            created_by: actorByRole.MANAGER,
+          });
+          await AppDataSource.query(
+            'UPDATE stock_movements SET created_at = $2 WHERE id = $1',
+            [entry.id, new Date(entryAt)],
+          );
+          restocks += 1;
+        }
+      }
+      await runCancelsUntil(at.getTime());
+
+      const creator = pick(sellers);
+      const order = await createOrder.execute({
+        created_by: creator,
+        customer_id: pick(next() < 0.4 ? loyal : createdCustomers).id,
+        products: [...lines].map(([id, quantity]) => ({ id, quantity })),
+      });
+      const path = pathFor(daysAgo, next());
+      const offsets = path.map(action => STEP_HOURS[action]);
+      for (const action of path) {
+        if (action === 'cancel') continue; // fica na fila do relógio
+        await changeStatus.execute({
+          id: order.id,
+          action,
+          // quem criou registra o pagamento; envio e entrega são do gerente
+          changed_by: action === 'pay' ? creator : actorByRole.MANAGER,
+        });
+      }
+      if (path.includes('cancel')) {
+        cancels.push({
+          orderId: order.id,
+          at,
+          offsets,
+          cancelAt: at.getTime() + STEP_HOURS.cancel * 3_600_000,
+        });
+      } else {
+        await backdateOrder(order.id, at, offsets);
+      }
+      orders += 1;
+    }
+  }
+  await runCancelsUntil(Infinity);
 
   // entradas de mercadoria e ajustes manuais (registrados agora, depois dos pedidos)
-  const record = new RecordStockMovementService(container.productsUnitOfWork);
   const byName = (name: string) =>
     createdProducts.find(product => product.name === name);
   const manual = [
@@ -395,7 +515,7 @@ async function main(): Promise<void> {
   );
 
   console.log(
-    `Seed concluído: ${createdCustomers.length} clientes, ${CATEGORIES.length} categorias, ${createdProducts.length} produtos (${low} abaixo do mínimo), ${ORDERS} pedidos e ${manual.length} movimentações manuais.`,
+    `Seed concluído: ${createdCustomers.length} clientes, ${CATEGORIES.length} categorias, ${createdProducts.length} produtos (${low} abaixo do mínimo), ${orders} pedidos em ${HISTORY_DAYS} dias, ${restocks} reposições e ${manual.length} movimentações manuais.`,
   );
   for (const { role, email, password } of SEED_USERS) {
     console.log(`  ${role.padEnd(7)} ${email} / ${password}`);

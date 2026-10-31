@@ -1,3 +1,4 @@
+import type { z } from 'zod';
 import {
   categoryBodySchema,
   categorySchema,
@@ -47,7 +48,64 @@ import {
   updateUserStatusBodySchema,
   userSchema,
 } from '../users';
+import {
+  metricsPeriodQuerySchema,
+  metricsSummarySchema,
+  ordersByStatusSchema,
+  revenueQuerySchema,
+  revenueSeriesSchema,
+  salesByCategorySchema,
+  topCustomersSchema,
+  topProductsSchema,
+  topQuerySchema,
+} from '../metrics';
+import {
+  customersReportQuerySchema,
+  productsReportQuerySchema,
+  salesReportQuerySchema,
+} from '../reports';
 import { defineRoute, RouteDefinition } from './define';
+
+/** Bloco do dashboard: GET /metrics/<nome>, mesmo acesso do resumo. */
+function metricsRoute<const Q extends z.ZodType, const S extends z.ZodType>(
+  name: string,
+  doc: { operationId: string; summary: string; query: Q; response: S },
+) {
+  return defineRoute({
+    method: 'get',
+    path: `/metrics/${name}`,
+    operationId: doc.operationId,
+    summary: doc.summary,
+    description:
+      'Sem report:read, só os pedidos criados pelo usuário (scope=own).',
+    tags: ['Métricas'],
+    auth: true,
+    permission: 'dashboard:read',
+    request: { query: doc.query },
+    responses: { 200: doc.response },
+  });
+}
+
+/** Relatório CSV em streaming: GET /reports/<nome>, só com report:read. */
+function reportRoute<const Q extends z.ZodType>(
+  name: string,
+  doc: { operationId: string; summary: string; query: Q },
+) {
+  return defineRoute({
+    method: 'get',
+    path: `/reports/${name}`,
+    operationId: doc.operationId,
+    summary: doc.summary,
+    description:
+      'UTF-8 com BOM, separador ";", vírgula decimal e datas dd/mm/aaaa hh:mm no fuso do negócio (abre direto no Excel em português).',
+    tags: ['Relatórios'],
+    auth: true,
+    permission: 'report:read',
+    download: { contentType: 'text/csv' },
+    request: { query: doc.query },
+    responses: { 200: null },
+  });
+}
 
 /** Transição sem corpo (pagar, enviar, entregar). */
 function transitionRoute(
@@ -474,6 +532,71 @@ export const routes = {
       request: { params: idParamsSchema },
       responses: { 204: null },
       errors: [404, 409],
+    }),
+  },
+
+  metrics: {
+    summary: defineRoute({
+      method: 'get',
+      path: '/metrics/summary',
+      operationId: 'getMetricsSummary',
+      summary: 'Indicadores de vendas do período, com o período anterior',
+      description:
+        'Venda = pedido pago e não cancelado, na data do pagamento, no fuso do negócio. Sem report:read, só os pedidos criados pelo usuário (scope=own).',
+      tags: ['Métricas'],
+      auth: true,
+      permission: 'dashboard:read',
+      request: { query: metricsPeriodQuerySchema },
+      responses: { 200: metricsSummarySchema },
+    }),
+    revenue: metricsRoute('revenue', {
+      operationId: 'getRevenueSeries',
+      summary:
+        'Faturamento no tempo (dia, semana ou mês), com os dias vazios em zero',
+      query: revenueQuerySchema,
+      response: revenueSeriesSchema,
+    }),
+    topProducts: metricsRoute('top-products', {
+      operationId: 'getTopProducts',
+      summary: 'Produtos com mais faturamento no período (preço da compra)',
+      query: topQuerySchema,
+      response: topProductsSchema,
+    }),
+    topCustomers: metricsRoute('top-customers', {
+      operationId: 'getTopCustomers',
+      summary: 'Clientes com mais faturamento no período',
+      query: topQuerySchema,
+      response: topCustomersSchema,
+    }),
+    categories: metricsRoute('categories', {
+      operationId: 'getSalesByCategory',
+      summary: 'Faturamento por categoria (categoria atual do produto)',
+      query: metricsPeriodQuerySchema,
+      response: salesByCategorySchema,
+    }),
+    status: metricsRoute('status', {
+      operationId: 'getOrdersByStatus',
+      summary: 'Pedidos criados no período, por status atual',
+      query: metricsPeriodQuerySchema,
+      response: ordersByStatusSchema,
+    }),
+  },
+
+  reports: {
+    sales: reportRoute('sales', {
+      operationId: 'exportSalesReport',
+      summary: 'CSV: vendas do período (um pedido por linha)',
+      query: salesReportQuerySchema,
+    }),
+    products: reportRoute('products', {
+      operationId: 'exportProductsReport',
+      summary: 'CSV: produtos com estoque e o vendido no período',
+      query: productsReportQuerySchema,
+    }),
+    customers: reportRoute('customers', {
+      operationId: 'exportCustomersReport',
+      summary: 'CSV: clientes com o total comprado no período',
+      query: customersReportQuerySchema,
     }),
   },
 

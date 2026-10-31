@@ -38,3 +38,30 @@ export function formatDate(iso: string): string {
 export function formatDateTime(iso: string): string {
   return dateTime.format(new Date(iso));
 }
+
+const compactCurrency = new Intl.NumberFormat('pt-BR', {
+  style: 'currency',
+  currency: 'BRL',
+  notation: 'compact',
+  maximumFractionDigits: 1,
+});
+const percent = new Intl.NumberFormat('pt-BR', {
+  style: 'percent',
+  maximumFractionDigits: 1,
+});
+
+/** Centavos -> "R$ 12,3 mil" (eixos de gráfico, telas estreitas). */
+export function formatCentsCompact(cents: number): string {
+  return compactCurrency.format(cents / 100);
+}
+
+/** Proporção (0.125) -> "12,5%". */
+export function formatPercent(ratio: number): string {
+  return percent.format(ratio);
+}
+
+/** Dia local "AAAA-MM-DD" -> "26/10/2026" (sem passar por fuso). */
+export function formatLocalDay(day: string): string {
+  const [year, month, dayOfMonth] = day.split('-');
+  return `${dayOfMonth}/${month}/${year}`;
+}

@@ -43,10 +43,21 @@ describe('controle de acesso no front (mapa do shared)', () => {
         'Produtos',
         'Categorias',
         'Pedidos',
+        'Relatórios',
         'Usuários',
       ],
     ],
-    ['MANAGER', ['Dashboard', 'Clientes', 'Produtos', 'Categorias', 'Pedidos']],
+    [
+      'MANAGER',
+      [
+        'Dashboard',
+        'Clientes',
+        'Produtos',
+        'Categorias',
+        'Pedidos',
+        'Relatórios',
+      ],
+    ],
     ['SELLER', ['Dashboard', 'Clientes', 'Produtos', 'Pedidos']],
   ])('%s vê o menu certo e o papel no header', async (role, expected) => {
     signIn(role);
@@ -185,6 +196,7 @@ describe('controle de acesso no front (mapa do shared)', () => {
     ['SELLER', '/products/new'],
     ['SELLER', `/customers/${customer.id}/edit`],
     ['MANAGER', '/users/new'],
+    ['SELLER', '/reports'],
   ])(
     '%s abrindo %s pela URL vê a página 403 dentro do layout',
     async (role, path) => {

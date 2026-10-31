@@ -11,6 +11,8 @@ export const VALIDATION_REASONS = {
   zero_quantity: 'Quantity must not be zero',
   negative_entry: 'An entry must have a positive quantity',
   reason_required: 'A reason is required',
+  custom_range_required: '`from` and `to` are required for a custom period',
+  range_too_long: 'The period must be at most 731 days',
 } as const;
 
 export type ValidationReason = keyof typeof VALIDATION_REASONS;

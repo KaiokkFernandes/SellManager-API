@@ -18,7 +18,9 @@ import {
   EditCustomerPage,
   NewCustomerPage,
 } from '@/features/customers';
+import { periodSearchSchema } from '@/components/period-picker';
 import { DashboardPage } from '@/features/dashboard';
+import { ReportsPage } from '@/features/reports';
 import {
   LoginPage,
   profileQueryOptions,
@@ -112,6 +114,8 @@ const authenticatedRoute = createRoute({
 const dashboardRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/',
+  beforeLoad: requires('dashboard:read'),
+  validateSearch: periodSearchSchema,
   component: DashboardPage,
 });
 // ---- Perfil (qualquer usuário logado)
@@ -201,6 +205,15 @@ const categoriesRoute = createRoute({
   component: CategoriesListPage,
 });
 
+// ---- Relatórios (exportação CSV)
+const reportsRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/reports',
+  beforeLoad: requires('report:read'),
+  validateSearch: periodSearchSchema,
+  component: ReportsPage,
+});
+
 // ---- Pedidos
 const ordersRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
@@ -271,6 +284,7 @@ const routeTree = rootRoute.addChildren([
       editProductRoute,
     ]),
     categoriesRoute,
+    reportsRoute,
     ordersRoute.addChildren([ordersListRoute, newOrderRoute, orderDetailRoute]),
     usersRoute.addChildren([usersListRoute, newUserRoute, editUserRoute]),
   ]),

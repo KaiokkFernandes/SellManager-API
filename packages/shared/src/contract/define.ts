@@ -33,8 +33,13 @@ interface RouteBase {
   /** Sujeita ao rate limit das rotas de autenticação. */
   rateLimited?: boolean;
   request?: RouteRequest;
-  /** Respostas de sucesso; `null` = sem corpo (204). */
+  /** Respostas de sucesso; `null` = sem corpo (204) ou arquivo (`download`). */
   responses: Partial<Record<SuccessStatus, z.ZodType | null>>;
+  /**
+   * A resposta 200 é um arquivo enviado em streaming (o handler usa
+   * `download`, não `reply`).
+   */
+  download?: { contentType: 'text/csv' };
   /** Erros de domínio (404, 409…). 400, 401, 413, 429 e 500 são deduzidos. */
   errors?: readonly ErrorStatus[];
 }

@@ -4,10 +4,11 @@ import {
   PaginationParams,
   slicePage,
 } from '@shared/domain/pagination';
-import { Order, OrderStatus } from '../domain/entities/Order';
+import { Order } from '../domain/entities/Order';
 import {
   ICreateOrderDTO,
   IFindOrdersFilter,
+  IOrderStatusChanges,
   IOrdersRepository,
 } from '../domain/repositories/IOrdersRepository';
 
@@ -76,6 +77,8 @@ export class FakeOrdersRepository implements IOrdersRepository {
     const order: Order = {
       id,
       ...data,
+      paid_at: null,
+      canceled_at: null,
       items: items.map(item => ({ ...item, id: randomUUID(), order_id: id })),
       created_at: now,
       updated_at: now,
@@ -84,10 +87,13 @@ export class FakeOrdersRepository implements IOrdersRepository {
     return Promise.resolve(this.clone(order));
   }
 
-  public updateStatus(id: string, status: OrderStatus): Promise<Order> {
+  public updateStatus(
+    id: string,
+    changes: IOrderStatusChanges,
+  ): Promise<Order> {
     const order = this.orders.find(item => item.id === id);
     if (!order) return Promise.reject(new Error('Order not found'));
-    order.status = status;
+    Object.assign(order, changes);
     order.updated_at = new Date();
     return Promise.resolve(this.clone(order));
   }

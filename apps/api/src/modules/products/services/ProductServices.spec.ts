@@ -230,6 +230,7 @@ describe('Product services', () => {
         customer_id,
         customer: { id: customer_id, name: 'Ana', email: 'ana@test.com' },
         status: 'pending',
+        created_by: 'user-1',
         total: 199.9,
         items: [
           {

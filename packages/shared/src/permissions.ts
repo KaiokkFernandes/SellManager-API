@@ -29,6 +29,7 @@ export const PERMISSIONS = [
   'order:ship',
   'order:deliver',
   'order:cancel',
+  'dashboard:read',
   'report:read',
   'user:read',
   'user:create',
@@ -46,8 +47,10 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   // clientes, produtos, pedidos e relatórios
   MANAGER: MANAGER_PERMISSIONS,
   // vende: vê produtos, cadastra clientes, cria pedidos e registra o pagamento;
+  // no dashboard vê só os próprios números (sem report:read);
   // não exclui nada, não mexe em preço/estoque, não envia/entrega nem cancela
   SELLER: [
+    'dashboard:read',
     'customer:read',
     'customer:create',
     'product:read',

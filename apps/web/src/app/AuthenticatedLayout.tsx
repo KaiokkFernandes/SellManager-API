@@ -1,6 +1,7 @@
 import { ROLE_LABELS, type Permission } from '@sellmanager/shared';
 import { Link } from '@tanstack/react-router';
 import {
+  FileDown,
   LayoutDashboard,
   Package,
   ShoppingCart,
@@ -15,7 +16,12 @@ import { useLowStockProducts } from '@/features/products';
 
 /** Menu completo; cada item aparece só para quem tem a permissão (mapa do shared). */
 const navItems: readonly (NavItem & { permission?: Permission })[] = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+  {
+    to: '/',
+    label: 'Dashboard',
+    icon: LayoutDashboard,
+    permission: 'dashboard:read',
+  },
   {
     to: '/customers',
     label: 'Clientes',
@@ -39,6 +45,12 @@ const navItems: readonly (NavItem & { permission?: Permission })[] = [
     label: 'Pedidos',
     icon: ShoppingCart,
     permission: 'order:read',
+  },
+  {
+    to: '/reports',
+    label: 'Relatórios',
+    icon: FileDown,
+    permission: 'report:read',
   },
   { to: '/users', label: 'Usuários', icon: UserCog, permission: 'user:read' },
 ];

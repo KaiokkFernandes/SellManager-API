@@ -187,3 +187,39 @@ export async function unwrap<T>(request: Promise<FetchResult<T>>): Promise<T> {
   }
   return result.data as T;
 }
+
+export interface DownloadedFile {
+  blob: Blob;
+  /** Nome sugerido pela API (Content-Disposition), se houver. */
+  filename: string | undefined;
+}
+
+/** Nome do arquivo do Content-Disposition (prefere o `filename*` em UTF-8). */
+export function filenameFrom(disposition: string | null): string | undefined {
+  if (!disposition) return undefined;
+  const encoded = /filename\*=UTF-8''([^;]+)/i.exec(disposition)?.[1];
+  if (encoded) return decodeURIComponent(encoded);
+  return /filename="([^"]+)"/i.exec(disposition)?.[1];
+}
+
+/**
+ * Como `unwrap`, para rotas de download (chame com `parseAs: 'blob'`): devolve
+ * o arquivo e o nome; erro da API vira ApiClientError com o JSON de erro.
+ */
+export async function unwrapFile(
+  request: Promise<FetchResult<unknown>>,
+): Promise<DownloadedFile> {
+  let result: FetchResult<unknown>;
+  try {
+    result = await request;
+  } catch (cause) {
+    throw Object.assign(new ApiClientError(0, undefined), { cause });
+  }
+  if (!result.response.ok) {
+    throw new ApiClientError(result.response.status, result.error);
+  }
+  return {
+    blob: result.data as Blob,
+    filename: filenameFrom(result.response.headers.get('Content-Disposition')),
+  };
+}

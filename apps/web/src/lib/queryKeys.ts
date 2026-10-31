@@ -18,6 +18,10 @@ export const queryKeys = {
       ['products', 'movements', id, params] as const,
     lowStock: (params: object) => ['products', 'low-stock', params] as const,
   },
+  metrics: {
+    all: ['metrics'] as const,
+    block: (name: string, params: object) => ['metrics', name, params] as const,
+  },
   categories: {
     all: ['categories'] as const,
     list: (params: object) => ['categories', 'list', params] as const,

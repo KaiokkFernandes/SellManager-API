@@ -41,6 +41,14 @@ Prints gerados pelo Playwright (`pnpm --filter web e2e`) em
 | ------------------------------------------------------------- | ------------------------------------------------------------------ |
 | ![Linha do tempo](docs/screenshots/pedido-linha-do-tempo.png) | ![Estoque baixo](docs/screenshots/estoque-baixo-desktop-light.png) |
 
+- **Dashboard** (`/`): período na URL (hoje, 7 e 30 dias, mês atual ou personalizado); KPIs
+  com a variação contra o período anterior (seta e texto, não só cor); faturamento no tempo
+  (Recharts, carregado sob demanda, cores do tema e tabela para leitor de tela); vendas por
+  categoria e pedidos por status como barras em HTML, cada item um link para a lista filtrada;
+  top produtos e clientes; aviso de estoque baixo. Cada bloco tem o próprio carregando, vazio e
+  erro. O vendedor vê "Seus números".
+- **Relatórios** (`report:read`): mesmo seletor de período e um botão de exportar CSV por
+  relatório, com filtros (status, categoria, abaixo do mínimo, incluir quem não comprou).
 - **Clientes**: lista com busca (debounce) e ordenação por nome, e-mail ou cadastro;
   formulário de criar/editar; detalhe com os pedidos do cliente e atalho para novo pedido;
   exclusão com confirmação que explica a recusa quando há pedidos.
@@ -349,6 +357,11 @@ para `@/lib/utils`.
 - Pedidos `pending` abandonados seguram estoque (a baixa é na criação): falta expirar pedidos
   pendentes antigos, ou separar estoque reservado de físico.
 - Movimentações não têm filtro por tipo nem período, e não há exportação.
+- Dashboard: "Sem categoria" não leva a lista nenhuma (a lista de produtos não filtra por
+  "sem categoria"), e os pontos do gráfico de faturamento não são clicáveis (a lista de pedidos
+  filtra pela data de criação, não pela de pagamento).
+- Com o período anterior quase vazio (início do histórico), a variação fica enorme
+  ("+13.636,8%"): correta, mas pouco útil; poderia virar "novo" acima de um limite.
 - O alerta de estoque baixo atualiza a cada minuto ou após uma mudança feita nesta sessão;
   não há push (WebSocket) nem notificação por e-mail.
 - Não há fluxo para trocar o próprio e-mail (com confirmação por e-mail).

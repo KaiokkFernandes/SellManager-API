@@ -113,7 +113,8 @@ and `can(role, permission)`). The same map is used everywhere:
 | `order:ship` | ✅ | ✅ | — | `PATCH /orders/{id}/ship` |
 | `order:deliver` | ✅ | ✅ | — | `PATCH /orders/{id}/deliver` |
 | `order:cancel` | ✅ | ✅ | — | `PATCH /orders/{id}/cancel` |
-| `report:read` | ✅ | ✅ | — | _reserved_ |
+| `dashboard:read` | ✅ | ✅ | ✅ | `GET /metrics/summary`, `GET /metrics/revenue`, `GET /metrics/top-products`, `GET /metrics/top-customers`, `GET /metrics/categories`, `GET /metrics/status` |
+| `report:read` | ✅ | ✅ | — | `GET /reports/sales`, `GET /reports/products`, `GET /reports/customers` |
 | `user:read` | ✅ | — | — | `GET /users`, `GET /users/{id}` |
 | `user:create` | ✅ | — | — | `POST /users` |
 | `user:update` | ✅ | — | — | `PUT /users/{id}`, `PATCH /users/{id}/status` |
@@ -219,6 +220,79 @@ stateDiagram-v2
 - **Categories.** One optional category per product. Names are unique regardless of case, and
   a category with products cannot be deleted (`409 RESOURCE_IN_USE`, `details.products_count`).
 
+## Sales metrics and reports
+
+The dashboard (`/`) and the reports (`/reports`) share one definition of a sale. The SQL for
+it lives in a single place (`apps/api/src/modules/metrics/infra/typeorm/salesSql.ts`), and the
+period rules live in the domain (`apps/api/src/modules/metrics/domain`).
+
+### Definitions
+
+- **Sale**: an order that was **paid and not canceled** (`paid`, `shipped` or `delivered`),
+  counted on the **payment date** (`orders.paid_at`). Pending orders are not sales.
+- **Canceled**: counted on the cancellation date (`orders.canceled_at`). An order that was paid
+  and later canceled leaves revenue and counts only as canceled.
+- **Time zone**: one "day" is a local day in `BUSINESS_TIMEZONE` (default
+  `America/Sao_Paulo`). A payment at 23:30 on 31/10 in São Paulo (02:30 on 01/11 in UTC) belongs
+  to October. The API turns local days into instants with `AT TIME ZONE`, which also handles
+  daylight saving time.
+- **Period** (`preset`): `today`, `7d`, `30d` (all ending today), `month` (from the 1st to
+  today) or `custom` (`from`–`to`, inclusive, up to 731 days). Default: `30d`.
+- **Previous period**: same length, right before. For `month`, the same stretch of the previous
+  month (on 31/03 it compares with 01/02–28/02).
+
+| Metric (`/metrics/...`)         | Definition                                                                                                                                                           |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Revenue (`summary`)             | Sum of `total_cents` of the sales paid in the period                                                                                                                 |
+| Sales (`summary`)               | Number of those sales                                                                                                                                                |
+| Average ticket (`summary`)      | Revenue ÷ sales, rounded to the cent (0 without sales)                                                                                                               |
+| Canceled (`summary`)            | Count and value of orders canceled in the period; **rate = canceled ÷ (sales + canceled)**                                                                           |
+| Change (`summary.change`)       | Relative to the previous period (`0.12` = +12%); `null` when the previous value is 0. The cancel rate changes in points                                              |
+| Revenue over time (`revenue`)   | Sales by day, week (starting Monday) or month in the business time zone; empty buckets are 0. Default by length: ≤ 31 days by day, ≤ 186 by week, otherwise by month |
+| Top products (`top-products`)   | Revenue by product over the period's sales, at the **purchase price** (order item), with units                                                                       |
+| Top customers (`top-customers`) | Revenue and number of sales by customer                                                                                                                              |
+| By category (`categories`)      | Revenue and units by the product's **current** category; `null` = no category                                                                                        |
+| By status (`status`)            | Orders **created** in the period, by current status (the funnel; includes pending)                                                                                   |
+| Below minimum stock             | Current state, not tied to the period (`GET /products/low-stock`)                                                                                                    |
+
+### Who sees what
+
+Every role has `dashboard:read`. With `report:read` (ADMIN, MANAGER) the numbers cover the whole
+store; without it (SELLER) they cover only the orders the user created (`orders.created_by`),
+and the response says `scope: "own"` (the page shows "Seus números"). Reports require
+`report:read`.
+
+### Reports (CSV)
+
+`GET /reports/sales`, `/reports/products` and `/reports/customers`, with the same period and a
+few filters (sales: `status`, `customer_id`; products: `category_id`, `below_min_stock`;
+customers: `only_buyers`). The files open directly in Excel or Numbers set to Portuguese:
+UTF-8 with BOM, `;` separator, CRLF, decimal comma without thousands separator (`1234,56`, so
+the spreadsheet can sum it), dates as `dd/mm/aaaa hh:mm` in the business time zone, headers in
+Portuguese, and cells that start with `=`, `+`, `-` or `@` prefixed with `'` (formula
+injection). The rows are streamed from a PostgreSQL cursor (`DECLARE`/`FETCH` in batches of
+500, in a `REPEATABLE READ` snapshot), so memory stays flat for any size. The browser downloads
+with the token in the header, never in the URL.
+
+### Performance
+
+Indexes (migration `AddOrderSalesFields`): `orders (paid_at) WHERE status <> 'canceled'`,
+`orders (canceled_at)` (partial), `orders (created_by, paid_at)`, `orders (created_at)` and
+`order_items (product_id)`. Every query is a single aggregate in the database; nothing loads
+orders into memory. There is no server cache: responses carry `Cache-Control: private,
+max-age=60` and the front keeps them for one minute.
+
+Measured on the 12-month seed (≈2,200 orders, ≈3,500 items), API running locally:
+
+| Query                              |                             `EXPLAIN ANALYZE` | HTTP (median of 10) |
+| ---------------------------------- | --------------------------------------------: | ------------------: |
+| summary, 30 days                   | 0.2 ms (bitmap OR on the two partial indexes) |              4.6 ms |
+| summary, 12 months                 |   0.6 ms (sequential: reads almost every row) |              3.9 ms |
+| revenue by month, 12 months        |                                        1.2 ms |              4.7 ms |
+| top products, 12 months            |                                        2.2 ms |              5.9 ms |
+| top products, 30 days, seller only |      0.6 ms (`IDX_orders_created_by_paid_at`) |                   — |
+| by category, 12 months             |                                             — |              6.4 ms |
+
 ## Requirements
 
 - **Node.js 24** (see `.nvmrc`)
@@ -277,10 +351,10 @@ API docs (Swagger UI, generated from the contract): http://localhost:3333/docs
 
 Each app has its own `.env.example`, and the variables are documented there.
 
-| App        | File                                             | Variables                                                                                                                                                                                |
-| ---------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/api` | [`apps/api/.env.example`](apps/api/.env.example) | `NODE_ENV`, `PORT`, `APP_API_URL`, `APP_WEB_URL`, `DB_*`, `JWT_SECRET` (required), `JWT_EXPIRES_IN`, `BCRYPT_SALT_ROUNDS`, `CORS_ORIGIN`, `TRUST_PROXY`, `MAIL_*`, `SMTP_*`, `LOG_LEVEL` |
-| `apps/web` | [`apps/web/.env.example`](apps/web/.env.example) | `VITE_API_URL`: `/api` in dev (Vite proxy) or the API URL. Only `VITE_*` variables reach the browser                                                                                     |
+| App        | File                                             | Variables                                                                                                                                                                                                     |
+| ---------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/api` | [`apps/api/.env.example`](apps/api/.env.example) | `NODE_ENV`, `PORT`, `APP_API_URL`, `APP_WEB_URL`, `BUSINESS_TIMEZONE`, `DB_*`, `JWT_SECRET` (required), `JWT_EXPIRES_IN`, `BCRYPT_SALT_ROUNDS`, `CORS_ORIGIN`, `TRUST_PROXY`, `MAIL_*`, `SMTP_*`, `LOG_LEVEL` |
+| `apps/web` | [`apps/web/.env.example`](apps/web/.env.example) | `VITE_API_URL`: `/api` in dev (Vite proxy) or the API URL. Only `VITE_*` variables reach the browser                                                                                                          |
 
 - The API checks its variables with zod at startup and refuses to start if one is invalid.
   The full table is in the [API README](apps/api/README.md#environment-variables).

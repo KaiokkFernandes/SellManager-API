@@ -2,6 +2,15 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod';
 
+function isValidTimezone(timeZone: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Relativo à pasta do app (apps/api), não ao cwd: funciona rodando pela raiz
 // do monorepo, pelo Turborepo ou de dentro de apps/api (src/ e dist/).
 const envFile = path.resolve(
@@ -24,6 +33,11 @@ const envSchema = z
     PORT: z.coerce.number().int().positive().default(3333),
     APP_API_URL: z.url().default('http://localhost:3333'),
     APP_WEB_URL: z.url().default('http://localhost:3000'),
+    // fuso das métricas: "um dia" de venda é o dia local do negócio
+    BUSINESS_TIMEZONE: z
+      .string()
+      .refine(isValidTimezone, 'Invalid IANA time zone')
+      .default('America/Sao_Paulo'),
 
     DB_HOST: z.string().default('localhost'),
     DB_PORT: z.coerce.number().int().positive().default(5433),

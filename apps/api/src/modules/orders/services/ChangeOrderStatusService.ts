@@ -2,7 +2,7 @@ import type { OrderAction } from '@sellmanager/shared';
 import { StockLedger } from '@modules/products/domain/StockLedger';
 import AppError from '@shared/errors/AppError';
 import { OrderDetails } from '../domain/entities/Order';
-import { nextOrderStatus } from '../domain/orderWorkflow';
+import { nextOrderStatus, statusTimestamps } from '../domain/orderWorkflow';
 import { IOrdersUnitOfWork } from '../domain/repositories/IOrdersUnitOfWork';
 
 interface IRequest {
@@ -59,13 +59,18 @@ export class ChangeOrderStatusService {
           }
         }
 
-        const updated = await orders.updateStatus(id, status);
+        const at = new Date();
+        const updated = await orders.updateStatus(id, {
+          status,
+          ...statusTimestamps(status, at),
+        });
         await history.add({
           order_id: id,
           from_status: order.status,
           to_status: status,
           changed_by_id: changed_by,
           reason: action === 'cancel' ? reason?.trim() : undefined,
+          at,
         });
         return { ...updated, history: await history.findByOrder(id) };
       },

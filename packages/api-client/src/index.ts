@@ -1,4 +1,5 @@
-export { createApiClient, unwrap } from './client';
+export { createApiClient, filenameFrom, unwrap, unwrapFile } from './client';
+export type { DownloadedFile } from './client';
 export type {
   ApiClientOptions,
   SellManagerClient,
@@ -23,3 +24,9 @@ export type OrderDetails = Schemas['OrderDetails'];
 export type OrderStatusChange = Schemas['OrderStatusChange'];
 export type StockMovement = Schemas['StockMovement'];
 export type Category = Schemas['Category'];
+export type MetricsSummary = Schemas['MetricsSummary'];
+export type RevenueSeries = Schemas['RevenueSeries'];
+export type TopProducts = Schemas['TopProducts'];
+export type TopCustomers = Schemas['TopCustomers'];
+export type SalesByCategory = Schemas['SalesByCategory'];
+export type OrdersByStatus = Schemas['OrdersByStatus'];

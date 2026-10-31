@@ -828,6 +828,504 @@
           "email": "ana@example.com"
         }
       },
+      "MetricsSummary": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/MetricsPeriod"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "all",
+              "own"
+            ]
+          },
+          "current": {
+            "type": "object",
+            "properties": {
+              "revenue_cents": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Valor em centavos (inteiro). R$ 199,90 = 19990"
+              },
+              "orders": {
+                "type": "integer",
+                "description": "Vendas (pagas e não canceladas)"
+              },
+              "average_ticket_cents": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Valor em centavos (inteiro). R$ 199,90 = 19990"
+              },
+              "canceled_orders": {
+                "type": "integer"
+              },
+              "canceled_cents": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Valor em centavos (inteiro). R$ 199,90 = 19990"
+              },
+              "cancel_rate": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "cancelados ÷ (vendas + cancelados); 0 sem pedidos"
+              }
+            },
+            "required": [
+              "revenue_cents",
+              "orders",
+              "average_ticket_cents",
+              "canceled_orders",
+              "canceled_cents",
+              "cancel_rate"
+            ]
+          },
+          "previous": {
+            "type": "object",
+            "properties": {
+              "revenue_cents": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Valor em centavos (inteiro). R$ 199,90 = 19990"
+              },
+              "orders": {
+                "type": "integer",
+                "description": "Vendas (pagas e não canceladas)"
+              },
+              "average_ticket_cents": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Valor em centavos (inteiro). R$ 199,90 = 19990"
+              },
+              "canceled_orders": {
+                "type": "integer"
+              },
+              "canceled_cents": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Valor em centavos (inteiro). R$ 199,90 = 19990"
+              },
+              "cancel_rate": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "cancelados ÷ (vendas + cancelados); 0 sem pedidos"
+              }
+            },
+            "required": [
+              "revenue_cents",
+              "orders",
+              "average_ticket_cents",
+              "canceled_orders",
+              "canceled_cents",
+              "cancel_rate"
+            ]
+          },
+          "change": {
+            "type": "object",
+            "properties": {
+              "revenue": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Variação relativa (0.12 = +12%); null se o anterior é zero"
+              },
+              "orders": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Variação relativa (0.12 = +12%); null se o anterior é zero"
+              },
+              "average_ticket": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Variação relativa (0.12 = +12%); null se o anterior é zero"
+              },
+              "canceled_orders": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Variação relativa (0.12 = +12%); null se o anterior é zero"
+              },
+              "cancel_rate": {
+                "type": "number",
+                "description": "Diferença em pontos (0.02 = +2 p.p.)"
+              }
+            },
+            "required": [
+              "revenue",
+              "orders",
+              "average_ticket",
+              "canceled_orders",
+              "cancel_rate"
+            ]
+          }
+        },
+        "required": [
+          "period",
+          "scope",
+          "current",
+          "previous",
+          "change"
+        ]
+      },
+      "MetricsPeriod": {
+        "type": "object",
+        "properties": {
+          "preset": {
+            "type": "string",
+            "enum": [
+              "today",
+              "7d",
+              "30d",
+              "month",
+              "custom"
+            ]
+          },
+          "timezone": {
+            "type": "string",
+            "example": "America/Sao_Paulo"
+          },
+          "current": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string",
+                "format": "date",
+                "description": "Dia local (AAAA-MM-DD)"
+              },
+              "to": {
+                "type": "string",
+                "format": "date",
+                "description": "Inclusivo"
+              }
+            },
+            "required": [
+              "from",
+              "to"
+            ]
+          },
+          "previous": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string",
+                "format": "date",
+                "description": "Dia local (AAAA-MM-DD)"
+              },
+              "to": {
+                "type": "string",
+                "format": "date",
+                "description": "Inclusivo"
+              }
+            },
+            "required": [
+              "from",
+              "to"
+            ]
+          }
+        },
+        "required": [
+          "preset",
+          "timezone",
+          "current",
+          "previous"
+        ]
+      },
+      "RevenueSeries": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/MetricsPeriod"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "all",
+              "own"
+            ]
+          },
+          "granularity": {
+            "type": "string",
+            "enum": [
+              "day",
+              "week",
+              "month"
+            ]
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "bucket": {
+                  "type": "string",
+                  "format": "date",
+                  "description": "Início do dia, semana (segunda) ou mês"
+                },
+                "revenue_cents": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Valor em centavos (inteiro). R$ 199,90 = 19990"
+                },
+                "orders": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "bucket",
+                "revenue_cents",
+                "orders"
+              ]
+            }
+          }
+        },
+        "required": [
+          "period",
+          "scope",
+          "granularity",
+          "points"
+        ]
+      },
+      "TopProducts": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/MetricsPeriod"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "all",
+              "own"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "product": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name"
+                  ]
+                },
+                "units": {
+                  "type": "integer"
+                },
+                "revenue_cents": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Valor em centavos (inteiro). R$ 199,90 = 19990"
+                }
+              },
+              "required": [
+                "product",
+                "units",
+                "revenue_cents"
+              ]
+            }
+          }
+        },
+        "required": [
+          "period",
+          "scope",
+          "items"
+        ]
+      },
+      "TopCustomers": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/MetricsPeriod"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "all",
+              "own"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "customer": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string",
+                      "format": "email"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "email"
+                  ]
+                },
+                "orders": {
+                  "type": "integer"
+                },
+                "revenue_cents": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Valor em centavos (inteiro). R$ 199,90 = 19990"
+                }
+              },
+              "required": [
+                "customer",
+                "orders",
+                "revenue_cents"
+              ]
+            }
+          }
+        },
+        "required": [
+          "period",
+          "scope",
+          "items"
+        ]
+      },
+      "SalesByCategory": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/MetricsPeriod"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "all",
+              "own"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "category": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name"
+                  ],
+                  "description": "null = sem categoria (categoria atual do produto)"
+                },
+                "units": {
+                  "type": "integer"
+                },
+                "revenue_cents": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Valor em centavos (inteiro). R$ 199,90 = 19990"
+                }
+              },
+              "required": [
+                "category",
+                "units",
+                "revenue_cents"
+              ]
+            }
+          }
+        },
+        "required": [
+          "period",
+          "scope",
+          "items"
+        ]
+      },
+      "OrdersByStatus": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/MetricsPeriod"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "all",
+              "own"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "pending",
+                    "paid",
+                    "shipped",
+                    "delivered",
+                    "canceled"
+                  ]
+                },
+                "orders": {
+                  "type": "integer",
+                  "description": "Criados no período, pelo status atual"
+                },
+                "total_cents": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Valor em centavos (inteiro). R$ 199,90 = 19990"
+                }
+              },
+              "required": [
+                "status",
+                "orders",
+                "total_cents"
+              ]
+            }
+          }
+        },
+        "required": [
+          "period",
+          "scope",
+          "items"
+        ]
+      },
       "Order": {
         "type": "object",
         "properties": {
@@ -857,6 +1355,21 @@
             "minimum": 0,
             "description": "Valor em centavos (inteiro). R$ 199,90 = 19990"
           },
+          "paid_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Pagamento registrado (data que vale para o faturamento)"
+          },
+          "canceled_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
           "items": {
             "type": "array",
             "items": {
@@ -878,6 +1391,8 @@
           "customer",
           "status",
           "total_cents",
+          "paid_at",
+          "canceled_at",
           "items",
           "created_at",
           "updated_at"
@@ -892,6 +1407,8 @@
           },
           "status": "pending",
           "total_cents": 39980,
+          "paid_at": null,
+          "canceled_at": null,
           "items": [
             {
               "id": "a1b2c3d4-0000-4000-8000-000000000001",
@@ -1012,6 +1529,21 @@
             "minimum": 0,
             "description": "Valor em centavos (inteiro). R$ 199,90 = 19990"
           },
+          "paid_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Pagamento registrado (data que vale para o faturamento)"
+          },
+          "canceled_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
           "items": {
             "type": "array",
             "items": {
@@ -1040,6 +1572,8 @@
           "customer",
           "status",
           "total_cents",
+          "paid_at",
+          "canceled_at",
           "items",
           "created_at",
           "updated_at",
@@ -4417,6 +4951,1070 @@
           },
           "409": {
             "description": "Conflito com o estado atual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics/summary": {
+      "get": {
+        "operationId": "getMetricsSummary",
+        "summary": "Indicadores de vendas do período, com o período anterior",
+        "description": "Venda = pedido pago e não cancelado, na data do pagamento, no fuso do negócio. Sem report:read, só os pedidos criados pelo usuário (scope=own).\n\nPermissão: `dashboard:read` (ADMIN, MANAGER, SELLER).",
+        "x-permission": "dashboard:read",
+        "tags": [
+          "Métricas"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "today",
+                "7d",
+                "30d",
+                "month",
+                "custom"
+              ],
+              "default": "30d"
+            },
+            "required": false,
+            "name": "preset",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Dia local (AAAA-MM-DD)"
+            },
+            "required": false,
+            "description": "Dia local (AAAA-MM-DD)",
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Inclusivo"
+            },
+            "required": false,
+            "description": "Inclusivo",
+            "name": "to",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricsSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics/revenue": {
+      "get": {
+        "operationId": "getRevenueSeries",
+        "summary": "Faturamento no tempo (dia, semana ou mês), com os dias vazios em zero",
+        "description": "Sem report:read, só os pedidos criados pelo usuário (scope=own).\n\nPermissão: `dashboard:read` (ADMIN, MANAGER, SELLER).",
+        "x-permission": "dashboard:read",
+        "tags": [
+          "Métricas"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "today",
+                "7d",
+                "30d",
+                "month",
+                "custom"
+              ],
+              "default": "30d"
+            },
+            "required": false,
+            "name": "preset",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Dia local (AAAA-MM-DD)"
+            },
+            "required": false,
+            "description": "Dia local (AAAA-MM-DD)",
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Inclusivo"
+            },
+            "required": false,
+            "description": "Inclusivo",
+            "name": "to",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "day",
+                "week",
+                "month"
+              ],
+              "description": "Padrão pelo tamanho do período: até 31 dias por dia, até 186 por semana, acima por mês"
+            },
+            "required": false,
+            "description": "Padrão pelo tamanho do período: até 31 dias por dia, até 186 por semana, acima por mês",
+            "name": "granularity",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueSeries"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics/top-products": {
+      "get": {
+        "operationId": "getTopProducts",
+        "summary": "Produtos com mais faturamento no período (preço da compra)",
+        "description": "Sem report:read, só os pedidos criados pelo usuário (scope=own).\n\nPermissão: `dashboard:read` (ADMIN, MANAGER, SELLER).",
+        "x-permission": "dashboard:read",
+        "tags": [
+          "Métricas"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "today",
+                "7d",
+                "30d",
+                "month",
+                "custom"
+              ],
+              "default": "30d"
+            },
+            "required": false,
+            "name": "preset",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Dia local (AAAA-MM-DD)"
+            },
+            "required": false,
+            "description": "Dia local (AAAA-MM-DD)",
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Inclusivo"
+            },
+            "required": false,
+            "description": "Inclusivo",
+            "name": "to",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 50,
+              "default": 10
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopProducts"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics/top-customers": {
+      "get": {
+        "operationId": "getTopCustomers",
+        "summary": "Clientes com mais faturamento no período",
+        "description": "Sem report:read, só os pedidos criados pelo usuário (scope=own).\n\nPermissão: `dashboard:read` (ADMIN, MANAGER, SELLER).",
+        "x-permission": "dashboard:read",
+        "tags": [
+          "Métricas"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "today",
+                "7d",
+                "30d",
+                "month",
+                "custom"
+              ],
+              "default": "30d"
+            },
+            "required": false,
+            "name": "preset",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Dia local (AAAA-MM-DD)"
+            },
+            "required": false,
+            "description": "Dia local (AAAA-MM-DD)",
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Inclusivo"
+            },
+            "required": false,
+            "description": "Inclusivo",
+            "name": "to",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 50,
+              "default": 10
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopCustomers"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics/categories": {
+      "get": {
+        "operationId": "getSalesByCategory",
+        "summary": "Faturamento por categoria (categoria atual do produto)",
+        "description": "Sem report:read, só os pedidos criados pelo usuário (scope=own).\n\nPermissão: `dashboard:read` (ADMIN, MANAGER, SELLER).",
+        "x-permission": "dashboard:read",
+        "tags": [
+          "Métricas"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "today",
+                "7d",
+                "30d",
+                "month",
+                "custom"
+              ],
+              "default": "30d"
+            },
+            "required": false,
+            "name": "preset",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Dia local (AAAA-MM-DD)"
+            },
+            "required": false,
+            "description": "Dia local (AAAA-MM-DD)",
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Inclusivo"
+            },
+            "required": false,
+            "description": "Inclusivo",
+            "name": "to",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalesByCategory"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics/status": {
+      "get": {
+        "operationId": "getOrdersByStatus",
+        "summary": "Pedidos criados no período, por status atual",
+        "description": "Sem report:read, só os pedidos criados pelo usuário (scope=own).\n\nPermissão: `dashboard:read` (ADMIN, MANAGER, SELLER).",
+        "x-permission": "dashboard:read",
+        "tags": [
+          "Métricas"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "today",
+                "7d",
+                "30d",
+                "month",
+                "custom"
+              ],
+              "default": "30d"
+            },
+            "required": false,
+            "name": "preset",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Dia local (AAAA-MM-DD)"
+            },
+            "required": false,
+            "description": "Dia local (AAAA-MM-DD)",
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Inclusivo"
+            },
+            "required": false,
+            "description": "Inclusivo",
+            "name": "to",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrdersByStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reports/sales": {
+      "get": {
+        "operationId": "exportSalesReport",
+        "summary": "CSV: vendas do período (um pedido por linha)",
+        "description": "UTF-8 com BOM, separador \";\", vírgula decimal e datas dd/mm/aaaa hh:mm no fuso do negócio (abre direto no Excel em português).\n\nPermissão: `report:read` (ADMIN, MANAGER).",
+        "x-permission": "report:read",
+        "tags": [
+          "Relatórios"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "today",
+                "7d",
+                "30d",
+                "month",
+                "custom"
+              ],
+              "default": "30d"
+            },
+            "required": false,
+            "name": "preset",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Dia local (AAAA-MM-DD)"
+            },
+            "required": false,
+            "description": "Dia local (AAAA-MM-DD)",
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Inclusivo"
+            },
+            "required": false,
+            "description": "Inclusivo",
+            "name": "to",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "paid",
+                "shipped",
+                "delivered"
+              ]
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "customer_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Arquivo (download em streaming)",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reports/products": {
+      "get": {
+        "operationId": "exportProductsReport",
+        "summary": "CSV: produtos com estoque e o vendido no período",
+        "description": "UTF-8 com BOM, separador \";\", vírgula decimal e datas dd/mm/aaaa hh:mm no fuso do negócio (abre direto no Excel em português).\n\nPermissão: `report:read` (ADMIN, MANAGER).",
+        "x-permission": "report:read",
+        "tags": [
+          "Relatórios"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "today",
+                "7d",
+                "30d",
+                "month",
+                "custom"
+              ],
+              "default": "30d"
+            },
+            "required": false,
+            "name": "preset",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Dia local (AAAA-MM-DD)"
+            },
+            "required": false,
+            "description": "Dia local (AAAA-MM-DD)",
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Inclusivo"
+            },
+            "required": false,
+            "description": "Inclusivo",
+            "name": "to",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "category_id",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Só os abaixo do estoque mínimo"
+            },
+            "required": false,
+            "description": "Só os abaixo do estoque mínimo",
+            "name": "below_min_stock",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Arquivo (download em streaming)",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reports/customers": {
+      "get": {
+        "operationId": "exportCustomersReport",
+        "summary": "CSV: clientes com o total comprado no período",
+        "description": "UTF-8 com BOM, separador \";\", vírgula decimal e datas dd/mm/aaaa hh:mm no fuso do negócio (abre direto no Excel em português).\n\nPermissão: `report:read` (ADMIN, MANAGER).",
+        "x-permission": "report:read",
+        "tags": [
+          "Relatórios"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "today",
+                "7d",
+                "30d",
+                "month",
+                "custom"
+              ],
+              "default": "30d"
+            },
+            "required": false,
+            "name": "preset",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Dia local (AAAA-MM-DD)"
+            },
+            "required": false,
+            "description": "Dia local (AAAA-MM-DD)",
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Inclusivo"
+            },
+            "required": false,
+            "description": "Inclusivo",
+            "name": "to",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "default": true,
+              "description": "Só quem comprou no período (padrão)"
+            },
+            "required": false,
+            "description": "Só quem comprou no período (padrão)",
+            "name": "only_buyers",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Arquivo (download em streaming)",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sem permissão para esta ação",
             "content": {
               "application/json": {
                 "schema": {

@@ -94,6 +94,10 @@ export const orderSchema = z
     customer: orderCustomerSchema,
     status: orderStatusSchema,
     total_cents: moneyCentsSchema,
+    paid_at: isoDateSchema
+      .nullable()
+      .describe('Pagamento registrado (data que vale para o faturamento)'),
+    canceled_at: isoDateSchema.nullable(),
     items: z.array(orderItemSchema),
     created_at: isoDateSchema,
     updated_at: isoDateSchema,
@@ -110,6 +114,8 @@ export const orderSchema = z
       },
       status: 'pending',
       total_cents: 39980,
+      paid_at: null,
+      canceled_at: null,
       items: [
         {
           id: 'a1b2c3d4-0000-4000-8000-000000000001',

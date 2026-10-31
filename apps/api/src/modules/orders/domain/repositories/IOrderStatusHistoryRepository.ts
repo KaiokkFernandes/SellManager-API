@@ -7,6 +7,8 @@ export interface IAddOrderStatusChangeDTO {
   to_status: OrderStatus;
   changed_by_id: string;
   reason?: string;
+  /** Instante da mudança (o mesmo gravado em paid_at/canceled_at do pedido). */
+  at: Date;
 }
 
 export interface IOrderStatusHistoryRepository {

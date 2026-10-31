@@ -19,9 +19,10 @@ export class OrderStatusHistoryRepository implements IOrderStatusHistoryReposito
 
   public async add({
     reason,
+    at,
     ...data
   }: IAddOrderStatusChangeDTO): Promise<void> {
-    await this.rows.insert({ ...data, reason: reason ?? null });
+    await this.rows.insert({ ...data, reason: reason ?? null, created_at: at });
   }
 
   public async findByOrder(orderId: string): Promise<OrderStatusChange[]> {

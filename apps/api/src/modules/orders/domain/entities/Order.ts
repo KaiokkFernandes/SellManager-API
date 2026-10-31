@@ -34,6 +34,12 @@ export interface Order {
   customer: OrderCustomer;
   status: OrderStatus;
   total: number;
+  /** Quando o pagamento foi registrado (base do faturamento); null se não pago. */
+  paid_at: Date | null;
+  /** Quando foi cancelado; null se não cancelado. */
+  canceled_at: Date | null;
+  /** Quem criou (escopo "próprios números" do vendedor); null em pedidos migrados sem autor. */
+  created_by: string | null;
   items: OrderItem[];
   created_at: Date;
   updated_at: Date;

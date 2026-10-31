@@ -38,12 +38,12 @@ describe('layout autenticado', () => {
     expect(screen.getByRole('button', { name: /Sair/ })).toBeInTheDocument();
   });
 
-  it('dashboard mostra os totais das listagens', async () => {
+  it('dashboard abre com os indicadores do período', async () => {
     loggedIn();
 
-    expect(await screen.findByLabelText('Produtos: 7')).toBeInTheDocument();
-    expect(screen.getByLabelText('Clientes: 4')).toBeInTheDocument();
-    expect(screen.getByLabelText('Pedidos: 2')).toBeInTheDocument();
+    const kpis = await screen.findByRole('list', { name: 'Indicadores' });
+    expect(kpis).toHaveTextContent('Faturamento');
+    expect(kpis).toHaveTextContent('R$ 12.345,50');
   });
 
   it('navega entre as páginas e marca a rota ativa', async () => {

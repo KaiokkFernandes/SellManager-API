@@ -22,6 +22,9 @@
   --ring: oklch(0.55 0.2 264);
   --sidebar: oklch(0.985 0 0);
   --radius: 0.5rem;
+  /* gráficos: série principal e a de comparação */
+  --chart-1: oklch(0.5 0.2 264);
+  --chart-2: oklch(0.7 0.12 180);
 }
 
 .dark {
@@ -43,6 +46,8 @@
   --destructive-foreground: oklch(0.15 0.005 264);
   --ring: oklch(0.68 0.16 264);
   --sidebar: oklch(0.17 0.006 264);
+  --chart-1: oklch(0.72 0.15 264);
+  --chart-2: oklch(0.75 0.12 180);
 }
 
 @theme inline {

@@ -71,6 +71,8 @@ export const order = {
   customer: { id: customer.id, name: customer.name, email: customer.email },
   status: 'pending',
   total_cents: 9980,
+  paid_at: null,
+  canceled_at: null,
   items: [
     {
       id: 'b1000000-0000-4000-8000-000000000001',

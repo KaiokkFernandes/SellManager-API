@@ -12,7 +12,14 @@ export interface ICreateOrderDTO {
   customer: OrderCustomer;
   status: OrderStatus;
   total: number;
+  created_by: string;
   items: Pick<OrderItem, 'product_id' | 'product' | 'price' | 'quantity'>[];
+}
+
+export interface IOrderStatusChanges {
+  status: OrderStatus;
+  paid_at?: Date;
+  canceled_at?: Date;
 }
 
 export interface IFindOrdersFilter {
@@ -37,5 +44,5 @@ export interface IOrdersRepository {
   /** Em quantos pedidos o produto aparece (bloqueia a exclusão do produto). */
   countByProduct(productId: string): Promise<number>;
   create(data: ICreateOrderDTO): Promise<Order>;
-  updateStatus(id: string, status: OrderStatus): Promise<Order>;
+  updateStatus(id: string, changes: IOrderStatusChanges): Promise<Order>;
 }
