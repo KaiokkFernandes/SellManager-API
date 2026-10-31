@@ -35,6 +35,7 @@
   `pnpm lint`, `pnpm format:check` (todos via Turborepo)
 - `pnpm test:unit` (sem banco) e `pnpm test:integration` (postgres-test, porta 5434)
 - Dados de dev: `pnpm --filter api seed` (um usuário por papel; credenciais no README raiz)
+- Primeiro ADMIN em produção: `pnpm --filter api create-admin:prod` (não há cadastro público)
 - Matriz de permissões no README: `pnpm --filter api docs:permissions` (um teste falha se desatualizada)
 - E2E: `pnpm --filter web e2e` (Playwright contra a API real; gera `apps/web/docs/screenshots`)
 - Um app só: `pnpm --filter api <script>` / `pnpm --filter web <script>`
