@@ -11,8 +11,8 @@
   },
   "servers": [
     {
-      "url": "http://localhost:3333",
-      "description": "Desenvolvimento local"
+      "url": "/api",
+      "description": "Mesmo domínio do front"
     }
   ],
   "components": {
@@ -24,6 +24,103 @@
       }
     },
     "schemas": {
+      "Health": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "error"
+            ]
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "VALIDATION_FAILED",
+              "BAD_REQUEST",
+              "INVALID_UPLOAD",
+              "UNAUTHORIZED",
+              "FORBIDDEN",
+              "ACCOUNT_DISABLED",
+              "NOT_FOUND",
+              "CONFLICT",
+              "ALREADY_EXISTS",
+              "INSUFFICIENT_STOCK",
+              "INVALID_TRANSITION",
+              "RESOURCE_IN_USE",
+              "PAYLOAD_TOO_LARGE",
+              "RATE_LIMITED",
+              "SERVICE_UNAVAILABLE",
+              "INTERNAL_ERROR"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValidationIssue"
+            }
+          },
+          "details": {}
+        },
+        "required": [
+          "status",
+          "code",
+          "message"
+        ],
+        "example": {
+          "status": "error",
+          "code": "VALIDATION_FAILED",
+          "message": "Validation failed",
+          "issues": [
+            {
+              "segment": "body",
+              "path": "email",
+              "message": "Invalid email address"
+            }
+          ]
+        }
+      },
+      "ValidationIssue": {
+        "type": "object",
+        "properties": {
+          "segment": {
+            "type": "string",
+            "enum": [
+              "params",
+              "query",
+              "body"
+            ]
+          },
+          "path": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "segment",
+          "path",
+          "message"
+        ]
+      },
       "User": {
         "type": "object",
         "properties": {
@@ -93,88 +190,6 @@
           "created_at": "2026-10-24T20:00:00.000Z",
           "updated_at": "2026-10-24T20:00:00.000Z"
         }
-      },
-      "ApiError": {
-        "type": "object",
-        "properties": {
-          "status": {
-            "type": "string",
-            "enum": [
-              "error"
-            ]
-          },
-          "code": {
-            "type": "string",
-            "enum": [
-              "VALIDATION_FAILED",
-              "BAD_REQUEST",
-              "INVALID_UPLOAD",
-              "UNAUTHORIZED",
-              "FORBIDDEN",
-              "ACCOUNT_DISABLED",
-              "NOT_FOUND",
-              "CONFLICT",
-              "ALREADY_EXISTS",
-              "INSUFFICIENT_STOCK",
-              "INVALID_TRANSITION",
-              "RESOURCE_IN_USE",
-              "PAYLOAD_TOO_LARGE",
-              "RATE_LIMITED",
-              "INTERNAL_ERROR"
-            ]
-          },
-          "message": {
-            "type": "string"
-          },
-          "issues": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ValidationIssue"
-            }
-          },
-          "details": {}
-        },
-        "required": [
-          "status",
-          "code",
-          "message"
-        ],
-        "example": {
-          "status": "error",
-          "code": "VALIDATION_FAILED",
-          "message": "Validation failed",
-          "issues": [
-            {
-              "segment": "body",
-              "path": "email",
-              "message": "Invalid email address"
-            }
-          ]
-        }
-      },
-      "ValidationIssue": {
-        "type": "object",
-        "properties": {
-          "segment": {
-            "type": "string",
-            "enum": [
-              "params",
-              "query",
-              "body"
-            ]
-          },
-          "path": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "segment",
-          "path",
-          "message"
-        ]
       },
       "CreateUserBody": {
         "type": "object",
@@ -260,7 +275,7 @@
           "avatar": {
             "type": "string",
             "format": "binary",
-            "description": "Imagem jpeg, png ou webp até 2 MB"
+            "description": "Imagem jpeg, png ou webp até 4 MB"
           }
         },
         "required": [
@@ -709,7 +724,7 @@
           "image": {
             "type": "string",
             "format": "binary",
-            "description": "Imagem jpeg, png ou webp até 2 MB"
+            "description": "Imagem jpeg, png ou webp até 4 MB"
           }
         },
         "required": [
@@ -1717,6 +1732,49 @@
     "parameters": {}
   },
   "paths": {
+    "/health": {
+      "get": {
+        "operationId": "checkHealth",
+        "summary": "Confere a API e a conexão com o banco",
+        "description": "Responde 503 se o banco não estiver acessível.",
+        "tags": [
+          "Saúde"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/users": {
       "post": {
         "operationId": "createUser",
@@ -1804,6 +1862,16 @@
           },
           "500": {
             "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível",
             "content": {
               "application/json": {
                 "schema": {
@@ -1971,6 +2039,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Serviço indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -2053,6 +2131,16 @@
           },
           "500": {
             "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível",
             "content": {
               "application/json": {
                 "schema": {
@@ -2170,6 +2258,16 @@
           },
           "500": {
             "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível",
             "content": {
               "application/json": {
                 "schema": {
@@ -2296,6 +2394,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Serviço indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -2303,7 +2411,7 @@
     "/users/avatar": {
       "patch": {
         "operationId": "updateUserAvatar",
-        "summary": "Envia o avatar (jpeg, png ou webp, até 2 MB)",
+        "summary": "Envia o avatar (jpeg, png ou webp, até 4 MB)",
         "description": "Qualquer usuário autenticado.",
         "tags": [
           "Usuários"
@@ -2354,8 +2462,28 @@
               }
             }
           },
+          "413": {
+            "description": "Payload grande demais",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível",
             "content": {
               "application/json": {
                 "schema": {
@@ -2455,6 +2583,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Serviço indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -2505,6 +2643,16 @@
           },
           "500": {
             "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível",
             "content": {
               "application/json": {
                 "schema": {
@@ -2590,6 +2738,16 @@
           },
           "500": {
             "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível",
             "content": {
               "application/json": {
                 "schema": {
@@ -2684,6 +2842,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Serviço indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -2750,6 +2918,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Serviço indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -2809,6 +2987,16 @@
           },
           "500": {
             "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível",
             "content": {
               "application/json": {
                 "schema": {
@@ -2992,6 +3180,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Serviço indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       },
@@ -3091,6 +3289,16 @@
           },
           "500": {
             "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível",
             "content": {
               "application/json": {
                 "schema": {
@@ -3224,6 +3432,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Serviço indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -3306,6 +3524,16 @@
           },
           "500": {
             "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível",
             "content": {
               "application/json": {
                 "schema": {
@@ -3430,6 +3658,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Serviço indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       },
@@ -3513,6 +3751,16 @@
           },
           "500": {
             "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível",
             "content": {
               "application/json": {
                 "schema": {
@@ -3665,6 +3913,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Serviço indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       },
@@ -3782,6 +4040,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Serviço indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -3789,7 +4057,7 @@
     "/products/{id}/image": {
       "patch": {
         "operationId": "updateProductImage",
-        "summary": "Envia ou substitui a imagem (jpeg, png ou webp, até 2 MB)",
+        "summary": "Envia ou substitui a imagem (jpeg, png ou webp, até 4 MB)",
         "description": "Permissão: `product:update` (ADMIN, MANAGER).",
         "x-permission": "product:update",
         "tags": [
@@ -3872,8 +4140,28 @@
               }
             }
           },
+          "413": {
+            "description": "Payload grande demais",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível",
             "content": {
               "application/json": {
                 "schema": {
@@ -3961,6 +4249,16 @@
           },
           "500": {
             "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível",
             "content": {
               "application/json": {
                 "schema": {
@@ -4105,6 +4403,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Serviço indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       },
@@ -4194,6 +4502,16 @@
           },
           "500": {
             "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível",
             "content": {
               "application/json": {
                 "schema": {
@@ -4320,6 +4638,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Serviço indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       },
@@ -4403,6 +4731,16 @@
           },
           "500": {
             "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível",
             "content": {
               "application/json": {
                 "schema": {
@@ -4576,6 +4914,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Serviço indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       },
@@ -4672,6 +5020,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Serviço indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -4754,6 +5112,16 @@
           },
           "500": {
             "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível",
             "content": {
               "application/json": {
                 "schema": {
@@ -4878,6 +5246,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Serviço indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       },
@@ -4961,6 +5339,16 @@
           },
           "500": {
             "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível",
             "content": {
               "application/json": {
                 "schema": {
@@ -5069,6 +5457,16 @@
           },
           "500": {
             "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível",
             "content": {
               "application/json": {
                 "schema": {
@@ -5199,6 +5597,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Serviço indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -5311,6 +5719,16 @@
           },
           "500": {
             "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível",
             "content": {
               "application/json": {
                 "schema": {
@@ -5437,6 +5855,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Serviço indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -5545,6 +5973,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Serviço indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -5646,6 +6084,16 @@
           },
           "500": {
             "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível",
             "content": {
               "application/json": {
                 "schema": {
@@ -5784,6 +6232,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Serviço indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -5912,6 +6370,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Serviço indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -6025,6 +6493,16 @@
           },
           "500": {
             "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível",
             "content": {
               "application/json": {
                 "schema": {
@@ -6204,6 +6682,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Serviço indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       },
@@ -6310,6 +6798,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Serviço indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -6392,6 +6890,16 @@
           },
           "500": {
             "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível",
             "content": {
               "application/json": {
                 "schema": {
@@ -6498,6 +7006,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Serviço indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -6597,6 +7115,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Serviço indisponível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
           }
         }
       }
@@ -6689,6 +7217,16 @@
           },
           "500": {
             "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível",
             "content": {
               "application/json": {
                 "schema": {
@@ -6808,6 +7346,16 @@
           },
           "500": {
             "description": "Erro interno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Serviço indisponível",
             "content": {
               "application/json": {
                 "schema": {

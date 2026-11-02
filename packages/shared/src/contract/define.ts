@@ -1,9 +1,15 @@
 import type { z } from 'zod';
 import type { Permission } from '../permissions';
 
+/**
+ * Prefixo público de todas as rotas: no mesmo domínio do front, a Vercel envia
+ * /api/* para a API. Os paths do contrato são relativos a ele.
+ */
+export const API_BASE_PATH = '/api';
+
 export type HttpMethod = 'get' | 'post' | 'put' | 'patch' | 'delete';
 export type SuccessStatus = 200 | 201 | 204;
-export type ErrorStatus = 400 | 401 | 403 | 404 | 409 | 413 | 429 | 500;
+export type ErrorStatus = 400 | 401 | 403 | 404 | 409 | 413 | 429 | 500 | 503;
 
 export interface RouteRequest {
   params?: z.ZodType;
@@ -40,7 +46,7 @@ interface RouteBase {
    * `download`, não `reply`).
    */
   download?: { contentType: 'text/csv' };
-  /** Erros de domínio (404, 409…). 400, 401, 413, 429 e 500 são deduzidos. */
+  /** Erros de domínio (404, 409…). 400, 401, 413, 429, 500 e 503 são deduzidos. */
   errors?: readonly ErrorStatus[];
 }
 
@@ -53,9 +59,9 @@ export type RouteDefinition<C extends RouteConfig = RouteConfig> = C & {
 
 /**
  * Declara uma rota do contrato. Os erros automáticos saem da própria
- * configuração: 400 se há entrada, 413 se há corpo JSON, 401 se exige auth,
+ * configuração: 400 se há entrada, 413 se há corpo, 401 se exige auth,
  * 403 se exige uma permissão,
- * 429 se tem rate limit e 500 sempre.
+ * 429 se tem rate limit, 500 sempre e 503 sempre (banco indisponível).
  */
 export function defineRoute<const C extends RouteConfig>(
   config: C,
@@ -64,11 +70,12 @@ export function defineRoute<const C extends RouteConfig>(
   const { params, query, body } = config.request ?? {};
 
   if (params || query || body) errors.add(400);
-  if (body && config.request?.bodyType !== 'multipart') errors.add(413);
+  if (body) errors.add(413);
   if (config.auth) errors.add(401);
   if (config.auth && config.permission !== 'authenticated') errors.add(403);
   if (config.rateLimited) errors.add(429);
   errors.add(500);
+  errors.add(503);
 
   return { ...config, errorStatuses: [...errors].sort((a, b) => a - b) };
 }
@@ -82,6 +89,7 @@ export const ERROR_DESCRIPTIONS: Record<ErrorStatus, string> = {
   413: 'Payload grande demais',
   429: 'Muitas requisições',
   500: 'Erro interno',
+  503: 'Serviço indisponível',
 };
 
 // ---- Tipos derivados de uma rota

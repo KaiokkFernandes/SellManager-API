@@ -16,7 +16,7 @@ import {
  */
 const OCTOBER = { preset: 'custom', from: '2026-10-01', to: '2026-10-31' };
 
-describe('/metrics', () => {
+describe('/api/metrics', () => {
   let ctx: TestContext;
   let admin: string;
   let seller: string;
@@ -30,7 +30,7 @@ describe('/metrics', () => {
     dates: { paid?: string; canceled?: string; created?: string } = {},
   ) => {
     const created = await request(ctx.app)
-      .post('/orders')
+      .post('/api/orders')
       .set('Authorization', auth)
       .send({
         customer_id: customerId,
@@ -59,7 +59,7 @@ describe('/metrics', () => {
 
   const summary = (auth: string, query: object = OCTOBER) =>
     request(ctx.app)
-      .get('/metrics/summary')
+      .get('/api/metrics/summary')
       .query(query)
       .set('Authorization', auth)
       .expect(200);
@@ -76,14 +76,14 @@ describe('/metrics', () => {
     });
     customerId = (
       await request(ctx.app)
-        .post('/customers')
+        .post('/api/customers')
         .set('Authorization', admin)
         .send({ name: 'Ana', email: 'ana@test.com' })
         .expect(201)
     ).body.id as string;
     productId = (
       await request(ctx.app)
-        .post('/products')
+        .post('/api/products')
         .set('Authorization', admin)
         .send({ name: 'Cabo', price_cents: 1000, quantity: 1000 })
         .expect(201)
@@ -182,7 +182,7 @@ describe('/metrics', () => {
       dates: { paid?: string; canceled?: string; created?: string },
     ) => {
       const created = await request(ctx.app)
-        .post('/orders')
+        .post('/api/orders')
         .set('Authorization', admin)
         .send({
           customer_id: customer,
@@ -213,7 +213,7 @@ describe('/metrics', () => {
     beforeEach(async () => {
       const cables = (
         await request(ctx.app)
-          .post('/categories')
+          .post('/api/categories')
           .set('Authorization', admin)
           .send({ name: 'Cabos' })
           .expect(201)
@@ -224,7 +224,7 @@ describe('/metrics', () => {
         category_id: string | null,
       ) =>
         request(ctx.app)
-          .post('/products')
+          .post('/api/products')
           .set('Authorization', admin)
           .send({ name, price_cents, quantity: 100, category_id })
           .expect(201)
@@ -233,7 +233,7 @@ describe('/metrics', () => {
       mouseId = await product('Mouse', 5000, null); // R$ 50, sem categoria
       otherCustomer = (
         await request(ctx.app)
-          .post('/customers')
+          .post('/api/customers')
           .set('Authorization', admin)
           .send({ name: 'Bruno', email: 'bruno@test.com' })
           .expect(201)
@@ -270,7 +270,7 @@ describe('/metrics', () => {
     const WEEK = { preset: 'custom', from: '2026-10-05', to: '2026-10-11' };
     const get = (path: string, query: object = WEEK) =>
       request(ctx.app)
-        .get(`/metrics/${path}`)
+        .get(`/api/metrics/${path}`)
         .query(query)
         .set('Authorization', admin)
         .expect(200);
@@ -374,20 +374,20 @@ describe('/metrics', () => {
 
   it('valida o período personalizado', async () => {
     const missing = await request(ctx.app)
-      .get('/metrics/summary?preset=custom&from=2026-10-01')
+      .get('/api/metrics/summary?preset=custom&from=2026-10-01')
       .set('Authorization', admin)
       .expect(400);
     expect(missing.body.issues[0]).toMatchObject({ path: 'from' });
     await request(ctx.app)
-      .get('/metrics/summary?preset=custom&from=2026-10-10&to=2026-10-01')
+      .get('/api/metrics/summary?preset=custom&from=2026-10-10&to=2026-10-01')
       .set('Authorization', admin)
       .expect(400);
     await request(ctx.app)
-      .get('/metrics/summary?preset=custom&from=2020-01-01&to=2026-01-01')
+      .get('/api/metrics/summary?preset=custom&from=2020-01-01&to=2026-01-01')
       .set('Authorization', admin)
       .expect(400);
     await request(ctx.app)
-      .get('/metrics/summary?preset=ontem')
+      .get('/api/metrics/summary?preset=ontem')
       .set('Authorization', admin)
       .expect(400);
   });

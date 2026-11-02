@@ -1,5 +1,6 @@
 import 'reflect-metadata';
-import { DataSource } from 'typeorm';
+import pg from 'pg';
+import { DataSource, LoggerOptions } from 'typeorm';
 import { env } from '@config/env';
 import { CategorySchema } from '@modules/categories/infra/typeorm/schemas/CategorySchema';
 import { CustomerSchema } from '@modules/customers/infra/typeorm/schemas/CustomerSchema';
@@ -24,16 +25,16 @@ import { AddStockMovements1761351200000 } from './migrations/1761351200000-AddSt
 import { AddCategories1761351300000 } from './migrations/1761351300000-AddCategories';
 import { AddProductMinStock1761351400000 } from './migrations/1761351400000-AddProductMinStock';
 import { AddOrderSalesFields1761351500000 } from './migrations/1761351500000-AddOrderSalesFields';
+import { databaseOptions } from './databaseOptions';
 
 // Entidades e migrations são listadas explicitamente (sem glob) para funcionar
 // igual em dev (tsx), no build (dist/) e nos testes.
 export const AppDataSource = new DataSource({
   type: 'postgres',
-  host: env.DB_HOST,
-  port: env.DB_PORT,
-  username: env.DB_USER,
-  password: env.DB_PASSWORD,
-  database: env.DB_NAME,
+  // explícito: o TypeORM carrega o pg dinamicamente, e o empacotamento da
+  // Vercel só inclui na função o que encontra em imports
+  driver: pg,
+  ...databaseOptions(env),
   entities: [
     UserSchema,
     UserTokenSchema,
@@ -60,5 +61,11 @@ export const AppDataSource = new DataSource({
     AddOrderSalesFields1761351500000,
   ],
   synchronize: false,
-  logging: env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+  // o logger do TypeORM imprime os parâmetros da consulta: em produção, erros
+  // chegam ao log só pelo errorHandler, já sem dados pessoais
+  logging: {
+    development: ['error', 'warn'] as LoggerOptions,
+    test: ['error'] as LoggerOptions,
+    production: false,
+  }[env.NODE_ENV],
 });

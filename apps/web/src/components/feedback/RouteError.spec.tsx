@@ -32,7 +32,7 @@ describe('RouteError', () => {
     render(<RouterProvider router={router} />);
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      /Resposta inesperada/,
+      /servidor está indisponível/,
     );
     failing = false; // o problema foi resolvido antes de tentar de novo
     await userEvent.click(

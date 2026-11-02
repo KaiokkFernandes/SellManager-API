@@ -1,22 +1,19 @@
-import { IStorageProvider } from './IStorageProvider';
+import { IFileToStore, IStorageProvider } from './IStorageProvider';
 
 export class FakeStorageProvider implements IStorageProvider {
   public readonly files = new Set<string>();
 
-  public saveFile(file: string): Promise<string> {
-    this.files.add(file);
-    return Promise.resolve(file);
+  private count = 0;
+
+  public save({ contentType }: IFileToStore): Promise<string> {
+    this.count += 1;
+    const url = `https://blob.test/${this.count}.${contentType.split('/')[1]}`;
+    this.files.add(url);
+    return Promise.resolve(url);
   }
 
-  public readonly discarded = new Set<string>();
-
-  public discardFile(file: string): Promise<void> {
-    this.discarded.add(file);
-    return Promise.resolve();
-  }
-
-  public deleteFile(file: string): Promise<void> {
-    this.files.delete(file);
+  public delete(url: string): Promise<void> {
+    this.files.delete(url);
     return Promise.resolve();
   }
 }

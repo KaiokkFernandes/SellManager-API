@@ -1,8 +1,7 @@
-import uploadConfig from '@config/upload';
 import { routes } from '@sellmanager/shared';
-import multer from 'multer';
 import { Container } from '@shared/container';
 import type { MountRoute } from '@shared/http/contract/mountRoute';
+import { imageUpload } from '@shared/http/middlewares/imageUpload';
 import { CreateProductService } from '../../../services/CreateProductService';
 import { DeleteProductService } from '../../../services/DeleteProductService';
 import { ListProductsService } from '../../../services/ListProductsService';
@@ -23,23 +22,17 @@ export function registerProductsRoutes(
   const { productsUnitOfWork } = container;
   const { storage } = container.providers;
 
-  const controller = new ProductsController(
-    {
-      list: new ListProductsService(products),
-      lowStock: new ListLowStockProductsService(products),
-      show: new ShowProductService(products),
-      create: new CreateProductService(productsUnitOfWork, categories),
-      update: new UpdateProductService(products, categories),
-      delete: new DeleteProductService(products, orders, storage),
-      updateImage: new UpdateProductImageService(products, storage),
-      listStockMovements: new ListStockMovementsService(
-        products,
-        stockMovements,
-      ),
-      recordStockMovement: new RecordStockMovementService(productsUnitOfWork),
-    },
-    container.config.APP_API_URL,
-  );
+  const controller = new ProductsController({
+    list: new ListProductsService(products),
+    lowStock: new ListLowStockProductsService(products),
+    show: new ShowProductService(products),
+    create: new CreateProductService(productsUnitOfWork, categories),
+    update: new UpdateProductService(products, categories),
+    delete: new DeleteProductService(products, orders, storage),
+    updateImage: new UpdateProductImageService(products, storage),
+    listStockMovements: new ListStockMovementsService(products, stockMovements),
+    recordStockMovement: new RecordStockMovementService(productsUnitOfWork),
+  });
 
   mount(routes.products.list, controller.list);
   // antes de /products/{id}: senão "low-stock" casaria como id
@@ -53,7 +46,7 @@ export function registerProductsRoutes(
   mount(
     routes.products.updateImage,
     controller.updateImage,
-    multer(uploadConfig.multer).single('image'),
+    ...imageUpload('image'),
   );
   mount(routes.products.deleteImage, controller.deleteImage);
 }

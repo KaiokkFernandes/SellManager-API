@@ -3,9 +3,19 @@ import { Express } from 'express';
 import type { Role } from '@sellmanager/shared';
 import { CreateUserService } from '@modules/users/services/CreateUserService';
 import { Container, makeContainer } from '@shared/container';
-import { createApp } from '@shared/http/app';
+import { createApp } from '@shared/http/createApp';
 import { AppDataSource } from '@shared/infra/typeorm/data-source';
 import { FakeMailProvider } from '@shared/providers/MailProvider/FakeMailProvider';
+
+/** Assinaturas mínimas: a API confere o tipo pelo conteúdo do arquivo. */
+export const PNG = Buffer.from([
+  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00,
+]);
+export const WEBP = Buffer.concat([
+  Buffer.from('RIFF'),
+  Buffer.alloc(4),
+  Buffer.from('WEBPVP8 '),
+]);
 
 export interface TestContext {
   app: Express;
@@ -68,7 +78,7 @@ export async function login(
   { email, password }: { email: string; password: string },
 ): Promise<string> {
   const response = await request(ctx.app)
-    .post('/sessions')
+    .post('/api/sessions')
     .send({ email, password })
     .expect(200);
   return `Bearer ${(response.body as { token: string }).token}`;

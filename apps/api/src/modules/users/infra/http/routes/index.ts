@@ -1,8 +1,7 @@
-import multer from 'multer';
 import { routes } from '@sellmanager/shared';
-import uploadConfig from '@config/upload';
 import { Container } from '@shared/container';
 import type { MountRoute } from '@shared/http/contract/mountRoute';
+import { imageUpload } from '@shared/http/middlewares/imageUpload';
 import { AuthenticateUserService } from '../../../services/AuthenticateUserService';
 import { ChangePasswordService } from '../../../services/ChangePasswordService';
 import { CreateUserService } from '../../../services/CreateUserService';
@@ -24,30 +23,25 @@ export function registerUsersRoutes(
   const { users, userTokens } = container.repositories;
   const { hash, token, mail, storage } = container.providers;
 
-  const controller = new UsersController(
-    {
-      list: new ListUsersService(users),
-      show: new ShowUserService(users),
-      create: new CreateUserService(users, hash),
-      update: new UpdateUserService(container.usersUnitOfWork),
-      updateStatus: new UpdateUserStatusService(container.usersUnitOfWork),
-      updateAvatar: new UpdateUserAvatarService(users, storage),
-      authenticate: new AuthenticateUserService(users, hash, token),
-      showProfile: new ShowProfileService(users),
-      updateProfile: new UpdateProfileService(users),
-      changePassword: new ChangePasswordService(users, hash, token),
-      sendForgotPasswordEmail: new SendForgotPasswordEmailService(
-        users,
-        userTokens,
-        mail,
-        container.config.APP_WEB_URL,
-      ),
-      resetPassword: new ResetPasswordService(users, userTokens, hash),
-    },
-    container.config.APP_API_URL,
-  );
-
-  const upload = multer(uploadConfig.multer);
+  const controller = new UsersController({
+    list: new ListUsersService(users),
+    show: new ShowUserService(users),
+    create: new CreateUserService(users, hash),
+    update: new UpdateUserService(container.usersUnitOfWork),
+    updateStatus: new UpdateUserStatusService(container.usersUnitOfWork),
+    updateAvatar: new UpdateUserAvatarService(users, storage),
+    authenticate: new AuthenticateUserService(users, hash, token),
+    showProfile: new ShowProfileService(users),
+    updateProfile: new UpdateProfileService(users),
+    changePassword: new ChangePasswordService(users, hash, token),
+    sendForgotPasswordEmail: new SendForgotPasswordEmailService(
+      users,
+      userTokens,
+      mail,
+      container.config.APP_WEB_URL,
+    ),
+    resetPassword: new ResetPasswordService(users, userTokens, hash),
+  });
 
   mount(routes.users.create, controller.create);
   mount(routes.users.list, controller.list);
@@ -57,7 +51,7 @@ export function registerUsersRoutes(
   mount(
     routes.users.updateAvatar,
     controller.updateAvatar,
-    upload.single('avatar'),
+    ...imageUpload('avatar'),
   );
   mount(routes.sessions.create, controller.createSession);
   mount(routes.profile.show, controller.showProfile);

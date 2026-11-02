@@ -20,6 +20,7 @@ import { RecordStockMovementService } from '@modules/products/services/RecordSto
 import { CreateUserService } from '@modules/users/services/CreateUserService';
 import { makeContainer } from '@shared/container';
 import { AppDataSource } from '@shared/infra/typeorm/data-source';
+import { isLocalDatabase } from '@shared/infra/typeorm/databaseOptions';
 
 /** Credenciais SÓ de desenvolvimento, uma por papel (documentadas no README). */
 export const SEED_USERS = [
@@ -280,8 +281,10 @@ async function cleanPreviousSeed(): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  if (env.NODE_ENV === 'production') {
-    throw new Error('O seed é só para desenvolvimento (NODE_ENV=production).');
+  if (env.NODE_ENV === 'production' || !isLocalDatabase(env)) {
+    throw new Error(
+      'O seed é só para desenvolvimento: recusado em produção ou com banco remoto.',
+    );
   }
 
   await AppDataSource.initialize();

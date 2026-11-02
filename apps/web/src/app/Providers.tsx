@@ -1,5 +1,6 @@
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
+import { ConnectionNotice } from '@/components/feedback/ConnectionNotice';
 import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider } from '@/features/auth';
 import { ThemeProvider } from '@/lib/theme';
@@ -17,6 +18,7 @@ export function Providers({
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           {children}
+          <ConnectionNotice />
           <Toaster />
         </AuthProvider>
       </QueryClientProvider>

@@ -1,3 +1,4 @@
+import { API_BASE_PATH } from '@sellmanager/shared';
 import { DataSource } from 'typeorm';
 import { env } from '@config/env';
 import uploadConfig from '@config/upload';
@@ -14,6 +15,8 @@ import { ProductsRepository } from '@modules/products/infra/typeorm/repositories
 import { StockMovementsRepository } from '@modules/products/infra/typeorm/repositories/StockMovementsRepository';
 import { UsersRepository } from '@modules/users/infra/typeorm/repositories/UsersRepository';
 import { UserTokensRepository } from '@modules/users/infra/typeorm/repositories/UserTokensRepository';
+import { createRateLimitStore } from '@shared/infra/redis/rateLimitStore';
+import { createDatabaseConnection } from '@shared/infra/typeorm/connection';
 import { BcryptHashProvider } from '@shared/providers/HashProvider/BcryptHashProvider';
 import { IHashProvider } from '@shared/providers/HashProvider/IHashProvider';
 import { EtherealMailProvider } from '@shared/providers/MailProvider/EtherealMailProvider';
@@ -22,6 +25,7 @@ import { SmtpMailProvider } from '@shared/providers/MailProvider/SmtpMailProvide
 import { HandlebarsMailTemplateProvider } from '@shared/providers/MailTemplateProvider/HandlebarsMailTemplateProvider';
 import { DiskStorageProvider } from '@shared/providers/StorageProvider/DiskStorageProvider';
 import { IStorageProvider } from '@shared/providers/StorageProvider/IStorageProvider';
+import { VercelBlobStorageProvider } from '@shared/providers/StorageProvider/VercelBlobStorageProvider';
 import { ITokenProvider } from '@shared/providers/TokenProvider/ITokenProvider';
 import { JoseTokenProvider } from '@shared/providers/TokenProvider/JoseTokenProvider';
 
@@ -47,6 +51,16 @@ function makeMailProvider(): IMailProvider {
   return new EtherealMailProvider(templateProvider, from);
 }
 
+function makeStorageProvider(): IStorageProvider {
+  if (env.BLOB_READ_WRITE_TOKEN && env.STORAGE_DRIVER === 'blob') {
+    return new VercelBlobStorageProvider(env.BLOB_READ_WRITE_TOKEN);
+  }
+  return new DiskStorageProvider(
+    uploadConfig.uploadsFolder,
+    `${env.APP_API_URL}${API_BASE_PATH}/files`,
+  );
+}
+
 export interface Providers {
   hash: IHashProvider;
   token: ITokenProvider;
@@ -66,10 +80,7 @@ export function makeContainer(
     hash: new BcryptHashProvider(env.BCRYPT_SALT_ROUNDS),
     token: new JoseTokenProvider(env.JWT_SECRET, env.JWT_EXPIRES_IN),
     mail: makeMailProvider(),
-    storage: new DiskStorageProvider(
-      uploadConfig.tmpFolder,
-      uploadConfig.uploadsFolder,
-    ),
+    storage: makeStorageProvider(),
     ...overrides,
   };
 
@@ -88,6 +99,10 @@ export function makeContainer(
 
   return {
     config: env,
+    database: createDatabaseConnection(dataSource),
+    // só o HTTP usa: abrir a conexão aqui deixaria presos os comandos (create-admin)
+    makeRateLimitStore: () =>
+      env.REDIS_URL ? createRateLimitStore(env.REDIS_URL) : undefined,
     providers,
     repositories,
     ordersUnitOfWork: new OrdersUnitOfWork(dataSource),

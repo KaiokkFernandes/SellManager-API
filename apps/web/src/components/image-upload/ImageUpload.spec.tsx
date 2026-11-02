@@ -22,8 +22,8 @@ describe('ImageUpload', () => {
       'Formato não suportado',
     );
 
-    await typing.upload(input, png(2 * 1024 * 1024 + 1));
-    expect(screen.getByRole('alert')).toHaveTextContent('no máximo 2 MB');
+    await typing.upload(input, png(4 * 1024 * 1024 + 1));
+    expect(screen.getByRole('alert')).toHaveTextContent('no máximo 4 MB');
 
     expect(
       screen.queryByRole('button', { name: /Enviar imagem/ }),

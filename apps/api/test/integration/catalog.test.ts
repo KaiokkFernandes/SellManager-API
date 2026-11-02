@@ -5,8 +5,10 @@ import {
   authenticate,
   closeDatabase,
   createTestContext,
+  PNG,
   resetDatabase,
   TestContext,
+  WEBP,
 } from './helpers';
 import { AppDataSource } from '@shared/infra/typeorm/data-source';
 
@@ -23,62 +25,62 @@ describe('Produtos e clientes', () => {
   });
   afterAll(closeDatabase);
 
-  describe('/products', () => {
+  describe('/api/products', () => {
     const keyboard = { name: 'Teclado', price_cents: 19990, quantity: 10 };
 
     it('leitura e escrita exigem autenticação', async () => {
-      await request(ctx.app).get('/products').expect(401);
-      await request(ctx.app).post('/products').send(keyboard).expect(401);
+      await request(ctx.app).get('/api/products').expect(401);
+      await request(ctx.app).post('/api/products').send(keyboard).expect(401);
       await request(ctx.app)
-        .get('/products')
+        .get('/api/products')
         .set('Authorization', auth)
         .expect(200);
     });
 
     it('CRUD completo com preço numérico', async () => {
       const created = await request(ctx.app)
-        .post('/products')
+        .post('/api/products')
         .set('Authorization', auth)
         .send(keyboard)
         .expect(201);
       const id = created.body.id as string;
 
       const shown = await request(ctx.app)
-        .get(`/products/${id}`)
+        .get(`/api/products/${id}`)
         .set('Authorization', auth)
         .expect(200);
       expect(shown.body.price_cents).toBe(19990);
 
       await request(ctx.app)
-        .put(`/products/${id}`)
+        .put(`/api/products/${id}`)
         .set('Authorization', auth)
         .send({ ...keyboard, price_cents: 15000 })
         .expect(200);
 
       await request(ctx.app)
-        .delete(`/products/${id}`)
+        .delete(`/api/products/${id}`)
         .set('Authorization', auth)
         .expect(204);
       await request(ctx.app)
-        .get(`/products/${id}`)
+        .get(`/api/products/${id}`)
         .set('Authorization', auth)
         .expect(404);
     });
 
     it('valida o body e rejeita nome duplicado', async () => {
       await request(ctx.app)
-        .post('/products')
+        .post('/api/products')
         .set('Authorization', auth)
         .send({ name: 'X', price_cents: 1.5, quantity: -1 })
         .expect(400);
 
       await request(ctx.app)
-        .post('/products')
+        .post('/api/products')
         .set('Authorization', auth)
         .send(keyboard)
         .expect(201);
       const duplicate = await request(ctx.app)
-        .post('/products')
+        .post('/api/products')
         .set('Authorization', auth)
         .send(keyboard)
         .expect(409);
@@ -90,17 +92,17 @@ describe('Produtos e clientes', () => {
 
     it('nome duplicado não diferencia maiúsculas, mas renomear o próprio produto pode', async () => {
       const created = await request(ctx.app)
-        .post('/products')
+        .post('/api/products')
         .set('Authorization', auth)
         .send(keyboard)
         .expect(201);
       await request(ctx.app)
-        .post('/products')
+        .post('/api/products')
         .set('Authorization', auth)
         .send({ ...keyboard, name: 'TECLADO' })
         .expect(409);
       await request(ctx.app)
-        .put(`/products/${created.body.id as string}`)
+        .put(`/api/products/${created.body.id as string}`)
         .set('Authorization', auth)
         .send({ ...keyboard, name: 'TECLADO' })
         .expect(200);
@@ -108,7 +110,7 @@ describe('Produtos e clientes', () => {
 
     it('o banco também barra duplicados por maiúsculas (índice em lower(name))', async () => {
       await request(ctx.app)
-        .post('/products')
+        .post('/api/products')
         .set('Authorization', auth)
         .send(keyboard)
         .expect(201);
@@ -123,7 +125,7 @@ describe('Produtos e clientes', () => {
       const responses = await Promise.all(
         Array.from({ length: 6 }, () =>
           request(ctx.app)
-            .post('/products')
+            .post('/api/products')
             .set('Authorization', auth)
             .send(keyboard),
         ),
@@ -142,14 +144,14 @@ describe('Produtos e clientes', () => {
     it('pagina a listagem', async () => {
       for (const name of ['A', 'B', 'C']) {
         await request(ctx.app)
-          .post('/products')
+          .post('/api/products')
           .set('Authorization', auth)
           .send({ ...keyboard, name })
           .expect(201);
       }
 
       const page = await request(ctx.app)
-        .get('/products?page=2&limit=2')
+        .get('/api/products?page=2&limit=2')
         .set('Authorization', auth)
         .expect(200);
 
@@ -172,7 +174,7 @@ describe('Produtos e clientes', () => {
       ];
       for (const item of items) {
         await request(ctx.app)
-          .post('/products')
+          .post('/api/products')
           .set('Authorization', auth)
           .send(item)
           .expect(201);
@@ -181,35 +183,35 @@ describe('Produtos e clientes', () => {
         body.data.map(product => product.name);
 
       const found = await request(ctx.app)
-        .get('/products?q=CABO')
+        .get('/api/products?q=CABO')
         .set('Authorization', auth)
         .expect(200);
       expect(names(found.body)).toEqual(['Cabo USB', 'cabo HDMI'].sort());
       expect(found.body.meta.total).toBe(2);
 
       const byPrice = await request(ctx.app)
-        .get('/products?q=cabo&sort=price&order=desc')
+        .get('/api/products?q=cabo&sort=price&order=desc')
         .set('Authorization', auth)
         .expect(200);
       expect(names(byPrice.body)).toEqual(['cabo HDMI', 'Cabo USB']);
 
       // % digitado pelo usuário é literal, não curinga
       const literal = await request(ctx.app)
-        .get('/products?q=%25')
+        .get('/api/products?q=%25')
         .set('Authorization', auth)
         .expect(200);
       expect(names(literal.body)).toEqual(['Desconto 100%']);
 
       // q vazio = sem filtro
       const all = await request(ctx.app)
-        .get('/products?q=&sort=quantity&order=desc')
+        .get('/api/products?q=&sort=quantity&order=desc')
         .set('Authorization', auth)
         .expect(200);
       expect(all.body.meta.total).toBe(4);
       expect(names(all.body)[0]).toBe('cabo HDMI');
 
       const invalid = await request(ctx.app)
-        .get('/products?sort=senha')
+        .get('/api/products?sort=senha')
         .set('Authorization', auth)
         .expect(400);
       expect(invalid.body.issues[0]).toMatchObject({
@@ -219,12 +221,12 @@ describe('Produtos e clientes', () => {
     });
   });
 
-  describe('/products/{id}/image', () => {
+  describe('/api/products/{id}/image', () => {
     const png = { filename: 'foto.png', contentType: 'image/png' };
 
     async function createProduct() {
       const created = await request(ctx.app)
-        .post('/products')
+        .post('/api/products')
         .set('Authorization', auth)
         .send({ name: 'Teclado', price_cents: 100, quantity: 1 })
         .expect(201);
@@ -236,19 +238,19 @@ describe('Produtos e clientes', () => {
       const id = await createProduct();
 
       const first = await request(ctx.app)
-        .patch(`/products/${id}/image`)
+        .patch(`/api/products/${id}/image`)
         .set('Authorization', auth)
-        .attach('image', Buffer.from('png-1'), png)
+        .attach('image', PNG, png)
         .expect(200);
       const firstUrl = first.body.image_url as string;
-      expect(firstUrl).toMatch(/\/files\/[a-f0-9]{32}\.png$/);
+      expect(firstUrl).toMatch(/\/api\/files\/[0-9a-f-]{36}\.png$/);
       const firstPath = new URL(firstUrl).pathname;
       await request(ctx.app).get(firstPath).expect(200);
 
       const second = await request(ctx.app)
-        .patch(`/products/${id}/image`)
+        .patch(`/api/products/${id}/image`)
         .set('Authorization', auth)
-        .attach('image', Buffer.from('webp-2'), {
+        .attach('image', WEBP, {
           filename: 'foto.webp',
           contentType: 'image/webp',
         })
@@ -258,13 +260,13 @@ describe('Produtos e clientes', () => {
       await request(ctx.app).get(firstPath).expect(404);
 
       const shown = await request(ctx.app)
-        .get(`/products/${id}`)
+        .get(`/api/products/${id}`)
         .set('Authorization', auth)
         .expect(200);
       expect(shown.body.image_url).toBe(second.body.image_url);
 
       const removed = await request(ctx.app)
-        .delete(`/products/${id}/image`)
+        .delete(`/api/products/${id}/image`)
         .set('Authorization', auth)
         .expect(200);
       expect(removed.body.image_url).toBeNull();
@@ -274,7 +276,7 @@ describe('Produtos e clientes', () => {
       const id = await createProduct();
 
       const wrongType = await request(ctx.app)
-        .patch(`/products/${id}/image`)
+        .patch(`/api/products/${id}/image`)
         .set('Authorization', auth)
         .attach('image', Buffer.from('%PDF'), {
           filename: 'doc.pdf',
@@ -283,18 +285,25 @@ describe('Produtos e clientes', () => {
         .expect(400);
       expect(wrongType.body.code).toBe('INVALID_UPLOAD');
 
+      const disguised = await request(ctx.app)
+        .patch(`/api/products/${id}/image`)
+        .set('Authorization', auth)
+        .attach('image', Buffer.from('%PDF-1.7'), png)
+        .expect(400);
+      expect(disguised.body.code).toBe('INVALID_UPLOAD');
+
       const tooLarge = await request(ctx.app)
-        .patch(`/products/${id}/image`)
+        .patch(`/api/products/${id}/image`)
         .set('Authorization', auth)
         .attach('image', Buffer.alloc(IMAGE_UPLOAD.maxBytes + 1), png)
-        .expect(400);
+        .expect(413);
       expect(tooLarge.body).toMatchObject({
-        code: 'INVALID_UPLOAD',
-        details: { reason: 'LIMIT_FILE_SIZE' },
+        code: 'PAYLOAD_TOO_LARGE',
+        message: 'File exceeds the 4 MB limit',
       });
 
       await request(ctx.app)
-        .patch(`/products/${id}/image`)
+        .patch(`/api/products/${id}/image`)
         .set('Authorization', auth)
         .expect(400);
     });
@@ -302,25 +311,25 @@ describe('Produtos e clientes', () => {
     it('exige autenticação e responde 404 para produto inexistente', async () => {
       const missing = '00000000-0000-4000-8000-000000000000';
       await request(ctx.app)
-        .patch(`/products/${missing}/image`)
-        .attach('image', Buffer.from('x'), png)
+        .patch(`/api/products/${missing}/image`)
+        .attach('image', PNG, png)
         .expect(401);
       await request(ctx.app)
-        .patch(`/products/${missing}/image`)
+        .patch(`/api/products/${missing}/image`)
         .set('Authorization', auth)
-        .attach('image', Buffer.from('x'), png)
+        .attach('image', PNG, png)
         .expect(404);
     });
   });
 
-  describe('/customers', () => {
+  describe('/api/customers', () => {
     it('exige autenticação', async () => {
-      await request(ctx.app).get('/customers').expect(401);
+      await request(ctx.app).get('/api/customers').expect(401);
     });
 
     it('CRUD completo, mantendo o próprio e-mail na atualização', async () => {
       const created = await request(ctx.app)
-        .post('/customers')
+        .post('/api/customers')
         .set('Authorization', auth)
         .send({ name: 'Ana', email: 'ana@test.com' })
         .expect(201);
@@ -328,24 +337,24 @@ describe('Produtos e clientes', () => {
 
       // regressão: antes a atualização com o mesmo e-mail falhava sempre
       const updated = await request(ctx.app)
-        .put(`/customers/${id}`)
+        .put(`/api/customers/${id}`)
         .set('Authorization', auth)
         .send({ name: 'Ana Maria', email: 'ana@test.com' })
         .expect(200);
       expect(updated.body.name).toBe('Ana Maria');
 
       const list = await request(ctx.app)
-        .get('/customers')
+        .get('/api/customers')
         .set('Authorization', auth)
         .expect(200);
       expect(list.body.meta.total).toBe(1);
 
       await request(ctx.app)
-        .delete(`/customers/${id}`)
+        .delete(`/api/customers/${id}`)
         .set('Authorization', auth)
         .expect(204);
       await request(ctx.app)
-        .get(`/customers/${id}`)
+        .get(`/api/customers/${id}`)
         .set('Authorization', auth)
         .expect(404);
     });
@@ -357,14 +366,14 @@ describe('Produtos e clientes', () => {
         { name: 'Carla Dias', email: 'carla@test.com' },
       ]) {
         await request(ctx.app)
-          .post('/customers')
+          .post('/api/customers')
           .set('Authorization', auth)
           .send(customer)
           .expect(201);
       }
 
       const found = await request(ctx.app)
-        .get('/customers?q=souza&sort=email&order=desc')
+        .get('/api/customers?q=souza&sort=email&order=desc')
         .set('Authorization', auth)
         .expect(200);
 
@@ -375,12 +384,12 @@ describe('Produtos e clientes', () => {
 
     it('rejeita e-mail de outro cliente', async () => {
       await request(ctx.app)
-        .post('/customers')
+        .post('/api/customers')
         .set('Authorization', auth)
         .send({ name: 'Ana', email: 'ana@test.com' })
         .expect(201);
       const response = await request(ctx.app)
-        .post('/customers')
+        .post('/api/customers')
         .set('Authorization', auth)
         .send({ name: 'Bia', email: 'ANA@test.com ' })
         .expect(409);

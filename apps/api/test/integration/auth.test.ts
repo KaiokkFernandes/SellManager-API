@@ -7,6 +7,7 @@ import {
   login,
   createTestContext,
   defaultUser,
+  PNG,
   resetDatabase,
   TestContext,
 } from './helpers';
@@ -26,20 +27,20 @@ describe('Usuários, sessão, perfil e senha', () => {
   it('ADMIN cadastra, o usuário faz login e acessa o perfil sem expor a senha', async () => {
     const admin = await authenticate(ctx, { email: 'admin@test.com' });
     const created = await request(ctx.app)
-      .post('/users')
+      .post('/api/users')
       .set('Authorization', admin)
       .send({ ...defaultUser, role: 'SELLER' })
       .expect(201);
     expect(created.body).not.toHaveProperty('password');
 
     const session = await request(ctx.app)
-      .post('/sessions')
+      .post('/api/sessions')
       .send({ email: 'KAIO@test.com ', password: defaultUser.password })
       .expect(200);
     expect(session.body.user).not.toHaveProperty('password');
 
     const profile = await request(ctx.app)
-      .get('/profile')
+      .get('/api/profile')
       .set('Authorization', `Bearer ${session.body.token as string}`)
       .expect(200);
     expect(profile.body).toMatchObject({
@@ -49,13 +50,13 @@ describe('Usuários, sessão, perfil e senha', () => {
   });
 
   it('o cadastro não é público', async () => {
-    await request(ctx.app).post('/users').send(defaultUser).expect(401);
+    await request(ctx.app).post('/api/users').send(defaultUser).expect(401);
   });
 
   it('valida o cadastro (senha curta, e-mail inválido) e rejeita e-mail duplicado', async () => {
     const admin = await authenticate(ctx, { email: 'admin@test.com' });
     const invalid = await request(ctx.app)
-      .post('/users')
+      .post('/api/users')
       .set('Authorization', admin)
       .send({ name: '', email: 'nao-e-email', password: '123' })
       .expect(400);
@@ -65,7 +66,7 @@ describe('Usuários, sessão, perfil e senha', () => {
 
     const create = () =>
       request(ctx.app)
-        .post('/users')
+        .post('/api/users')
         .set('Authorization', admin)
         .send({ ...defaultUser, role: 'SELLER' });
     await create().expect(201);
@@ -76,11 +77,11 @@ describe('Usuários, sessão, perfil e senha', () => {
     await createUser(ctx);
 
     const wrongPassword = await request(ctx.app)
-      .post('/sessions')
+      .post('/api/sessions')
       .send({ email: defaultUser.email, password: 'errada-123' })
       .expect(401);
     const unknownEmail = await request(ctx.app)
-      .post('/sessions')
+      .post('/api/sessions')
       .send({ email: 'ninguem@test.com', password: 'errada-123' })
       .expect(401);
 
@@ -88,19 +89,19 @@ describe('Usuários, sessão, perfil e senha', () => {
   });
 
   it('protege rotas autenticadas', async () => {
-    await request(ctx.app).get('/profile').expect(401);
+    await request(ctx.app).get('/api/profile').expect(401);
     await request(ctx.app)
-      .get('/profile')
+      .get('/api/profile')
       .set('Authorization', 'Bearer invalido')
       .expect(401);
-    await request(ctx.app).get('/users').expect(401);
+    await request(ctx.app).get('/api/users').expect(401);
   });
 
   it('lista usuários paginado', async () => {
     const auth = await authenticate(ctx);
 
     const response = await request(ctx.app)
-      .get('/users?limit=5')
+      .get('/api/users?limit=5')
       .set('Authorization', auth)
       .expect(200);
 
@@ -116,7 +117,7 @@ describe('Usuários, sessão, perfil e senha', () => {
     const auth = await authenticate(ctx, { role: 'SELLER' });
 
     const updated = await request(ctx.app)
-      .put('/profile')
+      .put('/api/profile')
       .set('Authorization', auth)
       .send({ name: 'Kaio F', email: 'outro@test.com', role: 'ADMIN' })
       .expect(200);
@@ -132,7 +133,7 @@ describe('Usuários, sessão, perfil e senha', () => {
     const current = await login(ctx, defaultUser);
     const change = (body: object) =>
       request(ctx.app)
-        .put('/profile/password')
+        .put('/api/profile/password')
         .set('Authorization', current)
         .send(body);
 
@@ -168,11 +169,11 @@ describe('Usuários, sessão, perfil e senha', () => {
 
     // a outra sessão caiu; a atual segue com o token novo
     await request(ctx.app)
-      .get('/profile')
+      .get('/api/profile')
       .set('Authorization', other)
       .expect(401);
     await request(ctx.app)
-      .get('/profile')
+      .get('/api/profile')
       .set('Authorization', `Bearer ${changed.body.token as string}`)
       .expect(200);
     await login(ctx, { email: defaultUser.email, password: 'nova-senha-123' });
@@ -182,11 +183,11 @@ describe('Usuários, sessão, perfil e senha', () => {
     await createUser(ctx);
 
     await request(ctx.app)
-      .post('/password/forgot')
+      .post('/api/password/forgot')
       .send({ email: defaultUser.email })
       .expect(204);
     await request(ctx.app)
-      .post('/password/forgot')
+      .post('/api/password/forgot')
       .send({ email: 'ninguem@test.com' })
       .expect(204);
     expect(ctx.mail.messages).toHaveLength(1);
@@ -199,10 +200,10 @@ describe('Usuários, sessão, perfil e senha', () => {
       password_confirmation: 'senha-recuperada',
     };
 
-    await request(ctx.app).post('/password/reset').send(reset).expect(204);
-    await request(ctx.app).post('/password/reset').send(reset).expect(400);
+    await request(ctx.app).post('/api/password/reset').send(reset).expect(204);
+    await request(ctx.app).post('/api/password/reset').send(reset).expect(400);
     await request(ctx.app)
-      .post('/sessions')
+      .post('/api/sessions')
       .send({ email: defaultUser.email, password: 'senha-recuperada' })
       .expect(200);
   });
@@ -211,7 +212,7 @@ describe('Usuários, sessão, perfil e senha', () => {
     const auth = await authenticate(ctx);
 
     await request(ctx.app)
-      .patch('/users/avatar')
+      .patch('/api/users/avatar')
       .set('Authorization', auth)
       .attach('avatar', Buffer.from('<script>alert(1)</script>'), {
         filename: 'x.html',
@@ -219,18 +220,24 @@ describe('Usuários, sessão, perfil e senha', () => {
       })
       .expect(400);
 
-    const response = await request(ctx.app)
-      .patch('/users/avatar')
+    // o tipo declarado não basta: o conteúdo precisa ser mesmo uma imagem
+    await request(ctx.app)
+      .patch('/api/users/avatar')
       .set('Authorization', auth)
-      .attach('avatar', Buffer.from('fake-png'), {
-        filename: 'a.png',
+      .attach('avatar', Buffer.from('<script>alert(1)</script>'), {
+        filename: 'x.png',
         contentType: 'image/png',
       })
+      .expect(400);
+
+    const response = await request(ctx.app)
+      .patch('/api/users/avatar')
+      .set('Authorization', auth)
+      .attach('avatar', PNG, { filename: 'a.png', contentType: 'image/png' })
       .expect(200);
 
-    expect(response.body.avatar).toMatch(/^[a-f0-9]{32}\.png$/);
-    await request(ctx.app)
-      .get(`/files/${response.body.avatar as string}`)
-      .expect(200);
+    const url = response.body.avatar_url as string;
+    expect(url).toMatch(/\/api\/files\/[0-9a-f-]{36}\.png$/);
+    await request(ctx.app).get(new URL(url).pathname).expect(200);
   });
 });

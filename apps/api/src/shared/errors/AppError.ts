@@ -9,6 +9,7 @@ const DEFAULT_CODES: Record<number, ApiErrorCode> = {
   413: 'PAYLOAD_TOO_LARGE',
   429: 'RATE_LIMITED',
   500: 'INTERNAL_ERROR',
+  503: 'SERVICE_UNAVAILABLE',
 };
 
 interface AppErrorOptions {

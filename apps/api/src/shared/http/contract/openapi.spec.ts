@@ -39,6 +39,7 @@ describe('OpenAPI gerado do contrato', () => {
       '403',
       '404',
       '500',
+      '503',
     ]);
     // quem pode chamar fica documentado
     expect(showProduct.description).toContain(

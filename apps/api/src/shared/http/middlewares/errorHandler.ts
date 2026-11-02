@@ -1,7 +1,11 @@
 import { NextFunction, Request, Response } from 'express';
 import { MulterError } from 'multer';
 import { QueryFailedError } from 'typeorm';
-import { apiErrorSchema, type ApiError } from '@sellmanager/shared';
+import {
+  apiErrorSchema,
+  IMAGE_UPLOAD,
+  type ApiError,
+} from '@sellmanager/shared';
 import AppError from '@shared/errors/AppError';
 import { logger } from '@shared/logger';
 import {
@@ -65,11 +69,21 @@ export function errorHandler(
     return;
   }
 
+  if (error instanceof MulterError && error.code === 'LIMIT_FILE_SIZE') {
+    sendError(response, 413, {
+      status: 'error',
+      code: 'PAYLOAD_TOO_LARGE',
+      message: `File exceeds the ${IMAGE_UPLOAD.maxBytes / 1024 / 1024} MB limit`,
+      details: { reason: error.code },
+    });
+    return;
+  }
+
   if (error instanceof MulterError) {
     sendError(response, 400, {
       status: 'error',
       code: 'INVALID_UPLOAD',
-      message: error.message,
+      message: 'Invalid upload',
       details: { reason: error.code },
     });
     return;
@@ -102,12 +116,12 @@ export function errorHandler(
     return;
   }
 
-  // Erros do body-parser (JSON malformado, payload grande demais)
+  // Erros do body-parser. Texto fixo: o original repete trechos do corpo enviado.
   if (error.type === 'entity.parse.failed') {
     sendError(response, 400, {
       status: 'error',
       code: 'BAD_REQUEST',
-      message: error.message,
+      message: 'Malformed JSON body',
     });
     return;
   }
@@ -115,7 +129,7 @@ export function errorHandler(
     sendError(response, 413, {
       status: 'error',
       code: 'PAYLOAD_TOO_LARGE',
-      message: error.message,
+      message: 'Request body is too large',
     });
     return;
   }

@@ -7,6 +7,10 @@ temp/
 coverage
 dist
 
+# Vercel
+.vercel
+.vercel-tools
+
 # uploads locais da api
 apps/api/tmp/*
 !apps/api/tmp/.gitkeep

@@ -19,7 +19,7 @@ single composition root.
   login errors so the API doesn't reveal which emails exist
 - **Users and roles:** ADMIN creates users with a role (ADMIN, MANAGER, SELLER); profile
   view/update (changing the password requires the current one), avatar upload (jpeg/png/webp,
-  max 2 MB)
+  max 4 MB)
 - **Password recovery** by email. The token is random, single-use, expires in 2 hours and is
   stored only as a SHA-256 hash
 - **Products** with categories and minimum stock, plus a low-stock list
@@ -39,7 +39,7 @@ single composition root.
 - **Pagination** on every list (`?page=&limit=`)
 - **One contract** in [`@sellmanager/shared`](../../packages/shared): routing, input validation,
   response checks and the committed `openapi.json` all come from it
-- **OpenAPI 3.1 docs** at `/docs`, with examples, auth and error responses
+- **OpenAPI 3.1 docs** at `/api/docs` (development only), with examples, auth and error responses
 - **Money in integer cents** (`price_cents`, `total_cents`) and a standard error format with a
   stable `code`
 - **Security:** helmet, CORS allow-list, rate limiting on auth routes, and structured logs
@@ -101,7 +101,7 @@ rate limit, input schemas, response schemas and domain errors. The API never rep
   a 500 and the test fails. In development the mismatch is logged. Production skips the check.
   Fields that the contract doesn't declare count as a mismatch, so a leaked password hash
   would be caught.
-- **`openapi.json`** is generated from the contract and committed, and `/docs` serves it.
+- **`openapi.json`** is generated from the contract and committed, and the client is generated from it. `/api/docs` builds the document in memory.
 
 Dependencies point inward: `infra → services → domain`. Services depend only on interfaces
 (`IUsersRepository`, `IHashProvider`, `IOrdersUnitOfWork`…). `makeContainer(dataSource)`
@@ -139,11 +139,11 @@ and stock movements share the same dates. It takes about 40 seconds.
   then creates them again.
 - It refuses to run with `NODE_ENV=production`.
 
-| URL                        | What                                           |
-| -------------------------- | ---------------------------------------------- |
-| http://localhost:3333      | API                                            |
-| http://localhost:3333/docs | Swagger UI (`/docs.json` for the raw document) |
-| http://localhost:8025      | Mailpit: inbox for password-recovery emails    |
+| URL                            | What                                               |
+| ------------------------------ | -------------------------------------------------- |
+| http://localhost:3333          | API                                                |
+| http://localhost:3333/api/docs | Swagger UI (`/api/docs.json` for the raw document) |
+| http://localhost:8025          | Mailpit: inbox for password-recovery emails        |
 
 The Docker PostgreSQL listens on port **5433**, so it won't clash with a local install on 5432.
 `.env` and `.env.test` are read from `apps/api/` no matter where the command runs from.
@@ -153,23 +153,28 @@ The Docker PostgreSQL listens on port **5433**, so it won't clash with a local i
 The app checks every variable at startup and refuses to start if one is invalid. All
 variables are listed with comments in [`.env.example`](.env.example).
 
-| Variable                                                              | Default                                           | Notes                                             |
-| --------------------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------- |
-| `NODE_ENV`                                                            | `development`                                     | `development` \| `test` \| `production`           |
-| `PORT`                                                                | `3333`                                            |                                                   |
-| `APP_API_URL`                                                         | `http://localhost:3333`                           | Used to build `avatar_url` and docs server        |
-| `APP_WEB_URL`                                                         | `http://localhost:3000`                           | Front-end URL used in the recovery link           |
-| `BUSINESS_TIMEZONE`                                                   | `America/Sao_Paulo`                               | IANA zone of the metrics: what "one day" means    |
-| `DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASSWORD` / `DB_NAME`         | Docker values                                     | PostgreSQL connection                             |
-| `JWT_SECRET`                                                          | —                                                 | **Required**, at least 32 characters              |
-| `JWT_EXPIRES_IN`                                                      | `2h`                                              |                                                   |
-| `BCRYPT_SALT_ROUNDS`                                                  | `12`                                              | 10–15                                             |
-| `CORS_ORIGIN`                                                         | `http://localhost:3000`                           | Comma-separated; `*` allows any origin            |
-| `TRUST_PROXY`                                                         | `0`                                               | Number of reverse proxies in front                |
-| `MAIL_DRIVER`                                                         | `ethereal`                                        | `smtp` (Mailpit in `.env.example`) or `ethereal`  |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER` / `SMTP_PASS` | — / `587` / `false`                               | `SMTP_HOST` is required with `smtp`               |
-| `MAIL_FROM_NAME` / `MAIL_FROM_EMAIL`                                  | `Equipe SellManager` / `no-reply@sellmanager.dev` | Sender                                            |
-| `LOG_LEVEL`                                                           | by `NODE_ENV`                                     | `debug` in dev, `info` in prod, `silent` in tests |
+| Variable                                                              | Default                                           | Notes                                                                                                       |
+| --------------------------------------------------------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `NODE_ENV`                                                            | `development` (`production` on Vercel)            | `development` \| `test` \| `production`                                                                     |
+| `PORT`                                                                | `3333`                                            |                                                                                                             |
+| `APP_API_URL`                                                         | `http://localhost:3333`                           | Used to build `avatar_url` and docs server                                                                  |
+| `APP_WEB_URL`                                                         | `http://localhost:3000`                           | Front-end URL used in the recovery link                                                                     |
+| `BUSINESS_TIMEZONE`                                                   | `America/Sao_Paulo`                               | IANA zone of the metrics: what "one day" means                                                              |
+| `DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASSWORD` / `DB_NAME`         | Docker values                                     | PostgreSQL connection                                                                                       |
+| `DATABASE_URL`                                                        | —                                                 | Required in production. Takes precedence over `DB_*`, with SSL                                              |
+| `DATABASE_URL_UNPOOLED`                                               | —                                                 | Direct connection, used only by migrations                                                                  |
+| `STORAGE_DRIVER`                                                      | `disk` (`blob` on Vercel)                         | Where images are stored                                                                                     |
+| `BLOB_READ_WRITE_TOKEN`                                               | —                                                 | Required with `STORAGE_DRIVER=blob`                                                                         |
+| `REDIS_URL`                                                           | —                                                 | Rate limit store. Required on Vercel production, with `rediss://`                                           |
+| `JWT_SECRET`                                                          | —                                                 | **Required**, at least 32 characters                                                                        |
+| `JWT_EXPIRES_IN`                                                      | `2h`                                              |                                                                                                             |
+| `BCRYPT_SALT_ROUNDS`                                                  | `12`                                              | 10–15                                                                                                       |
+| `CORS_ORIGIN`                                                         | `http://localhost:3000`                           | Other domains allowed, comma-separated. Same-host origins are always accepted; `*` is refused in production |
+| `TRUST_PROXY`                                                         | `0` (`1` on Vercel)                               | Number of reverse proxies in front                                                                          |
+| `MAIL_DRIVER`                                                         | `ethereal`                                        | `smtp` (Mailpit in `.env.example`) or `ethereal`                                                            |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER` / `SMTP_PASS` | — / `587` / `false`                               | `SMTP_HOST` is required with `smtp`                                                                         |
+| `MAIL_FROM_NAME` / `MAIL_FROM_EMAIL`                                  | `Equipe SellManager` / `no-reply@sellmanager.dev` | Sender                                                                                                      |
+| `LOG_LEVEL`                                                           | by `NODE_ENV`                                     | `debug` in dev, `info` in prod, `silent` in tests                                                           |
 
 ## Scripts
 
@@ -188,15 +193,15 @@ Run them inside `apps/api`, or from the root with `pnpm --filter api <script>`.
 | `pnpm test:coverage`                                             | Run tests with coverage                                |
 | `pnpm migration:run` / `migration:revert`                        | Apply or revert migrations (dev)                       |
 | `pnpm migration:create src/shared/infra/typeorm/migrations/Name` | New empty migration (register it in `data-source.ts`)  |
-| `pnpm migration:run:prod`                                        | Apply migrations from the compiled `dist/`             |
-| `pnpm seed`                                                      | Development data (idempotent, never in production)     |
+| `pnpm migration:run:prod`                                        | Apply migrations from `dist/`, without the TypeORM CLI |
+| `pnpm seed`                                                      | Development data (refused in production or remote DBs) |
 | `pnpm create-admin` / `create-admin:prod`                        | Create the first ADMIN (installation; see below)       |
 | `pnpm openapi:generate`                                          | Write `openapi.json` from the contract                 |
 | `pnpm openapi:check`                                             | Fail if `openapi.json` is out of date                  |
 
 ## API overview
 
-All bodies are JSON. Full schemas and examples are at **`/docs`**. 🔒 means the route requires
+All routes live under `/api`. All bodies are JSON. Full schemas and examples are at **`/api/docs`**. 🔒 means the route requires
 `Authorization: Bearer <token>`.
 
 | Method | Path                            | Auth | Description                                            |
@@ -244,7 +249,7 @@ All bodies are JSON. Full schemas and examples are at **`/docs`**. 🔒 means th
 
 🔒 routes also need a **permission** for the user's role (ADMIN, MANAGER or SELLER). Without
 it the answer is `403 FORBIDDEN` with `details.permission`. The matrix is in the
-[root README](../../README.md#access-control-roles-and-permissions), and `/docs` shows the
+[root README](../../README.md#access-control-roles-and-permissions), and `/api/docs` shows the
 permission on each operation. There is no public sign-up: an ADMIN creates users.
 
 **Listing options**
@@ -257,10 +262,12 @@ permission on each operation. There is no public sign-up: an ADMIN creates users
   time zone offset, e.g. `from=2026-10-01T00:00:00-03:00`. The client decides where the day
   starts. `to` must be after `from` (`400` otherwise). Newest orders come first.
 
-**Images**: jpeg, png or webp up to 2 MB, for avatars and products. The limits live in
-`IMAGE_UPLOAD` in `@sellmanager/shared`, and the front-end validates with the same values.
-Replacing an image deletes the previous file, and so does deleting the product. Files are
-served from `/files/<name>`, and responses carry the full URL in `avatar_url` / `image_url`.
+**Images**: jpeg, png or webp up to 4 MB, for avatars and products. The limits live in
+`IMAGE_UPLOAD` in `@sellmanager/shared`, and the front-end validates with the same values. The
+type is confirmed from the file content, never from what the client declares. Uploads stay in
+memory and go to `IStorageProvider`: Vercel Blob in production, a local folder in development
+(`STORAGE_DRIVER`). The database keeps the public URL the provider returns, also sent as
+`avatar_url` / `image_url`. The previous file is deleted only after the new URL is saved.
 
 **Business rules**
 
@@ -384,9 +391,10 @@ integration tests on every push and pull request.
 
 ```bash
 pnpm build          # from the root: builds @sellmanager/shared first (Turborepo)
-NODE_ENV=production pnpm --filter api migration:run:prod
-NODE_ENV=production pnpm --filter api create-admin:prod   # first install only
-NODE_ENV=production pnpm --filter api start
+export NODE_ENV=production DATABASE_URL=... JWT_SECRET=...
+pnpm --filter api migration:run:prod    # uses DATABASE_URL_UNPOOLED when set
+pnpm --filter api create-admin:prod     # first install only
+pnpm --filter api start
 ```
 
 **First ADMIN.** There is no public sign-up and the seed refuses to run in production, so a new
@@ -402,10 +410,11 @@ it is safe to leave in a deploy script. An e-mail that already belongs to anothe
 refused (exit 1) and that account is not promoted. With only deactivated ADMINs it creates a new
 one, which also recovers a store locked out of its admin accounts.
 
-In production, use `MAIL_DRIVER=smtp` with a real provider. Set `CORS_ORIGIN` to the
-front-end origin and `TRUST_PROXY` if the app runs behind a proxy. Uploaded avatars are
-stored on local disk (`apps/api/tmp/uploads`), so mount a persistent volume or replace the
-`IStorageProvider` implementation.
+In production, use `MAIL_DRIVER=smtp` with a real provider. `TRUST_PROXY` must match the number
+of proxies in front of the app, and `CORS_ORIGIN` is only needed for other domains: an origin
+equal to the request host is always accepted. The Vercel setup is in the root
+[`DEPLOY.md`](../../DEPLOY.md); `src/index.ts` is its entrypoint and exports the app without
+`listen`.
 
 ## License
 

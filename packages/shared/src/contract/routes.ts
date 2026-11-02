@@ -5,6 +5,7 @@ import {
   listCategoriesQuerySchema,
 } from '../categories';
 import {
+  healthSchema,
   idParamsSchema,
   paginatedSchema,
   paginationQuerySchema,
@@ -132,6 +133,19 @@ function transitionRoute(
  * para o openapi.json e, a partir dele, para o client tipado do front-end.
  */
 export const routes = {
+  health: {
+    show: defineRoute({
+      method: 'get',
+      path: '/health',
+      operationId: 'checkHealth',
+      summary: 'Confere a API e a conexão com o banco',
+      description: 'Responde 503 se o banco não estiver acessível.',
+      tags: ['Saúde'],
+      auth: false,
+      responses: { 200: healthSchema },
+    }),
+  },
+
   users: {
     create: defineRoute({
       method: 'post',
@@ -200,7 +214,7 @@ export const routes = {
       method: 'patch',
       path: '/users/avatar',
       operationId: 'updateUserAvatar',
-      summary: 'Envia o avatar (jpeg, png ou webp, até 2 MB)',
+      summary: 'Envia o avatar (jpeg, png ou webp, até 4 MB)',
       tags: ['Usuários'],
       auth: true,
       permission: 'authenticated',
@@ -395,7 +409,7 @@ export const routes = {
       method: 'patch',
       path: '/products/{id}/image',
       operationId: 'updateProductImage',
-      summary: 'Envia ou substitui a imagem (jpeg, png ou webp, até 2 MB)',
+      summary: 'Envia ou substitui a imagem (jpeg, png ou webp, até 4 MB)',
       tags: ['Produtos'],
       auth: true,
       permission: 'product:update',

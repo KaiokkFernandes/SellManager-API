@@ -34,21 +34,21 @@ describe('estoque (movimentações)', () => {
   const movements = async () =>
     (
       await request(ctx.app)
-        .get(`/products/${productId}/stock-movements`)
+        .get(`/api/products/${productId}/stock-movements`)
         .set('Authorization', auth)
         .expect(200)
     ).body as { data: Movement[]; meta: { total: number } };
 
   const move = (body: object, as = auth) =>
     request(ctx.app)
-      .post(`/products/${productId}/stock-movements`)
+      .post(`/api/products/${productId}/stock-movements`)
       .set('Authorization', as)
       .send(body);
 
   const stock = async () =>
     (
       await request(ctx.app)
-        .get(`/products/${productId}`)
+        .get(`/api/products/${productId}`)
         .set('Authorization', auth)
         .expect(200)
     ).body.quantity as number;
@@ -61,7 +61,7 @@ describe('estoque (movimentações)', () => {
     auth = await authenticate(ctx);
     productId = (
       await request(ctx.app)
-        .post('/products')
+        .post('/api/products')
         .set('Authorization', auth)
         .send({ name: 'Cabo', price_cents: 1000, quantity: 10 })
         .expect(201)
@@ -99,7 +99,7 @@ describe('estoque (movimentações)', () => {
 
     // quantity no PUT é ignorado: o estoque só muda por movimentação
     await request(ctx.app)
-      .put(`/products/${productId}`)
+      .put(`/api/products/${productId}`)
       .set('Authorization', auth)
       .send({ name: 'Cabo', price_cents: 1200, quantity: 999 })
       .expect(200);
@@ -161,7 +161,7 @@ describe('estoque (movimentações)', () => {
     });
 
     await request(ctx.app)
-      .get(`/products/${productId}/stock-movements`)
+      .get(`/api/products/${productId}/stock-movements`)
       .set('Authorization', seller)
       .expect(403);
     await move({ type: 'ENTRY', quantity: 1 }, seller).expect(403);
@@ -171,7 +171,7 @@ describe('estoque (movimentações)', () => {
   it('404 para produto inexistente', async () => {
     productId = '00000000-0000-4000-8000-000000000000';
     await request(ctx.app)
-      .get(`/products/${productId}/stock-movements`)
+      .get(`/api/products/${productId}/stock-movements`)
       .set('Authorization', auth)
       .expect(404);
     await move({ type: 'ENTRY', quantity: 1 }).expect(404);
@@ -180,7 +180,7 @@ describe('estoque (movimentações)', () => {
   it('estoque mínimo: alerta no produto e lista de estoque baixo', async () => {
     const create = (name: string, quantity: number, min_stock: number) =>
       request(ctx.app)
-        .post('/products')
+        .post('/api/products')
         .set('Authorization', auth)
         .send({ name, price_cents: 100, quantity, min_stock })
         .expect(201);
@@ -195,7 +195,7 @@ describe('estoque (movimentações)', () => {
       role: 'SELLER',
     });
     const low = await request(ctx.app)
-      .get('/products/low-stock')
+      .get('/api/products/low-stock')
       .set('Authorization', seller)
       .expect(200);
     expect(low.body.meta.total).toBe(2);
@@ -205,19 +205,19 @@ describe('estoque (movimentações)', () => {
 
     // a entrada tira o produto da lista
     await request(ctx.app)
-      .post(`/products/${hub.body.id as string}/stock-movements`)
+      .post(`/api/products/${hub.body.id as string}/stock-movements`)
       .set('Authorization', auth)
       .send({ type: 'ENTRY', quantity: 10 })
       .expect(201);
     const after = await request(ctx.app)
-      .get('/products/low-stock')
+      .get('/api/products/low-stock')
       .set('Authorization', auth)
       .expect(200);
     expect(after.body.meta.total).toBe(1);
 
     // editar o mínimo: zero desliga o alerta
     const edited = await request(ctx.app)
-      .put(`/products/${productId}`)
+      .put(`/api/products/${productId}`)
       .set('Authorization', auth)
       .send({ name: 'Cabo', price_cents: 1000, min_stock: 20 })
       .expect(200);
