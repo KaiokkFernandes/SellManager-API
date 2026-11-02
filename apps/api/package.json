@@ -4,7 +4,7 @@
   "description": "API REST de gestão de vendas (Node.js + TypeScript + Express + TypeORM) seguindo Clean Architecture",
   "private": true,
   "engines": {
-    "node": ">=24"
+    "node": "24.x"
   },
   "scripts": {
     "dev": "tsx watch src/shared/http/server.ts",
