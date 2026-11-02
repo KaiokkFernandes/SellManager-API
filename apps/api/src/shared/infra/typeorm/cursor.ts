@@ -1,5 +1,7 @@
 import { DataSource } from 'typeorm';
 
+const STATEMENT_TIMEOUT_MS = 30_000;
+
 /**
  * Lê o resultado aos poucos com um cursor do Postgres (DECLARE/FETCH), em
  * lotes: a memória fica constante seja qual for o tamanho do relatório. A
@@ -16,6 +18,9 @@ export async function* streamRows<T>(
   await runner.connect();
   try {
     await runner.startTransaction('REPEATABLE READ');
+    // SET LOCAL morre com a transação: seguro no pooler do Neon. A função da
+    // Vercel tem tempo limitado, e uma consulta presa não pode ocupar o banco.
+    await runner.query(`SET LOCAL statement_timeout = ${STATEMENT_TIMEOUT_MS}`);
     await runner.query(
       `DECLARE report_cursor NO SCROLL CURSOR FOR ${sql}`,
       params,

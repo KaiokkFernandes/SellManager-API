@@ -1,6 +1,6 @@
 import { unwrap, type Session } from '@sellmanager/api-client';
 import type { SessionBody } from '@sellmanager/shared';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   useCallback,
   useEffect,
@@ -105,17 +105,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const profile = useQuery({ ...profileQueryOptions, enabled: token !== null });
 
+  // mutation para o ConnectionNotice enxergar: costuma ser a primeira requisição
+  const { mutateAsync: createSession } = useMutation({
+    mutationFn: (credentials: SessionBody) =>
+      unwrap(api.POST('/sessions', { body: credentials })),
+  });
+
   const login = useCallback(
     async (credentials: SessionBody) => {
-      const session = await unwrap(
-        api.POST('/sessions', { body: credentials }),
-      );
+      const session = await createSession(credentials);
       tokenStorage.set(session.token);
       queryClient.setQueryData(queryKeys.auth.profile, session.user);
       setEndedBy(null);
       setToken(session.token);
     },
-    [queryClient],
+    [createSession, queryClient],
   );
 
   const logout = useCallback(() => endSession('manual'), [endSession]);

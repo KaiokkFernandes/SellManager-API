@@ -9,12 +9,12 @@ describe('parseEnv', () => {
     expect(parseEnv({ VITE_API_URL: '/api' }).VITE_API_URL).toBe('/api');
   });
 
-  it('falha com mensagem clara quando falta a variável', () => {
-    expect(() => parseEnv({})).toThrow(/VITE_API_URL/);
-    expect(() => parseEnv({})).toThrow(/\.env\.example/);
+  it('sem a variável, chama a API pelo caminho relativo /api', () => {
+    expect(parseEnv({}).VITE_API_URL).toBe('/api');
   });
 
   it('falha com valor que não é URL nem caminho', () => {
     expect(() => parseEnv({ VITE_API_URL: 'api' })).toThrow(/URL válida/);
+    expect(() => parseEnv({ VITE_API_URL: 'api' })).toThrow(/\.env\.example/);
   });
 });

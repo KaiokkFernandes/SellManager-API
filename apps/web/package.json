@@ -2,7 +2,7 @@
   "name": "@sellmanager/web",
   "version": "0.0.0",
   "private": true,
-  "description": "Front-end do SellManager (placeholder: só o esqueleto, sem telas)",
+  "description": "Front-end do SellManager: login, dashboard, clientes, produtos, pedidos e relatórios",
   "type": "module",
   "scripts": {
     "dev": "vite",

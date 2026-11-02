@@ -1,9 +1,11 @@
 import { z } from 'zod';
 
 const envSchema = z.object({
-  // "/api" (proxy do Vite em dev) ou a URL absoluta da API
+  // Padrão /api: mesmo domínio em produção e proxy do Vite em dev. URL absoluta
+  // só se a API ficar em outro domínio.
   VITE_API_URL: z
-    .string({ error: 'VITE_API_URL é obrigatória' })
+    .string()
+    .default('/api')
     .refine(
       value => value.startsWith('/') || URL.canParse(value),
       'VITE_API_URL deve ser uma URL válida (https://...) ou um caminho como /api',

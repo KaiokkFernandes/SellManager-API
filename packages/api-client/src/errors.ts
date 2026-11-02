@@ -23,7 +23,7 @@ export class ApiClientError extends Error {
     this.status = status;
     this.code =
       error?.code ?? (status === 0 ? 'NETWORK_ERROR' : 'UNEXPECTED_RESPONSE');
-    this.issues = error?.issues ?? [];
+    this.issues = Array.isArray(error?.issues) ? error.issues : [];
     this.details = error?.details;
   }
 

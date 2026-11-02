@@ -36,7 +36,14 @@ const FALLBACK = 'Ocorreu um erro inesperado. Tente novamente.';
 /** Mensagem amigável para qualquer erro capturado. */
 export function getErrorMessage(error: unknown): string {
   if (error instanceof ApiClientError) {
-    return MESSAGES[error.code];
+    // 5xx fora do contrato: a própria Vercel respondeu (função caiu ou estourou
+    // o tempo), com um corpo que nunca é mostrado na tela
+    if (error.code === 'UNEXPECTED_RESPONSE' && error.status >= 500) {
+      return MESSAGES.SERVICE_UNAVAILABLE;
+    }
+    // ?? para um code de uma versão mais nova da API que este build não conhece
+    const message: string | undefined = MESSAGES[error.code];
+    return message ?? FALLBACK;
   }
   return FALLBACK;
 }

@@ -20,6 +20,32 @@ describe('apiErrors', () => {
     );
   });
 
+  it.each([
+    [
+      'objeto da Vercel',
+      { error: { code: '500', message: 'FUNCTION_FAILED' } },
+    ],
+    ['code e message objeto', { code: 'X', message: { detail: 'y' } }],
+    ['texto puro', 'A server error has occurred'],
+    ['corpo vazio', undefined],
+  ])('5xx com %s vira texto próprio, sempre string', (_name, body) => {
+    const message = getErrorMessage(new ApiClientError(502, body));
+
+    expect(message).toBe(
+      'O servidor está indisponível no momento. Tente novamente em instantes.',
+    );
+  });
+
+  it('code que este build não conhece não deixa a mensagem vazia', () => {
+    const error = new ApiClientError(409, {
+      status: 'error',
+      code: 'NOVO_CODE',
+      message: 'x',
+    });
+
+    expect(getErrorMessage(error)).toMatch(/inesperado/);
+  });
+
   it('erro desconhecido recebe mensagem genérica', () => {
     expect(getErrorMessage(new Error('x'))).toMatch(/inesperado/);
   });
