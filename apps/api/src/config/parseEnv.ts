@@ -51,6 +51,13 @@ function buildSchema(source: Source) {
         .refine(isValidTimezone, 'Invalid IANA time zone')
         .default('America/Sao_Paulo'),
 
+      // Banco: DATABASE_URL (Neon: host com -pooler) tem precedência sobre DB_*,
+      // que ficam para o docker do desenvolvimento.
+      DATABASE_URL: production
+        ? z.url({ error: 'obrigatória: URL do banco (Neon, com -pooler)' })
+        : z.url().optional(),
+      // Conexão direta (sem pooler), usada só nas migrations
+      DATABASE_URL_UNPOOLED: z.url().optional(),
       DB_HOST: z.string().default('localhost'),
       DB_PORT: z.coerce.number().int().positive().default(5433),
       DB_USER: z.string().default('sellmanager'),

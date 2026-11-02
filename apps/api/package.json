@@ -17,7 +17,7 @@
     "migration:run": "pnpm typeorm migration:run -d src/shared/infra/typeorm/data-source.ts",
     "migration:revert": "pnpm typeorm migration:revert -d src/shared/infra/typeorm/data-source.ts",
     "migration:create": "pnpm typeorm migration:create",
-    "migration:run:prod": "typeorm migration:run -d dist/shared/infra/typeorm/data-source.js",
+    "migration:run:prod": "node dist/shared/infra/cli/migrate.js",
     "seed": "tsx scripts/seed.ts",
     "create-admin": "tsx src/shared/infra/cli/createAdmin.ts",
     "create-admin:prod": "node dist/shared/infra/cli/createAdmin.js",
@@ -33,10 +33,12 @@
     "docs:permissions": "tsx scripts/permissions-doc.ts"
   },
   "devDependencies": {
+    "@sellmanager/config": "workspace:*",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/multer": "^2.3.0",
     "@types/node": "^24",
+    "@types/pg": "^8.23.1",
     "@types/supertest": "^7.2.1",
     "@types/swagger-ui-express": "^4.1.8",
     "@vitest/coverage-v8": "^5.0.5",
@@ -48,8 +50,7 @@
     "tsx": "^4.23.15",
     "typescript": "6.0.3",
     "vite": "^8",
-    "vitest": "^5.0.5",
-    "@sellmanager/config": "workspace:*"
+    "vitest": "^5.0.5"
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^9.1.0",

@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { parseEnv } from './parseEnv';
 
 const base = { JWT_SECRET: 'x'.repeat(32) };
-const vercel = { ...base, VERCEL: '1', VERCEL_ENV: 'production' };
+const vercel = {
+  ...base,
+  VERCEL: '1',
+  VERCEL_ENV: 'production',
+  DATABASE_URL: 'postgresql://u:p@ep-x-pooler.neon.tech/db',
+};
 const vercelReady = {
   ...vercel,
   APP_WEB_URL: 'https://loja.exemplo.com',
@@ -44,9 +49,7 @@ describe('parseEnv', () => {
   });
 
   it('na Vercel exige a URL do front, mas a deriva do domínio do deploy', () => {
-    expect(() => parseEnv({ ...base, VERCEL: '1' })).toThrow(
-      /APP_WEB_URL: obrigatória/,
-    );
+    expect(() => parseEnv(vercel)).toThrow(/APP_WEB_URL: obrigatória/);
     expect(
       parseEnv({
         ...vercelReady,
@@ -56,12 +59,21 @@ describe('parseEnv', () => {
     ).toBe('https://loja.vercel.app');
     expect(
       parseEnv({
-        ...base,
-        VERCEL: '1',
+        ...vercel,
         VERCEL_ENV: 'preview',
         VERCEL_BRANCH_URL: 'loja-git-x.vercel.app',
       }).APP_WEB_URL,
     ).toBe('https://loja-git-x.vercel.app');
+  });
+
+  it('em produção exige DATABASE_URL, sem cair no banco local', () => {
+    expect(() => parseEnv({ ...vercelReady, DATABASE_URL: '' })).toThrow(
+      /DATABASE_URL: obrigatória/,
+    );
+    expect(() => parseEnv({ ...base, NODE_ENV: 'production' })).toThrow(
+      /DATABASE_URL: obrigatória/,
+    );
+    expect(parseEnv(base).DATABASE_URL).toBeUndefined();
   });
 
   it('recusa * no CORS em produção', () => {
