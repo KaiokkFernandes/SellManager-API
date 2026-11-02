@@ -20,8 +20,9 @@ export default defineConfig(({ mode }) => {
         port: 3000,
         strictPort: true,
         proxy: {
-          // mantém o Host, como no mesmo domínio em produção (sem CORS)
-          '/api': proxyTarget,
+          // mantém o Host, como no mesmo domínio em produção (sem CORS). A forma
+          // curta `'/api': url` ligaria o changeOrigin
+          '/api': { target: proxyTarget, changeOrigin: false },
         },
       },
       preview: { port: 3000 },

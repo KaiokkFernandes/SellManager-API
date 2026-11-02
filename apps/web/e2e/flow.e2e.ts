@@ -42,7 +42,10 @@ test('fluxo completo de venda', async ({ page }) => {
   ).toBeVisible();
   await page.getByRole('button', { name: 'Enviar imagem' }).click();
   const image = page.getByRole('img', { name: 'Imagem atual do produto' });
-  await expect(image).toHaveAttribute('src', /\/files\/[a-f0-9]{32}\.png$/);
+  await expect(image).toHaveAttribute(
+    'src',
+    /\/api\/files\/[0-9a-f-]{36}\.png$/,
+  );
   // a imagem carrega de verdade (servida pela API)
   await expect
     .poll(() => image.evaluate(img => (img as HTMLImageElement).naturalWidth))
