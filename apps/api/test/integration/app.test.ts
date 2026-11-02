@@ -79,6 +79,47 @@ describe('Aplicação', () => {
     await request(ctx.app).post('/sessions').send({}).expect(404);
   });
 
+  describe('política de origem', () => {
+    const app = () =>
+      createApp(ctx.container, {
+        corsOrigins: ['https://parceiro.exemplo.com'],
+      });
+
+    it('recusa origem não permitida antes de executar a rota', async () => {
+      const response = await request(app())
+        .post('/api/sessions')
+        .set('Origin', 'https://site-malicioso.exemplo.com')
+        .send({ email: 'a@b.com', password: 'x' })
+        .expect(403);
+
+      expect(response.body).toMatchObject({ code: 'FORBIDDEN' });
+      expect(response.headers['access-control-allow-origin']).toBeUndefined();
+    });
+
+    it('aceita a origem igual ao host, sem configurar CORS_ORIGIN', async () => {
+      await request(app())
+        .get('/api/health')
+        .set('Host', 'loja.exemplo.com')
+        .set('Origin', 'https://loja.exemplo.com')
+        .expect(200);
+    });
+
+    it('aceita origem listada e envia os cabeçalhos de CORS', async () => {
+      const response = await request(app())
+        .get('/api/health')
+        .set('Origin', 'https://parceiro.exemplo.com')
+        .expect(200);
+
+      expect(response.headers['access-control-allow-origin']).toBe(
+        'https://parceiro.exemplo.com',
+      );
+    });
+
+    it('requisição sem Origin (monitoramento) passa', async () => {
+      await request(app()).get('/api/health').expect(200);
+    });
+  });
+
   it('serve a documentação OpenAPI', async () => {
     const response = await request(ctx.app).get('/api/docs.json').expect(200);
     expect(response.body.openapi).toBe('3.1.0');

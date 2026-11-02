@@ -99,6 +99,9 @@ function buildSchema(source: Source) {
       SMTP_USER: z.string().optional(),
       SMTP_PASS: z.string().optional(),
 
+      // Contador do rate limit. Sem ela, fica em memória (só um processo)
+      REDIS_URL: z.url().optional(),
+
       LOG_LEVEL: z
         .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
         .optional(),
@@ -112,6 +115,13 @@ function buildSchema(source: Source) {
       }
       if (production && data.CORS_ORIGIN.includes('*')) {
         fail('CORS_ORIGIN', 'não aceita * em produção');
+      }
+      if (isVercelProduction(source)) {
+        if (!data.REDIS_URL) {
+          fail('REDIS_URL', 'obrigatória em produção (Redis do Upstash)');
+        } else if (!data.REDIS_URL.startsWith('rediss://')) {
+          fail('REDIS_URL', 'precisa usar rediss:// (conexão com TLS)');
+        }
       }
       // o Ethereal entregaria o link de redefinição de senha a um terceiro
       if (isVercelProduction(source) && data.MAIL_DRIVER !== 'smtp') {

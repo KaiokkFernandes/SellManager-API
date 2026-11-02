@@ -13,7 +13,7 @@ import { createRouteMounter } from './contract/mountRoute';
 import { responseValidationMode } from './contract/responseValidation';
 import { databaseReady } from './middlewares/databaseReady';
 import { ensureAuthenticated } from './middlewares/ensureAuthenticated';
-import { authRateLimiter } from './middlewares/rateLimiter';
+import { createAuthRateLimiter } from './middlewares/rateLimiter';
 
 export function createRoutes(container: Container): Router {
   const router = Router();
@@ -26,7 +26,7 @@ export function createRoutes(container: Container): Router {
       container.providers.token,
       container.repositories.users,
     ),
-    rateLimiter: authRateLimiter,
+    rateLimiter: createAuthRateLimiter({ store: container.rateLimitStore }),
     responseValidation: responseValidationMode,
   });
 

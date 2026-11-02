@@ -55,8 +55,8 @@ export default defineConfig(({ mode }) => {
         port: 3000,
         strictPort: true,
         proxy: {
-          // /api/products -> http://localhost:3333/api/products (sem CORS)
-          '/api': { target: proxyTarget, changeOrigin: true },
+          // mantém o Host, como no mesmo domínio em produção (sem CORS)
+          '/api': proxyTarget,
         },
       },
       preview: { port: 3000 },

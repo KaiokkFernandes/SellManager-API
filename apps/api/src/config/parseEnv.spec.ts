@@ -13,6 +13,7 @@ const vercelReady = {
   APP_WEB_URL: 'https://loja.exemplo.com',
   MAIL_DRIVER: 'smtp',
   SMTP_HOST: 'smtp.exemplo.com',
+  REDIS_URL: 'rediss://default:token@x.upstash.io:6379',
 };
 
 describe('parseEnv', () => {
@@ -90,6 +91,18 @@ describe('parseEnv', () => {
     );
     expect(() =>
       parseEnv({ ...withoutMail, VERCEL_ENV: 'preview' }),
+    ).not.toThrow();
+  });
+
+  it('na produção da Vercel exige REDIS_URL com rediss://; no preview, não', () => {
+    expect(() => parseEnv({ ...vercelReady, REDIS_URL: '' })).toThrow(
+      /REDIS_URL: obrigatória/,
+    );
+    expect(() =>
+      parseEnv({ ...vercelReady, REDIS_URL: 'redis://x.upstash.io:6379' }),
+    ).toThrow(/REDIS_URL: precisa usar rediss/);
+    expect(() =>
+      parseEnv({ ...vercelReady, REDIS_URL: '', VERCEL_ENV: 'preview' }),
     ).not.toThrow();
   });
 

@@ -1,7 +1,6 @@
 import 'reflect-metadata';
 import '@config/zod';
 import express, { Express } from 'express';
-import cors from 'cors';
 import helmet from 'helmet';
 import { API_BASE_PATH } from '@sellmanager/shared';
 import { env } from '@config/env';
@@ -12,16 +11,22 @@ import { Container } from '@shared/container';
 import { logger, requestSerializers } from '@shared/logger';
 import { generateOpenApiDocument } from './contract/openapi';
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
+import { originPolicy } from './middlewares/originPolicy';
 import { createRoutes } from './routes';
 
 interface AppOptions {
   /** Swagger UI e documento OpenAPI (padrão: tudo menos produção). */
   docs?: boolean;
+  /** Origens de outros domínios aceitas (padrão: CORS_ORIGIN). */
+  corsOrigins?: string[];
 }
 
 export function createApp(
   container: Container,
-  { docs = env.NODE_ENV !== 'production' }: AppOptions = {},
+  {
+    docs = env.NODE_ENV !== 'production',
+    corsOrigins = env.CORS_ORIGIN,
+  }: AppOptions = {},
 ): Express {
   const app = express();
 
@@ -30,9 +35,7 @@ export function createApp(
   app.use(pinoHttp({ logger, serializers: requestSerializers }));
   // cross-origin: o front-end (outra origem) precisa carregar os avatares em /files
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
-  app.use(
-    cors({ origin: env.CORS_ORIGIN.includes('*') ? '*' : env.CORS_ORIGIN }),
-  );
+  app.use(originPolicy(corsOrigins));
   app.use(express.json({ limit: '100kb' }));
   app.use(`${API_BASE_PATH}/files`, express.static(uploadConfig.uploadsFolder));
   // Fora de produção: o documento revela todas as rotas e o mapa de permissões,
