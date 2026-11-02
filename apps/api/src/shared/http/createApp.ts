@@ -37,7 +37,13 @@ export function createApp(
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   app.use(originPolicy(corsOrigins));
   app.use(express.json({ limit: '100kb' }));
-  app.use(`${API_BASE_PATH}/files`, express.static(uploadConfig.uploadsFolder));
+  // só o provider de disco serve arquivos; o Blob entrega direto pela URL dele
+  if (env.STORAGE_DRIVER === 'disk') {
+    app.use(
+      `${API_BASE_PATH}/files`,
+      express.static(uploadConfig.uploadsFolder),
+    );
+  }
   // Fora de produção: o documento revela todas as rotas e o mapa de permissões,
   // a API não tem consumidores externos e os arquivos estáticos do Swagger não
   // são servidos na função da Vercel. Gerado em memória: nada é lido do disco.

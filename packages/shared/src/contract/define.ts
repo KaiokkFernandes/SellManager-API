@@ -59,7 +59,7 @@ export type RouteDefinition<C extends RouteConfig = RouteConfig> = C & {
 
 /**
  * Declara uma rota do contrato. Os erros automáticos saem da própria
- * configuração: 400 se há entrada, 413 se há corpo JSON, 401 se exige auth,
+ * configuração: 400 se há entrada, 413 se há corpo, 401 se exige auth,
  * 403 se exige uma permissão,
  * 429 se tem rate limit, 500 sempre e 503 sempre (banco indisponível).
  */
@@ -70,7 +70,7 @@ export function defineRoute<const C extends RouteConfig>(
   const { params, query, body } = config.request ?? {};
 
   if (params || query || body) errors.add(400);
-  if (body && config.request?.bodyType !== 'multipart') errors.add(413);
+  if (body) errors.add(413);
   if (config.auth) errors.add(401);
   if (config.auth && config.permission !== 'authenticated') errors.add(403);
   if (config.rateLimited) errors.add(429);

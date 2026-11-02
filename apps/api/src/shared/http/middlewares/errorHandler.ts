@@ -1,7 +1,11 @@
 import { NextFunction, Request, Response } from 'express';
 import { MulterError } from 'multer';
 import { QueryFailedError } from 'typeorm';
-import { apiErrorSchema, type ApiError } from '@sellmanager/shared';
+import {
+  apiErrorSchema,
+  IMAGE_UPLOAD,
+  type ApiError,
+} from '@sellmanager/shared';
 import AppError from '@shared/errors/AppError';
 import { logger } from '@shared/logger';
 import {
@@ -61,6 +65,16 @@ export function errorHandler(
       message: error.message,
       ...(error.issues && { issues: error.issues }),
       ...(error.details !== undefined && { details: error.details }),
+    });
+    return;
+  }
+
+  if (error instanceof MulterError && error.code === 'LIMIT_FILE_SIZE') {
+    sendError(response, 413, {
+      status: 'error',
+      code: 'PAYLOAD_TOO_LARGE',
+      message: `File exceeds the ${IMAGE_UPLOAD.maxBytes / 1024 / 1024} MB limit`,
+      details: { reason: error.code },
     });
     return;
   }

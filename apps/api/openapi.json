@@ -275,7 +275,7 @@
           "avatar": {
             "type": "string",
             "format": "binary",
-            "description": "Imagem jpeg, png ou webp até 2 MB"
+            "description": "Imagem jpeg, png ou webp até 4 MB"
           }
         },
         "required": [
@@ -724,7 +724,7 @@
           "image": {
             "type": "string",
             "format": "binary",
-            "description": "Imagem jpeg, png ou webp até 2 MB"
+            "description": "Imagem jpeg, png ou webp até 4 MB"
           }
         },
         "required": [
@@ -2411,7 +2411,7 @@
     "/users/avatar": {
       "patch": {
         "operationId": "updateUserAvatar",
-        "summary": "Envia o avatar (jpeg, png ou webp, até 2 MB)",
+        "summary": "Envia o avatar (jpeg, png ou webp, até 4 MB)",
         "description": "Qualquer usuário autenticado.",
         "tags": [
           "Usuários"
@@ -2454,6 +2454,16 @@
           },
           "401": {
             "description": "Não autenticado ou credenciais inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload grande demais",
             "content": {
               "application/json": {
                 "schema": {
@@ -4047,7 +4057,7 @@
     "/products/{id}/image": {
       "patch": {
         "operationId": "updateProductImage",
-        "summary": "Envia ou substitui a imagem (jpeg, png ou webp, até 2 MB)",
+        "summary": "Envia ou substitui a imagem (jpeg, png ou webp, até 4 MB)",
         "description": "Permissão: `product:update` (ADMIN, MANAGER).",
         "x-permission": "product:update",
         "tags": [
@@ -4122,6 +4132,16 @@
           },
           "404": {
             "description": "Recurso não encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload grande demais",
             "content": {
               "application/json": {
                 "schema": {

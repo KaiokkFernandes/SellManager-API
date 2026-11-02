@@ -99,6 +99,12 @@ function buildSchema(source: Source) {
       SMTP_USER: z.string().optional(),
       SMTP_PASS: z.string().optional(),
 
+      // Imagens: 'disk' (pasta local, só desenvolvimento) ou 'blob' (Vercel Blob)
+      STORAGE_DRIVER: z
+        .enum(['disk', 'blob'])
+        .default(onVercel ? 'blob' : 'disk'),
+      BLOB_READ_WRITE_TOKEN: z.string().optional(),
+
       // Contador do rate limit. Sem ela, fica em memória (só um processo)
       REDIS_URL: z.url().optional(),
 
@@ -115,6 +121,13 @@ function buildSchema(source: Source) {
       }
       if (production && data.CORS_ORIGIN.includes('*')) {
         fail('CORS_ORIGIN', 'não aceita * em produção');
+      }
+      if (data.STORAGE_DRIVER === 'blob' && !data.BLOB_READ_WRITE_TOKEN) {
+        fail('BLOB_READ_WRITE_TOKEN', 'obrigatória com STORAGE_DRIVER=blob');
+      }
+      // a função não tem disco durável: os arquivos sumiriam a cada instância
+      if (onVercel && data.STORAGE_DRIVER === 'disk') {
+        fail('STORAGE_DRIVER', 'precisa ser blob na Vercel');
       }
       if (isVercelProduction(source)) {
         if (!data.REDIS_URL) {

@@ -14,6 +14,7 @@ const vercelReady = {
   MAIL_DRIVER: 'smtp',
   SMTP_HOST: 'smtp.exemplo.com',
   REDIS_URL: 'rediss://default:token@x.upstash.io:6379',
+  BLOB_READ_WRITE_TOKEN: 'vercel_blob_rw_exemplo',
 };
 
 describe('parseEnv', () => {
@@ -60,7 +61,8 @@ describe('parseEnv', () => {
     ).toBe('https://loja.vercel.app');
     expect(
       parseEnv({
-        ...vercel,
+        ...vercelReady,
+        APP_WEB_URL: '',
         VERCEL_ENV: 'preview',
         VERCEL_BRANCH_URL: 'loja-git-x.vercel.app',
       }).APP_WEB_URL,
@@ -104,6 +106,17 @@ describe('parseEnv', () => {
     expect(() =>
       parseEnv({ ...vercelReady, REDIS_URL: '', VERCEL_ENV: 'preview' }),
     ).not.toThrow();
+  });
+
+  it('na Vercel usa o Blob e exige o token; localmente, o disco', () => {
+    expect(parseEnv(base).STORAGE_DRIVER).toBe('disk');
+    expect(parseEnv(vercelReady).STORAGE_DRIVER).toBe('blob');
+    expect(() =>
+      parseEnv({ ...vercelReady, BLOB_READ_WRITE_TOKEN: '' }),
+    ).toThrow(/BLOB_READ_WRITE_TOKEN: obrigatória/);
+    expect(() => parseEnv({ ...vercelReady, STORAGE_DRIVER: 'disk' })).toThrow(
+      /STORAGE_DRIVER: precisa ser blob/,
+    );
   });
 
   it('variável em branco equivale a não definida', () => {

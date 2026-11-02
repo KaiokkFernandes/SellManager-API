@@ -7,6 +7,7 @@ import {
   login,
   createTestContext,
   defaultUser,
+  PNG,
   resetDatabase,
   TestContext,
 } from './helpers';
@@ -219,18 +220,24 @@ describe('Usuários, sessão, perfil e senha', () => {
       })
       .expect(400);
 
+    // o tipo declarado não basta: o conteúdo precisa ser mesmo uma imagem
+    await request(ctx.app)
+      .patch('/api/users/avatar')
+      .set('Authorization', auth)
+      .attach('avatar', Buffer.from('<script>alert(1)</script>'), {
+        filename: 'x.png',
+        contentType: 'image/png',
+      })
+      .expect(400);
+
     const response = await request(ctx.app)
       .patch('/api/users/avatar')
       .set('Authorization', auth)
-      .attach('avatar', Buffer.from('fake-png'), {
-        filename: 'a.png',
-        contentType: 'image/png',
-      })
+      .attach('avatar', PNG, { filename: 'a.png', contentType: 'image/png' })
       .expect(200);
 
-    expect(response.body.avatar).toMatch(/^[a-f0-9]{32}\.png$/);
-    await request(ctx.app)
-      .get(`/api/files/${response.body.avatar as string}`)
-      .expect(200);
+    const url = response.body.avatar_url as string;
+    expect(url).toMatch(/\/api\/files\/[0-9a-f-]{36}\.png$/);
+    await request(ctx.app).get(new URL(url).pathname).expect(200);
   });
 });

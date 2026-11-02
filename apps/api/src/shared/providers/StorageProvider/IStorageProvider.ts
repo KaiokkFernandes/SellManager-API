@@ -1,8 +1,17 @@
+import type { ImageMimeType } from '@sellmanager/shared';
+
+export interface IFileToStore {
+  content: Buffer;
+  /** Tipo confirmado pelo conteúdo do arquivo. */
+  contentType: ImageMimeType;
+}
+
 export interface IStorageProvider {
-  /** Move um arquivo recebido (pasta temporária) para o armazenamento definitivo. */
-  saveFile(file: string): Promise<string>;
-  /** Remove o arquivo; não falha se ele já não existir. */
-  deleteFile(file: string): Promise<void>;
-  /** Descarta um upload ainda na pasta temporária (ex.: o recurso não existe). */
-  discardFile(file: string): Promise<void>;
+  /** Guarda o arquivo e devolve a URL pública, que é o que vai para o banco. */
+  save(file: IFileToStore): Promise<string>;
+  /**
+   * Remove o arquivo da URL. Nunca falha: o registro já foi atualizado, e um
+   * arquivo órfão é melhor do que devolver erro depois de salvar.
+   */
+  delete(url: string): Promise<void>;
 }

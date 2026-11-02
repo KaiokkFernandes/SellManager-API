@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FakeCategoriesRepository } from '@modules/categories/fakes/FakeCategoriesRepository';
 import { FakeOrdersRepository } from '@modules/orders/fakes/FakeOrdersRepository';
 import { FakeStorageProvider } from '@shared/providers/StorageProvider/FakeStorageProvider';
@@ -256,41 +256,57 @@ describe('Product services', () => {
   });
 
   describe('imagem', () => {
+    const image = {
+      content: Buffer.from('x'),
+      contentType: 'image/png' as const,
+    };
+
     it('envia, substitui (apagando a anterior) e remove', async () => {
       const created = await createProduct(keyboard);
       const service = new UpdateProductImageService(repository, storage);
 
-      await service.execute({ id: created.id, imageFileName: 'a.png' });
-      const replaced = await service.execute({
-        id: created.id,
-        imageFileName: 'b.webp',
-      });
-      expect(replaced.image).toBe('b.webp');
-      expect([...storage.files]).toEqual(['b.webp']);
+      await service.execute({ id: created.id, image });
+      const replaced = await service.execute({ id: created.id, image });
+      expect([...storage.files]).toEqual([replaced.image]);
 
-      const removed = await service.execute({
-        id: created.id,
-        imageFileName: null,
-      });
+      const removed = await service.execute({ id: created.id, image: null });
       expect(removed.image).toBeNull();
       expect(storage.files.size).toBe(0);
     });
 
-    it('produto inexistente: 404 e descarta o upload temporário', async () => {
+    it('produto inexistente: 404 sem enviar nada ao armazenamento', async () => {
       await expect(
         new UpdateProductImageService(repository, storage).execute({
           id: 'nao-existe',
-          imageFileName: 'a.png',
+          image,
         }),
       ).rejects.toMatchObject({ statusCode: 404 });
-      expect([...storage.discarded]).toEqual(['a.png']);
+      expect(storage.files.size).toBe(0);
+    });
+
+    it('se o banco falhar, mantém a imagem anterior e apaga a nova', async () => {
+      const created = await createProduct(keyboard);
+      const service = new UpdateProductImageService(repository, storage);
+      const { image: previous } = await service.execute({
+        id: created.id,
+        image,
+      });
+      vi.spyOn(repository, 'save').mockRejectedValueOnce(
+        new Error('banco fora do ar'),
+      );
+
+      await expect(service.execute({ id: created.id, image })).rejects.toThrow(
+        'banco fora do ar',
+      );
+
+      expect([...storage.files]).toEqual([previous]);
     });
 
     it('excluir o produto apaga a imagem', async () => {
       const created = await createProduct(keyboard);
       await new UpdateProductImageService(repository, storage).execute({
         id: created.id,
-        imageFileName: 'a.png',
+        image,
       });
 
       await new DeleteProductService(

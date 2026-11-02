@@ -1,4 +1,4 @@
-import type { routes } from '@sellmanager/shared';
+import type { ImageMimeType, routes } from '@sellmanager/shared';
 import AppError from '@shared/errors/AppError';
 import type { RouteHandler } from '@shared/http/contract/mountRoute';
 import { AuthenticateUserService } from '../../../services/AuthenticateUserService';
@@ -33,13 +33,10 @@ interface UsersServices {
 type Routes = typeof routes;
 
 export class UsersController {
-  constructor(
-    private readonly services: UsersServices,
-    private readonly apiUrl: string,
-  ) {}
+  constructor(private readonly services: UsersServices) {}
 
   private toResponse = (user: Parameters<typeof toUserResponse>[0]) =>
-    toUserResponse(user, this.apiUrl);
+    toUserResponse(user);
 
   public create: RouteHandler<Routes['users']['create']> = async ({
     input,
@@ -111,7 +108,10 @@ export class UsersController {
 
     const user = await this.services.updateAvatar.execute({
       user_id: request.user.id,
-      avatarFileName: request.file.filename,
+      avatar: {
+        content: request.file.buffer,
+        contentType: request.file.mimetype as ImageMimeType,
+      },
     });
     reply(200, this.toResponse(user));
   };

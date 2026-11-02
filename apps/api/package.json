@@ -55,6 +55,7 @@
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^9.1.0",
     "@sellmanager/shared": "workspace:*",
+    "@vercel/blob": "^2.8.2",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "date-fns": "^4.4.0",

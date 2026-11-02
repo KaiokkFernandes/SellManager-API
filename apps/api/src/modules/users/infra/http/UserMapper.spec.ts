@@ -2,8 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { User } from '../../domain/entities/User';
 import { toUserResponse } from './UserMapper';
 
-const apiUrl = 'http://api.test';
-
 function makeUser(overrides: Partial<User> = {}): User {
   return {
     id: 'user-id',
@@ -22,16 +20,16 @@ function makeUser(overrides: Partial<User> = {}): User {
 
 describe('toUserResponse', () => {
   it('não expõe o hash da senha', () => {
-    expect(toUserResponse(makeUser(), apiUrl)).not.toHaveProperty('password');
+    expect(toUserResponse(makeUser())).not.toHaveProperty('password');
   });
 
-  it('monta avatar_url quando o usuário tem avatar', () => {
-    const response = toUserResponse(makeUser({ avatar: 'abc.png' }), apiUrl);
+  it('avatar_url é a URL pública guardada no banco', () => {
+    const url = 'https://blob.test/abc.png';
 
-    expect(response.avatar_url).toBe('http://api.test/api/files/abc.png');
+    expect(toUserResponse(makeUser({ avatar: url })).avatar_url).toBe(url);
   });
 
   it('avatar_url é null quando o usuário não tem avatar', () => {
-    expect(toUserResponse(makeUser(), apiUrl).avatar_url).toBeNull();
+    expect(toUserResponse(makeUser()).avatar_url).toBeNull();
   });
 });

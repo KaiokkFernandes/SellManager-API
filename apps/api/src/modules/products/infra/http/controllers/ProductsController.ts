@@ -1,4 +1,4 @@
-import type { routes } from '@sellmanager/shared';
+import type { ImageMimeType, routes } from '@sellmanager/shared';
 import AppError from '@shared/errors/AppError';
 import type { RouteHandler } from '@shared/http/contract/mountRoute';
 import { fromCents } from '@shared/http/money';
@@ -29,13 +29,9 @@ interface ProductsServices {
 type Routes = typeof routes.products;
 
 export class ProductsController {
-  constructor(
-    private readonly services: ProductsServices,
-    private readonly apiUrl: string,
-  ) {}
+  constructor(private readonly services: ProductsServices) {}
 
-  private toResponse = (product: Product) =>
-    toProductResponse(product, this.apiUrl);
+  private toResponse = (product: Product) => toProductResponse(product);
 
   public list: RouteHandler<Routes['list']> = async ({ input, reply }) => {
     const { page, limit, q, category_id, sort, order } = input.query;
@@ -105,7 +101,10 @@ export class ProductsController {
     }
     const product = await this.services.updateImage.execute({
       id: input.params.id,
-      imageFileName: request.file.filename,
+      image: {
+        content: request.file.buffer,
+        contentType: request.file.mimetype as ImageMimeType,
+      },
     });
     reply(200, this.toResponse(product));
   };
@@ -116,7 +115,7 @@ export class ProductsController {
   }) => {
     const product = await this.services.updateImage.execute({
       id: input.params.id,
-      imageFileName: null,
+      image: null,
     });
     reply(200, this.toResponse(product));
   };

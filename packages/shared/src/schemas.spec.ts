@@ -88,7 +88,7 @@ describe('contrato de rotas', () => {
       400, 401, 403, 413, 429, 500, 503,
     ]);
     expect(routes.users.updateAvatar.errorStatuses).toEqual([
-      400, 401, 500, 503,
+      400, 401, 413, 500, 503,
     ]);
     expect(routes.profile.show.errorStatuses).toEqual([401, 404, 500, 503]);
   });

@@ -5,7 +5,8 @@ import { z } from 'zod';
  * e a validação do front usam estas mesmas constantes.
  */
 export const IMAGE_UPLOAD = {
-  maxBytes: 2 * 1024 * 1024,
+  // a requisição inteira precisa caber nos 4,5 MB da Vercel
+  maxBytes: 4 * 1024 * 1024,
   mimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
 } as const;
 
@@ -19,6 +20,6 @@ export function isAllowedImageType(type: string): type is ImageMimeType {
 export function imageFileSchema() {
   return z.string().meta({
     format: 'binary',
-    description: 'Imagem jpeg, png ou webp até 2 MB',
+    description: 'Imagem jpeg, png ou webp até 4 MB',
   });
 }

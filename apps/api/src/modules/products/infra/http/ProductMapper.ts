@@ -6,10 +6,7 @@ import { toCents } from '@shared/http/money';
 import { isBelowMinStock, Product } from '../../domain/entities/Product';
 import { StockMovement } from '../../domain/entities/StockMovement';
 
-export function toProductResponse(
-  product: Product,
-  apiUrl: string,
-): ProductResponse {
+export function toProductResponse(product: Product): ProductResponse {
   return {
     id: product.id,
     name: product.name,
@@ -18,7 +15,7 @@ export function toProductResponse(
     min_stock: product.min_stock,
     below_min_stock: isBelowMinStock(product),
     category: product.category ? { ...product.category } : null,
-    image_url: product.image ? `${apiUrl}/api/files/${product.image}` : null,
+    image_url: product.image,
     created_at: product.created_at.toISOString(),
     updated_at: product.updated_at.toISOString(),
   };

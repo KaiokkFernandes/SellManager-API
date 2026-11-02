@@ -31,6 +31,6 @@ export class DeleteProductService {
     }
 
     await this.productsRepository.remove(product);
-    if (product.image) await this.storageProvider.deleteFile(product.image);
+    if (product.image) await this.storageProvider.delete(product.image);
   }
 }

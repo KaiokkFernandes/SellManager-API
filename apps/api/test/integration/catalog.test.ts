@@ -5,8 +5,10 @@ import {
   authenticate,
   closeDatabase,
   createTestContext,
+  PNG,
   resetDatabase,
   TestContext,
+  WEBP,
 } from './helpers';
 import { AppDataSource } from '@shared/infra/typeorm/data-source';
 
@@ -238,17 +240,17 @@ describe('Produtos e clientes', () => {
       const first = await request(ctx.app)
         .patch(`/api/products/${id}/image`)
         .set('Authorization', auth)
-        .attach('image', Buffer.from('png-1'), png)
+        .attach('image', PNG, png)
         .expect(200);
       const firstUrl = first.body.image_url as string;
-      expect(firstUrl).toMatch(/\/files\/[a-f0-9]{32}\.png$/);
+      expect(firstUrl).toMatch(/\/api\/files\/[0-9a-f-]{36}\.png$/);
       const firstPath = new URL(firstUrl).pathname;
       await request(ctx.app).get(firstPath).expect(200);
 
       const second = await request(ctx.app)
         .patch(`/api/products/${id}/image`)
         .set('Authorization', auth)
-        .attach('image', Buffer.from('webp-2'), {
+        .attach('image', WEBP, {
           filename: 'foto.webp',
           contentType: 'image/webp',
         })
@@ -283,14 +285,21 @@ describe('Produtos e clientes', () => {
         .expect(400);
       expect(wrongType.body.code).toBe('INVALID_UPLOAD');
 
+      const disguised = await request(ctx.app)
+        .patch(`/api/products/${id}/image`)
+        .set('Authorization', auth)
+        .attach('image', Buffer.from('%PDF-1.7'), png)
+        .expect(400);
+      expect(disguised.body.code).toBe('INVALID_UPLOAD');
+
       const tooLarge = await request(ctx.app)
         .patch(`/api/products/${id}/image`)
         .set('Authorization', auth)
         .attach('image', Buffer.alloc(IMAGE_UPLOAD.maxBytes + 1), png)
-        .expect(400);
+        .expect(413);
       expect(tooLarge.body).toMatchObject({
-        code: 'INVALID_UPLOAD',
-        details: { reason: 'LIMIT_FILE_SIZE' },
+        code: 'PAYLOAD_TOO_LARGE',
+        message: 'File exceeds the 4 MB limit',
       });
 
       await request(ctx.app)
@@ -303,12 +312,12 @@ describe('Produtos e clientes', () => {
       const missing = '00000000-0000-4000-8000-000000000000';
       await request(ctx.app)
         .patch(`/api/products/${missing}/image`)
-        .attach('image', Buffer.from('x'), png)
+        .attach('image', PNG, png)
         .expect(401);
       await request(ctx.app)
         .patch(`/api/products/${missing}/image`)
         .set('Authorization', auth)
-        .attach('image', Buffer.from('x'), png)
+        .attach('image', PNG, png)
         .expect(404);
     });
   });

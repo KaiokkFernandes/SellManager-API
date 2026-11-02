@@ -2,7 +2,12 @@ import { ImageOff, ImageUp, Loader2, Trash2 } from 'lucide-react';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { getErrorMessage } from '@/lib/apiErrors';
-import { IMAGE_ACCEPT, validateImageFile } from '@/lib/imageFile';
+import {
+  getUploadErrorMessage,
+  IMAGE_ACCEPT,
+  IMAGE_MAX_MB,
+  validateImageFile,
+} from '@/lib/imageFile';
 
 interface ImageUploadProps {
   /** URL da imagem atual (null = sem imagem). */
@@ -73,7 +78,7 @@ export function ImageUpload({
       await onUpload(file, setProgress);
       clearSelection();
     } catch (caught) {
-      setError(getErrorMessage(caught));
+      setError(getUploadErrorMessage(caught));
     } finally {
       setProgress(null);
     }
@@ -130,7 +135,7 @@ export function ImageUpload({
           className="text-sm file:mr-3 file:rounded-md file:border file:bg-background file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-accent"
         />
         <p id={statusId} className="text-xs text-muted-foreground">
-          JPEG, PNG ou WebP, até 2 MB.
+          JPEG, PNG ou WebP, até {IMAGE_MAX_MB} MB.
         </p>
 
         {progress !== null ? (
