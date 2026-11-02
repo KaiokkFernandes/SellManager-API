@@ -19,12 +19,17 @@ describe('Aplicação', () => {
     });
   });
 
-  it('JSON malformado responde 400', async () => {
-    await request(ctx.app)
+  it('JSON malformado responde 400 sem repetir o que foi enviado', async () => {
+    const response = await request(ctx.app)
       .post('/sessions')
       .set('Content-Type', 'application/json')
-      .send('{bad json')
+      .send('{"password": segredo-digitado}')
       .expect(400);
+    expect(response.body).toEqual({
+      status: 'error',
+      code: 'BAD_REQUEST',
+      message: 'Malformed JSON body',
+    });
   });
 
   it('serve a documentação OpenAPI', async () => {

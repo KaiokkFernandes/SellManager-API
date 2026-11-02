@@ -10,7 +10,7 @@ import { pinoHttp } from 'pino-http';
 import swaggerUi from 'swagger-ui-express';
 import uploadConfig from '@config/upload';
 import { Container } from '@shared/container';
-import { logger } from '@shared/logger';
+import { logger, requestSerializers } from '@shared/logger';
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
 import { createRoutes } from './routes';
 
@@ -19,7 +19,7 @@ export function createApp(container: Container): Express {
 
   app.set('trust proxy', env.TRUST_PROXY);
 
-  app.use(pinoHttp({ logger }));
+  app.use(pinoHttp({ logger, serializers: requestSerializers }));
   // cross-origin: o front-end (outra origem) precisa carregar os avatares em /files
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   app.use(

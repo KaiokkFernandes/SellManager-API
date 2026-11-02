@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { DataSource } from 'typeorm';
+import { DataSource, LoggerOptions } from 'typeorm';
 import { env } from '@config/env';
 import { CategorySchema } from '@modules/categories/infra/typeorm/schemas/CategorySchema';
 import { CustomerSchema } from '@modules/customers/infra/typeorm/schemas/CustomerSchema';
@@ -60,5 +60,11 @@ export const AppDataSource = new DataSource({
     AddOrderSalesFields1761351500000,
   ],
   synchronize: false,
-  logging: env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+  // o logger do TypeORM imprime os parâmetros da consulta: em produção, erros
+  // chegam ao log só pelo errorHandler, já sem dados pessoais
+  logging: {
+    development: ['error', 'warn'] as LoggerOptions,
+    test: ['error'] as LoggerOptions,
+    production: false,
+  }[env.NODE_ENV],
 });

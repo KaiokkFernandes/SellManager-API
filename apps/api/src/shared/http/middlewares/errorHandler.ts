@@ -69,7 +69,7 @@ export function errorHandler(
     sendError(response, 400, {
       status: 'error',
       code: 'INVALID_UPLOAD',
-      message: error.message,
+      message: 'Invalid upload',
       details: { reason: error.code },
     });
     return;
@@ -102,12 +102,12 @@ export function errorHandler(
     return;
   }
 
-  // Erros do body-parser (JSON malformado, payload grande demais)
+  // Erros do body-parser. Texto fixo: o original repete trechos do corpo enviado.
   if (error.type === 'entity.parse.failed') {
     sendError(response, 400, {
       status: 'error',
       code: 'BAD_REQUEST',
-      message: error.message,
+      message: 'Malformed JSON body',
     });
     return;
   }
@@ -115,7 +115,7 @@ export function errorHandler(
     sendError(response, 413, {
       status: 'error',
       code: 'PAYLOAD_TOO_LARGE',
-      message: error.message,
+      message: 'Request body is too large',
     });
     return;
   }
