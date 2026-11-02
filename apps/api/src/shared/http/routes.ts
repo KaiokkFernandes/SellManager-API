@@ -9,11 +9,14 @@ import { registerUsersRoutes } from '@modules/users/infra/http/routes';
 import { Container } from '@shared/container';
 import { createRouteMounter } from './contract/mountRoute';
 import { responseValidationMode } from './contract/responseValidation';
+import { databaseReady } from './middlewares/databaseReady';
 import { ensureAuthenticated } from './middlewares/ensureAuthenticated';
 import { authRateLimiter } from './middlewares/rateLimiter';
 
 export function createRoutes(container: Container): Router {
   const router = Router();
+
+  router.use(databaseReady(container.database));
 
   // Todas as rotas vêm do contrato de @sellmanager/shared.
   const mount = createRouteMounter(router, {

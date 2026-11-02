@@ -23,6 +23,8 @@ const MESSAGES: Record<
   RESOURCE_IN_USE: 'Este item está em uso e não pode ser removido.',
   PAYLOAD_TOO_LARGE: 'Os dados enviados são grandes demais.',
   RATE_LIMITED: 'Muitas tentativas. Aguarde um instante e tente de novo.',
+  SERVICE_UNAVAILABLE:
+    'O servidor está indisponível no momento. Tente novamente em instantes.',
   INTERNAL_ERROR: 'Algo deu errado no servidor. Tente novamente.',
   NETWORK_ERROR:
     'Não foi possível conectar ao servidor. Verifique sua conexão.',

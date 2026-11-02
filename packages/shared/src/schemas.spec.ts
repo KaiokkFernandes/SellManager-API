@@ -78,17 +78,19 @@ describe('contrato de rotas', () => {
 
     // permissão específica => 403; 'authenticated' => só 401
     expect(routes.products.show.errorStatuses).toEqual([
-      400, 401, 403, 404, 500,
+      400, 401, 403, 404, 500, 503,
     ]);
     expect(routes.orders.create.errorStatuses).toEqual([
-      400, 401, 403, 404, 409, 413, 500,
+      400, 401, 403, 404, 409, 413, 500, 503,
     ]);
     // 403 = conta desativada (declarado na rota)
     expect(routes.sessions.create.errorStatuses).toEqual([
-      400, 401, 403, 413, 429, 500,
+      400, 401, 403, 413, 429, 500, 503,
     ]);
-    expect(routes.users.updateAvatar.errorStatuses).toEqual([400, 401, 500]);
-    expect(routes.profile.show.errorStatuses).toEqual([401, 404, 500]);
+    expect(routes.users.updateAvatar.errorStatuses).toEqual([
+      400, 401, 500, 503,
+    ]);
+    expect(routes.profile.show.errorStatuses).toEqual([401, 404, 500, 503]);
   });
 
   it('toda rota autenticada declara a permissão', async () => {

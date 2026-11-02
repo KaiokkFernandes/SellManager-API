@@ -83,6 +83,7 @@ export const API_ERROR_CODES = [
   'RESOURCE_IN_USE',
   'PAYLOAD_TOO_LARGE',
   'RATE_LIMITED',
+  'SERVICE_UNAVAILABLE',
   'INTERNAL_ERROR',
 ] as const;
 

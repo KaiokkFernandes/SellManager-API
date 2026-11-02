@@ -1,5 +1,6 @@
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { createApp } from '@shared/http/createApp';
 import { closeDatabase, createTestContext, TestContext } from './helpers';
 
 describe('Aplicação', () => {
@@ -32,10 +33,35 @@ describe('Aplicação', () => {
     });
   });
 
+  it('sem banco, responde 503 no formato do contrato e sem detalhes', async () => {
+    const app = createApp({
+      ...ctx.container,
+      database: {
+        ready: () => Promise.reject(new Error('senha incorreta no host x')),
+        ping: () => Promise.reject(new Error('senha incorreta no host x')),
+      },
+    });
+
+    const response = await request(app).get('/products').expect(503);
+
+    expect(response.body).toEqual({
+      status: 'error',
+      code: 'SERVICE_UNAVAILABLE',
+      message: 'Service temporarily unavailable',
+    });
+  });
+
   it('serve a documentação OpenAPI', async () => {
     const response = await request(ctx.app).get('/docs.json').expect(200);
     expect(response.body.openapi).toBe('3.1.0');
     await request(ctx.app).get('/docs/').expect(200);
+  });
+
+  it('em produção a documentação não é servida', async () => {
+    const app = createApp(ctx.container, { docs: false });
+
+    await request(app).get('/docs.json').expect(404);
+    await request(app).get('/docs/').expect(404);
   });
 
   it('envia headers de segurança', async () => {

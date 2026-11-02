@@ -3,7 +3,7 @@ import { Express } from 'express';
 import type { Role } from '@sellmanager/shared';
 import { CreateUserService } from '@modules/users/services/CreateUserService';
 import { Container, makeContainer } from '@shared/container';
-import { createApp } from '@shared/http/app';
+import { createApp } from '@shared/http/createApp';
 import { AppDataSource } from '@shared/infra/typeorm/data-source';
 import { FakeMailProvider } from '@shared/providers/MailProvider/FakeMailProvider';
 

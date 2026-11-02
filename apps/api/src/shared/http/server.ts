@@ -2,8 +2,10 @@ import { env } from '@config/env';
 import { makeContainer } from '@shared/container';
 import { AppDataSource } from '@shared/infra/typeorm/data-source';
 import { logger } from '@shared/logger';
-import { createApp } from './app';
+import { createApp } from './createApp';
 
+// Processo sempre ligado (desenvolvimento e `pnpm start`). Na Vercel a entrada
+// é src/index.ts, sem listen.
 async function bootstrap(): Promise<void> {
   await AppDataSource.initialize();
 

@@ -14,6 +14,7 @@ import { ProductsRepository } from '@modules/products/infra/typeorm/repositories
 import { StockMovementsRepository } from '@modules/products/infra/typeorm/repositories/StockMovementsRepository';
 import { UsersRepository } from '@modules/users/infra/typeorm/repositories/UsersRepository';
 import { UserTokensRepository } from '@modules/users/infra/typeorm/repositories/UserTokensRepository';
+import { createDatabaseConnection } from '@shared/infra/typeorm/connection';
 import { BcryptHashProvider } from '@shared/providers/HashProvider/BcryptHashProvider';
 import { IHashProvider } from '@shared/providers/HashProvider/IHashProvider';
 import { EtherealMailProvider } from '@shared/providers/MailProvider/EtherealMailProvider';
@@ -88,6 +89,7 @@ export function makeContainer(
 
   return {
     config: env,
+    database: createDatabaseConnection(dataSource),
     providers,
     repositories,
     ordersUnitOfWork: new OrdersUnitOfWork(dataSource),
