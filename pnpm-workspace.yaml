@@ -9,6 +9,8 @@ allowBuilds:
 overrides:
   # picomatch vulnerável trazido pelo tsc-alias (ferramenta de build)
   tsc-alias>picomatch: ^2.3.2
+  # zod vulnerável (GHSA-mrhx-c7xc-m3w5) trazido pelo SDK do Blob, via @vercel/oidc
+  '@vercel/cli-config>zod': ^4.6.7
 
 peerDependencyRules:
   allowedVersions:
