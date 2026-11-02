@@ -13,7 +13,7 @@ import {
 } from '@sellmanager/api-client';
 
 const api = createApiClient({
-  baseUrl: import.meta.env.VITE_API_URL,
+  baseUrl: '/api', // prefixo das rotas; URL absoluta se a API ficar em outro domínio
   getToken: () => localStorage.getItem('token'),
   onUnauthorized: () => logout(), // 401 on an authenticated request
 });

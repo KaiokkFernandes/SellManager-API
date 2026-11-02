@@ -22,7 +22,7 @@
   interfaces, injeção de dependência manual.
 - Testes: unitários para os services (repositórios fake) e de integração das
   rotas principais (supertest).
-- ESLint + Prettier, `.env.example`, documentação OpenAPI em `/docs`.
+- ESLint + Prettier, `.env.example`, documentação OpenAPI em `/api/docs` (só fora de produção).
 - Front-end (apps/web): login, dashboard, clientes, produtos e pedidos. Siga as convenções de
   `apps/web/README.md`: formulários sempre com schemas de `packages/shared`, estado de lista
   na URL (`listSearchSchema`), features não se importam entre si, e todo acesso ao token só
@@ -38,6 +38,7 @@
 - Primeiro ADMIN em produção: `pnpm --filter api create-admin:prod` (não há cadastro público)
 - Matriz de permissões no README: `pnpm --filter api docs:permissions` (um teste falha se desatualizada)
 - E2E: `pnpm --filter web e2e` (Playwright contra a API real; gera `apps/web/docs/screenshots`)
+- Publicação: passo a passo em `DEPLOY.md`; migrations de produção em `pnpm --filter api migration:run:prod`
 - Um app só: `pnpm --filter api <script>` / `pnpm --filter web <script>`
 - Migrations: `pnpm --filter api migration:run` / `migration:revert`; novas migrations
   precisam ser registradas em `apps/api/src/shared/infra/typeorm/data-source.ts`
@@ -63,6 +64,12 @@
   `BUSINESS_TIMEZONE`; SQL só em `modules/metrics/infra/typeorm/salesSql.ts`; agregar no banco
   (nunca carregar pedidos em memória); CSV via cursor (`streamRows`) e `download` do contrato.
 - Dinheiro em centavos inteiros (`*_cents`); erros `{ status, code, message, issues?, details? }`.
+- Rotas sob `API_BASE_PATH` (`/api`): os paths do contrato são relativos a ele. Entrada da Vercel em
+  `apps/api/src/index.ts` (sem listen); `shared/http/server.ts` é o processo local.
+- Vercel: não reintroduzir dependência de disco nem de `dist/` na função. Pacote carregado
+  dinamicamente precisa de import explícito (ex.: `pg`), senão não entra na função. Conferir com
+  `vercel build` depois de mexer em `vercel.json` ou nas dependências da API.
+- Arquivos: só via `IStorageProvider` (Blob em produção, disco em dev); o banco guarda a URL pública.
 - Cada módulo da api (`apps/api/src/modules/<m>`) tem `domain/` (interfaces puras),
   `services/` (casos de uso), `fakes/` (repositórios em memória) e `infra/{typeorm,http}`.
 - Implementações concretas só são instanciadas em `apps/api/src/shared/container`.

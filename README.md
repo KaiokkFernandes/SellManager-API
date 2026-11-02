@@ -26,7 +26,7 @@ both the API and the front-end import.
 
 | Package                   | What it is                                                                                   | Docs                                                           |
 | ------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| `@sellmanager/api`        | Users, products, customers and orders; JWT auth, OpenAPI at `/docs`                          | [apps/api/README.md](apps/api/README.md)                       |
+| `@sellmanager/api`        | Users, products, customers and orders; JWT auth, OpenAPI at `/api/docs`                      | [apps/api/README.md](apps/api/README.md)                       |
 | `@sellmanager/web`        | Front-end: login, dashboard, customers, products (with images) and orders                    | [apps/web/README.md](apps/web/README.md)                       |
 | `@sellmanager/shared`     | The contract: request schemas, response DTOs, error format and the registry of every route   | [packages/shared/README.md](packages/shared/README.md)         |
 | `@sellmanager/api-client` | `openapi-fetch` client typed from `apps/api/openapi.json`: JWT, 401 callback, errors, upload | [packages/api-client/README.md](packages/api-client/README.md) |
@@ -43,7 +43,7 @@ packages/shared  (zod schemas + route registry)
 apps/api         mountRoute: routing, validation and typed replies from the registry
       │  openapi:generate
       ▼
-apps/api/openapi.json   (committed; served at /docs)
+apps/api/openapi.json   (committed; generates the client)
       │  generate (openapi-typescript)
       ▼
 packages/api-client     (typed openapi-fetch client)
@@ -320,12 +320,12 @@ pnpm dev
 
 `pnpm dev` builds `@sellmanager/shared` once, then runs all of these in parallel:
 
-| URL                        | App                                         |
-| -------------------------- | ------------------------------------------- |
-| http://localhost:3333      | API (`apps/api`)                            |
-| http://localhost:3333/docs | API docs (Swagger UI)                       |
-| http://localhost:3000      | Web (`apps/web`)                            |
-| http://localhost:8025      | Mailpit: inbox for password-recovery emails |
+| URL                            | App                                         |
+| ------------------------------ | ------------------------------------------- |
+| http://localhost:3333          | API (`apps/api`)                            |
+| http://localhost:3333/api/docs | API docs (Swagger UI)                       |
+| http://localhost:3000          | Web (`apps/web`)                            |
+| http://localhost:8025          | Mailpit: inbox for password-recovery emails |
 
 `shared` also runs in watch mode, so editing a schema rebuilds it, and the API restarts by itself.
 
@@ -345,16 +345,18 @@ pnpm --filter shared build
 
 `turbo run dev --filter=@sellmanager/web...` runs the web app together with everything it depends on.
 
-API docs (Swagger UI, generated from the contract): http://localhost:3333/docs
+API docs (Swagger UI, generated from the contract, development only): http://localhost:3333/api/docs
+
+To publish on Vercel with Neon, follow [`DEPLOY.md`](DEPLOY.md).
 
 ## Environment variables
 
 Each app has its own `.env.example`, and the variables are documented there.
 
-| App        | File                                             | Variables                                                                                                                                                                                                     |
-| ---------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/api` | [`apps/api/.env.example`](apps/api/.env.example) | `NODE_ENV`, `PORT`, `APP_API_URL`, `APP_WEB_URL`, `BUSINESS_TIMEZONE`, `DB_*`, `JWT_SECRET` (required), `JWT_EXPIRES_IN`, `BCRYPT_SALT_ROUNDS`, `CORS_ORIGIN`, `TRUST_PROXY`, `MAIL_*`, `SMTP_*`, `LOG_LEVEL` |
-| `apps/web` | [`apps/web/.env.example`](apps/web/.env.example) | `VITE_API_URL`: `/api` in dev (Vite proxy) or the API URL. Only `VITE_*` variables reach the browser                                                                                                          |
+| App        | File                                             | Variables                                                                                                                                                                                                                                                                                                      |
+| ---------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/api` | [`apps/api/.env.example`](apps/api/.env.example) | `NODE_ENV`, `PORT`, `APP_API_URL`, `APP_WEB_URL`, `BUSINESS_TIMEZONE`, `DB_*`, `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `REDIS_URL`, `STORAGE_DRIVER`, `BLOB_READ_WRITE_TOKEN`, `JWT_SECRET` (required), `JWT_EXPIRES_IN`, `BCRYPT_SALT_ROUNDS`, `CORS_ORIGIN`, `TRUST_PROXY`, `MAIL_*`, `SMTP_*`, `LOG_LEVEL` |
+| `apps/web` | [`apps/web/.env.example`](apps/web/.env.example) | `VITE_API_URL`: optional, defaults to `/api` (Vite proxy in dev, same domain in production). Only `VITE_*` variables reach the browser                                                                                                                                                                         |
 
 - The API checks its variables with zod at startup and refuses to start if one is invalid.
   The full table is in the [API README](apps/api/README.md#environment-variables).
@@ -433,7 +435,7 @@ Example: a `GET /products/{id}/stock` route.
    - Register the route in `routes/index.ts` with `mount(routes.products.stock, controller.stock)`.
      Extra middlewares, such as multer, go after the handler.
 4. **Generate:** run `pnpm openapi:generate`, or `pnpm build`. Commit `apps/api/openapi.json`
-   together with the change. `/docs` shows the new route right away.
+   together with the change. `/api/docs` shows the new route right away.
 5. **Use it in the front-end:** `await unwrap(api.GET('/products/{id}/stock', { params: { path: { id } } }))`
    is typed by path, params and response. `pnpm build` regenerates the api-client types.
 6. **Tests:** add an integration test in `apps/api/test/integration`. The response check in the

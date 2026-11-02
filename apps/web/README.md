@@ -85,13 +85,13 @@ largura de qualquer forma.
 
 ### Variáveis de ambiente
 
-Validadas com zod em [`src/lib/env.ts`](src/lib/env.ts); se faltar ou for inválida, o app
-falha ao iniciar com uma mensagem clara. Veja [`.env.example`](.env.example).
+Validadas com zod em [`src/lib/env.ts`](src/lib/env.ts); se for inválida, o app falha ao
+iniciar com uma mensagem clara. Veja [`.env.example`](.env.example).
 
-| Variável           | Descrição                                                  |
-| ------------------ | ---------------------------------------------------------- |
-| `VITE_API_URL`     | `/api` em dev (proxy) ou a URL absoluta da API em produção |
-| `API_PROXY_TARGET` | só dev: destino do proxy (padrão `http://localhost:3333`)  |
+| Variável           | Descrição                                                       |
+| ------------------ | --------------------------------------------------------------- |
+| `VITE_API_URL`     | Opcional. Padrão `/api`; absoluta só com a API em outro domínio |
+| `API_PROXY_TARGET` | só dev: destino do proxy (padrão `http://localhost:3333`)       |
 
 ## Estrutura e regra de dependência
 
