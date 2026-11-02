@@ -100,9 +100,9 @@ export function makeContainer(
   return {
     config: env,
     database: createDatabaseConnection(dataSource),
-    rateLimitStore: env.REDIS_URL
-      ? createRateLimitStore(env.REDIS_URL)
-      : undefined,
+    // só o HTTP usa: abrir a conexão aqui deixaria presos os comandos (create-admin)
+    makeRateLimitStore: () =>
+      env.REDIS_URL ? createRateLimitStore(env.REDIS_URL) : undefined,
     providers,
     repositories,
     ordersUnitOfWork: new OrdersUnitOfWork(dataSource),

@@ -8,7 +8,10 @@
       "buildCommand": "while [ ! -f pnpm-workspace.yaml ] && [ \"$PWD\" != / ]; do cd ..; done && bash scripts/vercel-run.sh node_modules/.bin/turbo run build --filter=@sellmanager/web",
       "outputDirectory": "dist",
       "rewrites": [
-        { "source": "/((?!assets/).*)", "destination": "/index.html" }
+        {
+          "source": "/((?!assets/).*)",
+          "destination": "/index.html"
+        }
       ],
       "headers": [
         {
@@ -27,8 +30,14 @@
               "key": "Content-Security-Policy",
               "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.public.blob.vercel-storage.com; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
             },
-            { "key": "X-Content-Type-Options", "value": "nosniff" },
-            { "key": "X-Frame-Options", "value": "DENY" },
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "X-Frame-Options",
+              "value": "DENY"
+            },
             {
               "key": "Referrer-Policy",
               "value": "strict-origin-when-cross-origin"
@@ -48,11 +57,26 @@
       "installCommand": "while [ ! -f pnpm-workspace.yaml ] && [ \"$PWD\" != / ]; do cd ..; done && bash scripts/vercel-run.sh pnpm install --frozen-lockfile",
       "buildCommand": "while [ ! -f pnpm-workspace.yaml ] && [ \"$PWD\" != / ]; do cd ..; done && bash scripts/vercel-run.sh bash apps/api/scripts/vercel-build.sh",
       "outputDirectory": ".",
-      "functions": { "src/index.ts": { "maxDuration": 60 } }
+      "functions": {
+        "src/index.ts": {
+          "maxDuration": 60,
+          "excludeFiles": "{apps/api/dist/**,apps/api/scripts/**,apps/api/test/**,apps/api/.turbo/**,apps/api/src/**/*.spec.ts,apps/api/.env*,apps/api/*.mts,apps/api/*.mjs,apps/api/*.md,*.md}"
+        }
+      }
     }
   },
   "rewrites": [
-    { "source": "/api/(.*)", "destination": { "service": "backend" } },
-    { "source": "/(.*)", "destination": { "service": "frontend" } }
+    {
+      "source": "/api/(.*)",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "frontend"
+      }
+    }
   ]
 }

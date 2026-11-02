@@ -26,7 +26,9 @@ export function createRoutes(container: Container): Router {
       container.providers.token,
       container.repositories.users,
     ),
-    rateLimiter: createAuthRateLimiter({ store: container.rateLimitStore }),
+    rateLimiter: createAuthRateLimiter({
+      store: container.makeRateLimitStore(),
+    }),
     responseValidation: responseValidationMode,
   });
 
