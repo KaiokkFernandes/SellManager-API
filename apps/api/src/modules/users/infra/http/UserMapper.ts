@@ -15,7 +15,7 @@ export function toUserResponse(
     avatar: user.avatar,
     role: user.role,
     active: user.active,
-    avatar_url: user.avatar ? `${apiUrl}/files/${user.avatar}` : null,
+    avatar_url: user.avatar ? `${apiUrl}/api/files/${user.avatar}` : null,
     // mesmo valor que o JSON.stringify de Date já produzia
     created_at: user.created_at.toISOString(),
     updated_at: user.updated_at.toISOString(),

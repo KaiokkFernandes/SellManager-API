@@ -18,7 +18,7 @@ export function toProductResponse(
     min_stock: product.min_stock,
     below_min_stock: isBelowMinStock(product),
     category: product.category ? { ...product.category } : null,
-    image_url: product.image ? `${apiUrl}/files/${product.image}` : null,
+    image_url: product.image ? `${apiUrl}/api/files/${product.image}` : null,
     created_at: product.created_at.toISOString(),
     updated_at: product.updated_at.toISOString(),
   };

@@ -58,7 +58,7 @@ describe('matriz de permissões (gerada do mapa)', () => {
   it.each(cases)(
     '$role → $route.method $route.path ($route.permission): permitido=$allowed',
     async ({ role, route, allowed }) => {
-      const path = route.path.replace(/\{\w+\}/g, FAKE_ID);
+      const path = `/api${route.path.replace(/\{\w+\}/g, FAKE_ID)}`;
       const response = await request(ctx.app)
         [route.method](path)
         .set('Authorization', tokens[role])
@@ -80,7 +80,7 @@ describe('matriz de permissões (gerada do mapa)', () => {
   it('rotas "authenticated" (perfil) valem para todos os papéis', async () => {
     for (const role of ROLES) {
       await request(ctx.app)
-        .get('/profile')
+        .get('/api/profile')
         .set('Authorization', tokens[role])
         .expect(200);
     }

@@ -3,6 +3,7 @@ import '@config/zod';
 import express, { Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import { API_BASE_PATH } from '@sellmanager/shared';
 import { env } from '@config/env';
 import { pinoHttp } from 'pino-http';
 import swaggerUi from 'swagger-ui-express';
@@ -33,22 +34,26 @@ export function createApp(
     cors({ origin: env.CORS_ORIGIN.includes('*') ? '*' : env.CORS_ORIGIN }),
   );
   app.use(express.json({ limit: '100kb' }));
-  app.use('/files', express.static(uploadConfig.uploadsFolder));
+  app.use(`${API_BASE_PATH}/files`, express.static(uploadConfig.uploadsFolder));
   // Fora de produção: o documento revela todas as rotas e o mapa de permissões,
   // a API não tem consumidores externos e os arquivos estáticos do Swagger não
   // são servidos na função da Vercel. Gerado em memória: nada é lido do disco.
   if (docs) {
     const openApiDocument = {
       ...generateOpenApiDocument(),
-      servers: [{ url: env.APP_API_URL }],
+      servers: [{ url: `${env.APP_API_URL}${API_BASE_PATH}` }],
     } as swaggerUi.JsonObject;
-    app.get('/docs.json', (_request, response) => {
+    app.get(`${API_BASE_PATH}/docs.json`, (_request, response) => {
       response.json(openApiDocument);
     });
-    app.use('/docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
+    app.use(
+      `${API_BASE_PATH}/docs`,
+      swaggerUi.serve,
+      swaggerUi.setup(openApiDocument),
+    );
   }
 
-  app.use(createRoutes(container));
+  app.use(API_BASE_PATH, createRoutes(container));
   app.use(notFoundHandler);
   app.use(errorHandler);
 

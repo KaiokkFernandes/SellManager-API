@@ -1,6 +1,12 @@
 import type { z } from 'zod';
 import type { Permission } from '../permissions';
 
+/**
+ * Prefixo público de todas as rotas: no mesmo domínio do front, a Vercel envia
+ * /api/* para a API. Os paths do contrato são relativos a ele.
+ */
+export const API_BASE_PATH = '/api';
+
 export type HttpMethod = 'get' | 'post' | 'put' | 'patch' | 'delete';
 export type SuccessStatus = 200 | 201 | 204;
 export type ErrorStatus = 400 | 401 | 403 | 404 | 409 | 413 | 429 | 500 | 503;

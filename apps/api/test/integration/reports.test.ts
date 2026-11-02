@@ -16,7 +16,7 @@ function raw(response: request.Response): string {
   return Buffer.from(response.body as Buffer).toString('utf8');
 }
 
-describe('/reports (CSV)', () => {
+describe('/api/reports (CSV)', () => {
   let ctx: TestContext;
   let admin: string;
   let customerId: string;
@@ -24,7 +24,7 @@ describe('/reports (CSV)', () => {
 
   const csv = (name: string, query: object = OCTOBER, auth = admin) =>
     request(ctx.app)
-      .get(`/reports/${name}`)
+      .get(`/api/reports/${name}`)
       .query(query)
       .set('Authorization', auth)
       .buffer(true)
@@ -48,14 +48,14 @@ describe('/reports (CSV)', () => {
     admin = await authenticate(ctx);
     customerId = (
       await request(ctx.app)
-        .post('/customers')
+        .post('/api/customers')
         .set('Authorization', admin)
         .send({ name: 'João Conceição', email: 'joao@test.com' })
         .expect(201)
     ).body.id as string;
     productId = (
       await request(ctx.app)
-        .post('/products')
+        .post('/api/products')
         .set('Authorization', admin)
         .send({
           name: 'Cabo Ótico',
@@ -72,7 +72,7 @@ describe('/reports (CSV)', () => {
       canceled?: string,
     ) => {
       const created = await request(ctx.app)
-        .post('/orders')
+        .post('/api/orders')
         .set('Authorization', admin)
         .send({
           customer_id: customerId,
@@ -134,7 +134,7 @@ describe('/reports (CSV)', () => {
 
   it('clientes: total comprado e última compra; só quem comprou por padrão', async () => {
     await request(ctx.app)
-      .post('/customers')
+      .post('/api/customers')
       .set('Authorization', admin)
       .send({ name: 'Sem Compras', email: 'nada@test.com' })
       .expect(201);
@@ -167,11 +167,11 @@ describe('/reports (CSV)', () => {
       role: 'SELLER',
     });
     await request(ctx.app)
-      .get('/reports/sales')
+      .get('/api/reports/sales')
       .set('Authorization', seller)
       .expect(403);
     const invalid = await request(ctx.app)
-      .get('/reports/sales?preset=custom')
+      .get('/api/reports/sales?preset=custom')
       .set('Authorization', admin)
       .expect(400);
     expect(invalid.body.code).toBe('VALIDATION_FAILED');

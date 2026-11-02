@@ -12,17 +12,17 @@ describe('Aplicação', () => {
   afterAll(closeDatabase);
 
   it('rota inexistente responde 404 em JSON', async () => {
-    const response = await request(ctx.app).get('/nao-existe').expect(404);
+    const response = await request(ctx.app).get('/api/nao-existe').expect(404);
     expect(response.body).toEqual({
       status: 'error',
       code: 'NOT_FOUND',
-      message: 'Route GET /nao-existe not found',
+      message: 'Route GET /api/nao-existe not found',
     });
   });
 
   it('JSON malformado responde 400 sem repetir o que foi enviado', async () => {
     const response = await request(ctx.app)
-      .post('/sessions')
+      .post('/api/sessions')
       .set('Content-Type', 'application/json')
       .send('{"password": segredo-digitado}')
       .expect(400);
@@ -42,7 +42,7 @@ describe('Aplicação', () => {
       },
     });
 
-    const response = await request(app).get('/products').expect(503);
+    const response = await request(app).get('/api/products').expect(503);
 
     expect(response.body).toEqual({
       status: 'error',
@@ -51,21 +51,49 @@ describe('Aplicação', () => {
     });
   });
 
+  it('/api/health confere o banco', async () => {
+    const response = await request(ctx.app).get('/api/health').expect(200);
+    expect(response.body).toEqual({ status: 'ok' });
+  });
+
+  it('/api/health responde 503 quando a consulta ao banco falha', async () => {
+    const app = createApp({
+      ...ctx.container,
+      database: {
+        ready: () => Promise.resolve(),
+        ping: () => Promise.reject(new Error('conexão perdida')),
+      },
+    });
+
+    const response = await request(app).get('/api/health').expect(503);
+
+    expect(response.body).toEqual({
+      status: 'error',
+      code: 'SERVICE_UNAVAILABLE',
+      message: 'Service temporarily unavailable',
+    });
+  });
+
+  it('as rotas só existem sob /api', async () => {
+    await request(ctx.app).get('/health').expect(404);
+    await request(ctx.app).post('/sessions').send({}).expect(404);
+  });
+
   it('serve a documentação OpenAPI', async () => {
-    const response = await request(ctx.app).get('/docs.json').expect(200);
+    const response = await request(ctx.app).get('/api/docs.json').expect(200);
     expect(response.body.openapi).toBe('3.1.0');
-    await request(ctx.app).get('/docs/').expect(200);
+    await request(ctx.app).get('/api/docs/').expect(200);
   });
 
   it('em produção a documentação não é servida', async () => {
     const app = createApp(ctx.container, { docs: false });
 
-    await request(app).get('/docs.json').expect(404);
-    await request(app).get('/docs/').expect(404);
+    await request(app).get('/api/docs.json').expect(404);
+    await request(app).get('/api/docs/').expect(404);
   });
 
   it('envia headers de segurança', async () => {
-    const response = await request(ctx.app).get('/docs.json').expect(200);
+    const response = await request(ctx.app).get('/api/docs.json').expect(200);
     expect(response.headers['x-content-type-options']).toBe('nosniff');
     expect(response.headers['x-powered-by']).toBeUndefined();
   });

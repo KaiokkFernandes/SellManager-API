@@ -30,7 +30,7 @@ describe('gestão de usuários (ADMIN)', () => {
   const createSeller = async () =>
     (
       await request(ctx.app)
-        .post('/users')
+        .post('/api/users')
         .set('Authorization', auth)
         .send({
           name: 'Bia',
@@ -46,7 +46,7 @@ describe('gestão de usuários (ADMIN)', () => {
     expect(seller).toMatchObject({ role: 'SELLER', active: true });
 
     const session = await request(ctx.app)
-      .post('/sessions')
+      .post('/api/sessions')
       .send({ email: 'bia@test.com', password: 'senha-inicial-123' })
       .expect(200);
     expect(session.body.user.role).toBe('SELLER');
@@ -55,13 +55,13 @@ describe('gestão de usuários (ADMIN)', () => {
   it('lista com busca e filtros de papel e situação', async () => {
     const seller = await createSeller();
     await request(ctx.app)
-      .patch(`/users/${seller.id}/status`)
+      .patch(`/api/users/${seller.id}/status`)
       .set('Authorization', auth)
       .send({ active: false })
       .expect(200);
 
     const list = (query: string) =>
-      request(ctx.app).get(`/users?${query}`).set('Authorization', auth);
+      request(ctx.app).get(`/api/users?${query}`).set('Authorization', auth);
     expect((await list('role=SELLER')).body.meta.total).toBe(1);
     expect((await list('status=active')).body.data[0].email).toBe(
       'admin@test.com',
@@ -77,19 +77,19 @@ describe('gestão de usuários (ADMIN)', () => {
       password: 'senha-inicial-123',
     });
     await request(ctx.app)
-      .get('/users')
+      .get('/api/users')
       .set('Authorization', sellerAuth)
       .expect(403);
 
     const updated = await request(ctx.app)
-      .put(`/users/${seller.id}`)
+      .put(`/api/users/${seller.id}`)
       .set('Authorization', auth)
       .send({ name: 'Bia Lima', role: 'ADMIN' })
       .expect(200);
     expect(updated.body).toMatchObject({ name: 'Bia Lima', role: 'ADMIN' });
 
     await request(ctx.app)
-      .get('/users')
+      .get('/api/users')
       .set('Authorization', sellerAuth)
       .expect(200);
   });
@@ -102,33 +102,33 @@ describe('gestão de usuários (ADMIN)', () => {
     });
 
     await request(ctx.app)
-      .patch(`/users/${seller.id}/status`)
+      .patch(`/api/users/${seller.id}/status`)
       .set('Authorization', auth)
       .send({ active: false })
       .expect(200);
 
     await request(ctx.app)
-      .get('/profile')
+      .get('/api/profile')
       .set('Authorization', sellerAuth)
       .expect(401);
     const disabled = await request(ctx.app)
-      .post('/sessions')
+      .post('/api/sessions')
       .send({ email: 'bia@test.com', password: 'senha-inicial-123' })
       .expect(403);
     expect(disabled.body.code).toBe('ACCOUNT_DISABLED');
     // senha errada continua 401: não revela que a conta existe
     await request(ctx.app)
-      .post('/sessions')
+      .post('/api/sessions')
       .send({ email: 'bia@test.com', password: 'errada-123' })
       .expect(401);
     await request(ctx.app)
-      .post('/password/forgot')
+      .post('/api/password/forgot')
       .send({ email: 'bia@test.com' })
       .expect(204);
     expect(ctx.mail.messages).toHaveLength(0);
 
     await request(ctx.app)
-      .patch(`/users/${seller.id}/status`)
+      .patch(`/api/users/${seller.id}/status`)
       .set('Authorization', auth)
       .send({ active: true })
       .expect(200);
@@ -137,7 +137,7 @@ describe('gestão de usuários (ADMIN)', () => {
 
   it('não muda o próprio papel, não se desativa e não rebaixa o último ADMIN', async () => {
     const self = await request(ctx.app)
-      .put(`/users/${admin.id}`)
+      .put(`/api/users/${admin.id}`)
       .set('Authorization', auth)
       .send({ name: 'Admin', role: 'MANAGER' })
       .expect(409);
@@ -146,7 +146,7 @@ describe('gestão de usuários (ADMIN)', () => {
       details: { reason: 'SELF' },
     });
     await request(ctx.app)
-      .patch(`/users/${admin.id}/status`)
+      .patch(`/api/users/${admin.id}/status`)
       .set('Authorization', auth)
       .send({ active: false })
       .expect(409);
@@ -155,13 +155,13 @@ describe('gestão de usuários (ADMIN)', () => {
     const other = await createUser(ctx, { email: 'outro@test.com' });
     const otherAuth = await login(ctx, other);
     await request(ctx.app)
-      .put(`/users/${other.id}`)
+      .put(`/api/users/${other.id}`)
       .set('Authorization', auth)
       .send({ name: 'Outro', role: 'MANAGER' })
       .expect(200);
     // `other` agora é MANAGER: não tem mais user:update
     await request(ctx.app)
-      .put(`/users/${admin.id}`)
+      .put(`/api/users/${admin.id}`)
       .set('Authorization', otherAuth)
       .send({ name: 'Admin', role: 'MANAGER' })
       .expect(403);
@@ -173,11 +173,11 @@ describe('gestão de usuários (ADMIN)', () => {
 
     const [first, second] = await Promise.all([
       request(ctx.app)
-        .put(`/users/${other.id}`)
+        .put(`/api/users/${other.id}`)
         .set('Authorization', auth)
         .send({ name: 'Outro', role: 'SELLER' }),
       request(ctx.app)
-        .put(`/users/${admin.id}`)
+        .put(`/api/users/${admin.id}`)
         .set('Authorization', otherAuth)
         .send({ name: 'Admin', role: 'SELLER' }),
     ]);
@@ -211,14 +211,14 @@ describe('gestão de usuários (ADMIN)', () => {
 
     const session = await login(ctx, data);
     await request(ctx.app)
-      .get('/users')
+      .get('/api/users')
       .set('Authorization', session)
       .expect(200);
   });
 
   it('404 para usuário inexistente', async () => {
     await request(ctx.app)
-      .get('/users/00000000-0000-4000-8000-000000000000')
+      .get('/api/users/00000000-0000-4000-8000-000000000000')
       .set('Authorization', auth)
       .expect(404);
   });

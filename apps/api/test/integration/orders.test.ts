@@ -23,7 +23,7 @@ interface Product {
   quantity: number;
 }
 
-describe('/orders', () => {
+describe('/api/orders', () => {
   let ctx: TestContext;
   let auth: string;
   let customerId: string;
@@ -35,7 +35,7 @@ describe('/orders', () => {
   ) =>
     (
       await request(ctx.app)
-        .post('/products')
+        .post('/api/products')
         .set('Authorization', auth)
         .send({ name, price_cents, quantity })
         .expect(201)
@@ -45,7 +45,7 @@ describe('/orders', () => {
     (
       (
         await request(ctx.app)
-          .get(`/products/${product.id}`)
+          .get(`/api/products/${product.id}`)
           .set('Authorization', auth)
           .expect(200)
       ).body as Product
@@ -53,7 +53,7 @@ describe('/orders', () => {
 
   const order = (products: { id: string; quantity: number }[]) =>
     request(ctx.app)
-      .post('/orders')
+      .post('/api/orders')
       .set('Authorization', auth)
       .send({ customer_id: customerId, products });
 
@@ -65,7 +65,7 @@ describe('/orders', () => {
     auth = await authenticate(ctx);
     customerId = (
       await request(ctx.app)
-        .post('/customers')
+        .post('/api/customers')
         .set('Authorization', auth)
         .send({ name: 'Ana', email: 'ana@test.com' })
         .expect(201)
@@ -105,7 +105,7 @@ describe('/orders', () => {
     expect(await stockOf(mouse)).toBe(4);
 
     const shown = await request(ctx.app)
-      .get(`/orders/${response.body.id as string}`)
+      .get(`/api/orders/${response.body.id as string}`)
       .set('Authorization', auth)
       .expect(200);
     expect(shown.body.items).toHaveLength(2);
@@ -127,7 +127,7 @@ describe('/orders', () => {
     expect(await stockOf(cable)).toBe(10);
     expect(await stockOf(mouse)).toBe(1);
     const list = await request(ctx.app)
-      .get('/orders')
+      .get('/api/orders')
       .set('Authorization', auth)
       .expect(200);
     expect(list.body.meta.total).toBe(0);
@@ -148,7 +148,7 @@ describe('/orders', () => {
 
   const act = (id: string, action: string, body: object = {}) =>
     request(ctx.app)
-      .patch(`/orders/${id}/${action}`)
+      .patch(`/api/orders/${id}/${action}`)
       .set('Authorization', auth)
       .send(body);
 
@@ -168,7 +168,7 @@ describe('/orders', () => {
     expect(await stockOf(cable)).toBe(6);
 
     const shown = await request(ctx.app)
-      .get(`/orders/${id}`)
+      .get(`/api/orders/${id}`)
       .set('Authorization', auth)
       .expect(200);
     expect(
@@ -190,7 +190,7 @@ describe('/orders', () => {
     expect(shown.body.canceled_at).toBeNull();
 
     const filtered = await request(ctx.app)
-      .get('/orders?status=delivered')
+      .get('/api/orders?status=delivered')
       .set('Authorization', auth)
       .expect(200);
     expect(filtered.body.meta.total).toBe(1);
@@ -216,7 +216,7 @@ describe('/orders', () => {
     const canceled = await act(paid.body.id as string, 'pay').expect(409);
     expect(canceled.body.details.status).toBe('canceled');
     const shown = await request(ctx.app)
-      .get(`/orders/${paid.body.id as string}`)
+      .get(`/api/orders/${paid.body.id as string}`)
       .set('Authorization', auth)
       .expect(200);
     expect(shown.body.history.at(-1)).toMatchObject({
@@ -261,7 +261,7 @@ describe('/orders', () => {
     });
     const asSeller = (action: string, body: object = {}) =>
       request(ctx.app)
-        .patch(`/orders/${id}/${action}`)
+        .patch(`/api/orders/${id}/${action}`)
         .set('Authorization', seller)
         .send(body);
 
@@ -279,7 +279,7 @@ describe('/orders', () => {
     const missing = '00000000-0000-4000-8000-000000000000';
 
     await request(ctx.app)
-      .post('/orders')
+      .post('/api/orders')
       .set('Authorization', auth)
       .send({ customer_id: missing, products: [{ id: missing, quantity: 1 }] })
       .expect(404);
@@ -296,7 +296,7 @@ describe('/orders', () => {
     await order([{ id: cable.id, quantity: 1 }]).expect(201);
 
     const response = await request(ctx.app)
-      .delete(`/products/${cable.id}`)
+      .delete(`/api/products/${cable.id}`)
       .set('Authorization', auth)
       .expect(409);
     expect(response.body).toMatchObject({
@@ -305,7 +305,7 @@ describe('/orders', () => {
       details: { orders_count: 1 },
     });
     const customer = await request(ctx.app)
-      .delete(`/customers/${customerId}`)
+      .delete(`/api/customers/${customerId}`)
       .set('Authorization', auth)
       .expect(409);
     expect(customer.body).toMatchObject({
@@ -321,11 +321,11 @@ describe('/orders', () => {
 
     const other = '00000000-0000-4000-8000-000000000000';
     const filtered = await request(ctx.app)
-      .get(`/orders?customer_id=${other}`)
+      .get(`/api/orders?customer_id=${other}`)
       .set('Authorization', auth)
       .expect(200);
     const all = await request(ctx.app)
-      .get(`/orders?customer_id=${customerId}`)
+      .get(`/api/orders?customer_id=${customerId}`)
       .set('Authorization', auth)
       .expect(200);
 
@@ -338,13 +338,13 @@ describe('/orders', () => {
     const created = await order([{ id: cable.id, quantity: 2 }]).expect(201);
 
     await request(ctx.app)
-      .put(`/products/${cable.id}`)
+      .put(`/api/products/${cable.id}`)
       .set('Authorization', auth)
       .send({ name: 'Cabo trançado', price_cents: 5000 })
       .expect(200);
 
     const shown = await request(ctx.app)
-      .get(`/orders/${created.body.id as string}`)
+      .get(`/api/orders/${created.body.id as string}`)
       .set('Authorization', auth)
       .expect(200);
     expect(shown.body.total_cents).toBe(2000);
@@ -371,7 +371,7 @@ describe('/orders', () => {
     }
 
     const october = await request(ctx.app)
-      .get('/orders')
+      .get('/api/orders')
       .query({ from: '2026-10-01T00:00:00Z', to: '2026-11-01T00:00:00Z' })
       .set('Authorization', auth)
       .expect(200);
@@ -382,14 +382,14 @@ describe('/orders', () => {
 
     // o offset do fuso é respeitado: 30/09 23:30Z é 30/09 20:30 em -03:00
     const fromLocal = await request(ctx.app)
-      .get('/orders')
+      .get('/api/orders')
       .query({ from: '2026-09-30T20:00:00-03:00' })
       .set('Authorization', auth)
       .expect(200);
     expect(fromLocal.body.meta.total).toBe(3);
 
     const inverted = await request(ctx.app)
-      .get('/orders')
+      .get('/api/orders')
       .query({ from: '2026-11-01T00:00:00Z', to: '2026-10-01T00:00:00Z' })
       .set('Authorization', auth)
       .expect(400);

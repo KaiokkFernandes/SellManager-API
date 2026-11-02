@@ -55,12 +55,8 @@ export default defineConfig(({ mode }) => {
         port: 3000,
         strictPort: true,
         proxy: {
-          // /api/products -> http://localhost:3333/products (sem CORS no navegador)
-          '/api': {
-            target: proxyTarget,
-            changeOrigin: true,
-            rewrite: (p: string) => p.replace(/^\/api/, ''),
-          },
+          // /api/products -> http://localhost:3333/api/products (sem CORS)
+          '/api': { target: proxyTarget, changeOrigin: true },
         },
       },
       preview: { port: 3000 },

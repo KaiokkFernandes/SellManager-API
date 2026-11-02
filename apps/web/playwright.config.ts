@@ -21,7 +21,7 @@ export default defineConfig({
   webServer: [
     {
       command: 'pnpm --filter api dev',
-      url: 'http://localhost:3333/docs.json',
+      url: 'http://localhost:3333/api/docs.json',
       reuseExistingServer: true,
       cwd: '../..',
       timeout: 60_000,

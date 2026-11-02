@@ -5,6 +5,7 @@ import {
   listCategoriesQuerySchema,
 } from '../categories';
 import {
+  healthSchema,
   idParamsSchema,
   paginatedSchema,
   paginationQuerySchema,
@@ -132,6 +133,19 @@ function transitionRoute(
  * para o openapi.json e, a partir dele, para o client tipado do front-end.
  */
 export const routes = {
+  health: {
+    show: defineRoute({
+      method: 'get',
+      path: '/health',
+      operationId: 'checkHealth',
+      summary: 'Confere a API e a conexão com o banco',
+      description: 'Responde 503 se o banco não estiver acessível.',
+      tags: ['Saúde'],
+      auth: false,
+      responses: { 200: healthSchema },
+    }),
+  },
+
   users: {
     create: defineRoute({
       method: 'post',

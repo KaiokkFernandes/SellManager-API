@@ -8,14 +8,14 @@ import {
   TestContext,
 } from './helpers';
 
-describe('/categories', () => {
+describe('/api/categories', () => {
   let ctx: TestContext;
   let auth: string;
 
   const createCategory = async (name: string) =>
     (
       await request(ctx.app)
-        .post('/categories')
+        .post('/api/categories')
         .set('Authorization', auth)
         .send({ name })
         .expect(201)
@@ -23,7 +23,7 @@ describe('/categories', () => {
 
   const createProduct = (name: string, category_id: string | null) =>
     request(ctx.app)
-      .post('/products')
+      .post('/api/products')
       .set('Authorization', auth)
       .send({ name, price_cents: 1000, quantity: 1, category_id });
 
@@ -41,7 +41,7 @@ describe('/categories', () => {
     expect(cables).toMatchObject({ name: 'Cabos', products_count: 0 });
 
     const duplicated = await request(ctx.app)
-      .post('/categories')
+      .post('/api/categories')
       .set('Authorization', auth)
       .send({ name: 'CABOS' })
       .expect(409);
@@ -52,7 +52,7 @@ describe('/categories', () => {
 
     await createProduct('Cabo USB', cables.id).expect(201);
     const renamed = await request(ctx.app)
-      .put(`/categories/${cables.id}`)
+      .put(`/api/categories/${cables.id}`)
       .set('Authorization', auth)
       .send({ name: 'Cabos e adaptadores' })
       .expect(200);
@@ -62,7 +62,7 @@ describe('/categories', () => {
     });
 
     const list = await request(ctx.app)
-      .get('/categories?q=adapt')
+      .get('/api/categories?q=adapt')
       .set('Authorization', auth)
       .expect(200);
     expect(list.body.data).toEqual([
@@ -77,7 +77,7 @@ describe('/categories', () => {
     await createProduct('Mouse', null).expect(201);
 
     const filtered = await request(ctx.app)
-      .get(`/products?category_id=${cables.id}`)
+      .get(`/api/products?category_id=${cables.id}`)
       .set('Authorization', auth)
       .expect(200);
     expect(
@@ -86,7 +86,7 @@ describe('/categories', () => {
 
     // tirar a categoria do produto
     const updated = await request(ctx.app)
-      .put(`/products/${created.body.id as string}`)
+      .put(`/api/products/${created.body.id as string}`)
       .set('Authorization', auth)
       .send({ name: 'Cabo USB', price_cents: 1000, category_id: null })
       .expect(200);
@@ -106,7 +106,7 @@ describe('/categories', () => {
     const product = await createProduct('Cabo USB', cables.id).expect(201);
 
     const blocked = await request(ctx.app)
-      .delete(`/categories/${cables.id}`)
+      .delete(`/api/categories/${cables.id}`)
       .set('Authorization', auth)
       .expect(409);
     expect(blocked.body).toMatchObject({
@@ -115,11 +115,11 @@ describe('/categories', () => {
     });
 
     await request(ctx.app)
-      .delete(`/products/${product.body.id as string}`)
+      .delete(`/api/products/${product.body.id as string}`)
       .set('Authorization', auth)
       .expect(204);
     await request(ctx.app)
-      .delete(`/categories/${cables.id}`)
+      .delete(`/api/categories/${cables.id}`)
       .set('Authorization', auth)
       .expect(204);
   });
@@ -130,11 +130,11 @@ describe('/categories', () => {
       role: 'SELLER',
     });
     await request(ctx.app)
-      .get('/categories')
+      .get('/api/categories')
       .set('Authorization', seller)
       .expect(200);
     await request(ctx.app)
-      .post('/categories')
+      .post('/api/categories')
       .set('Authorization', seller)
       .send({ name: 'Cabos' })
       .expect(403);

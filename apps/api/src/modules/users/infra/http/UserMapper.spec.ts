@@ -28,7 +28,7 @@ describe('toUserResponse', () => {
   it('monta avatar_url quando o usuário tem avatar', () => {
     const response = toUserResponse(makeUser({ avatar: 'abc.png' }), apiUrl);
 
-    expect(response.avatar_url).toBe('http://api.test/files/abc.png');
+    expect(response.avatar_url).toBe('http://api.test/api/files/abc.png');
   });
 
   it('avatar_url é null quando o usuário não tem avatar', () => {

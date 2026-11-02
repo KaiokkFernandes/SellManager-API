@@ -6,6 +6,7 @@ import {
 import { z } from 'zod';
 import {
   allRoutes,
+  API_BASE_PATH,
   apiErrorSchema,
   can,
   ERROR_DESCRIPTIONS,
@@ -122,8 +123,6 @@ export function generateOpenApiDocument() {
         'API de gestão de vendas: usuários, produtos, clientes e pedidos. Gerado a partir do contrato em @sellmanager/shared.',
       license: { name: 'MIT', identifier: 'MIT' },
     },
-    servers: [
-      { url: 'http://localhost:3333', description: 'Desenvolvimento local' },
-    ],
+    servers: [{ url: API_BASE_PATH, description: 'Mesmo domínio do front' }],
   });
 }

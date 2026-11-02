@@ -68,7 +68,7 @@ export async function login(
   { email, password }: { email: string; password: string },
 ): Promise<string> {
   const response = await request(ctx.app)
-    .post('/sessions')
+    .post('/api/sessions')
     .send({ email, password })
     .expect(200);
   return `Bearer ${(response.body as { token: string }).token}`;

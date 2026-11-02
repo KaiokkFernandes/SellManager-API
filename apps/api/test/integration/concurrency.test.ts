@@ -30,7 +30,7 @@ describe('concorrência em pedidos e estoque', () => {
   const createProduct = async (quantity: number) =>
     (
       await request(ctx.app)
-        .post('/products')
+        .post('/api/products')
         .set('Authorization', auth)
         .send({ name: `Produto ${quantity}`, price_cents: 1000, quantity })
         .expect(201)
@@ -38,7 +38,7 @@ describe('concorrência em pedidos e estoque', () => {
 
   const order = (productId: string, quantity = 1) =>
     request(ctx.app)
-      .post('/orders')
+      .post('/api/orders')
       .set('Authorization', auth)
       .send({
         customer_id: customerId,
@@ -47,14 +47,14 @@ describe('concorrência em pedidos e estoque', () => {
 
   const act = (orderId: string, action: string, body: object = {}) =>
     request(ctx.app)
-      .patch(`/orders/${orderId}/${action}`)
+      .patch(`/api/orders/${orderId}/${action}`)
       .set('Authorization', auth)
       .send(body);
 
   const stockOf = async (productId: string) =>
     (
       await request(ctx.app)
-        .get(`/products/${productId}`)
+        .get(`/api/products/${productId}`)
         .set('Authorization', auth)
         .expect(200)
     ).body.quantity as number;
@@ -81,7 +81,7 @@ describe('concorrência em pedidos e estoque', () => {
     auth = await authenticate(ctx);
     customerId = (
       await request(ctx.app)
-        .post('/customers')
+        .post('/api/customers')
         .set('Authorization', auth)
         .send({ name: 'Ana', email: 'ana@test.com' })
         .expect(201)
@@ -145,7 +145,7 @@ describe('concorrência em pedidos e estoque', () => {
 
     expect([cancel.status, ship.status].sort()).toEqual([200, 409]);
     const shown = await request(ctx.app)
-      .get(`/orders/${id}`)
+      .get(`/api/orders/${id}`)
       .set('Authorization', auth)
       .expect(200);
     // o estoque só voltou se o cancelamento venceu
@@ -161,7 +161,7 @@ describe('concorrência em pedidos e estoque', () => {
 
     const [adjustment, ...orders] = await Promise.all([
       request(ctx.app)
-        .post(`/products/${productId}/stock-movements`)
+        .post(`/api/products/${productId}/stock-movements`)
         .set('Authorization', auth)
         .send({ type: 'ADJUSTMENT', quantity: -3, reason: 'Avaria' }),
       ...Array.from({ length: 5 }, () => order(productId)),

@@ -56,6 +56,10 @@ export function paginatedSchema<T extends z.ZodType>(item: T) {
   return z.object({ data: z.array(item), meta: paginationMetaSchema });
 }
 
+export const healthSchema = z
+  .object({ status: z.literal('ok') })
+  .meta({ id: 'Health' });
+
 export const validationIssueSchema = z
   .object({
     segment: z.enum(['params', 'query', 'body']),
